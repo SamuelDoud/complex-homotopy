@@ -36,7 +36,7 @@ class point(object):
         """given a function and a desired numbers of steps, update this point in the grid to match that"""
         list_points=[]
         self.function = function
-        result_at_point = self.function.subs({z:complex(self.real,self.imag)})
+        result_at_point = self.function.evaluateAt(complex(self.real, self.imag)) #get the result of f(z)
         self.f_real = re(result_at_point)
         self.f_imag = im(result_at_point) #these are the final points in the homotopy
         for step in range(desired_steps):
