@@ -1,6 +1,10 @@
 import tkinter
+import PointGrid
+import plot
+import Line
 
-window = tkinter.Tk()
-window.mainloop() #This launches the main window
 
-def AddLine()
+def init():
+    window = tkinter.Tk()
+    window.mainloop() #This launches the main window
+

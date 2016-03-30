@@ -16,7 +16,20 @@ class point(object):
         self.function = function
         if not self.function:
             self.updatePoint(self.function, self.n)#a function was provided, calculate the homotopy
-    def setPoints(self, list_points):
+
+    def reset():
+        self.counter=0
+        self.increment=1
+
+    def set_function(function, n=0):
+        """Adds a new function to this point"""
+        if n is not 0:
+            self.n=n
+        self.reset() #reset the counter and increment for this point
+        self.function=function
+        self.update_point(self.function, self.n)
+
+    def set_points(self, list_points):
         """given a new set of points, update this point's points and reset the n and counter"""
         self.point_order=list_points
         self.n = len(self.point_order) #set n to zero to bring the animation back to the base state
@@ -32,7 +45,7 @@ class point(object):
         #when the counter reaches n, set the increment to -1 
         return self.point_order[n] #return the current points in the animation process.
 
-    def updatePoint(self, function, desired_steps):
+    def update_point(self, function, desired_steps):
         """given a function and a desired numbers of steps, update this point in the grid to match that"""
         list_points=[]
         self.function = function
@@ -43,4 +56,4 @@ class point(object):
             t = step / (desired_steps+0.0)
             less_t = (1-t) #tracking of progress variables, this is not needed to be written explictly
             list_points.append((less_t*real + t*f_real, less_t*imag + t*f_imag)) #add to the list as a tuple
-        self.setPoints(list_points) #update the points as specified
+        self.set_points(list_points) #update the points as specified

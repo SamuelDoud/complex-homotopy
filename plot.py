@@ -18,7 +18,8 @@ class plot(object):
         self.grid.addLine(line)
 
     def NextFrame(self):
-        complex_lines=self.grid.newLines() #get all the new lines from the grid. The PlotGrid calls to each Line object asking for new points, the Line then calls for new locations from each point based on their deformation pattern.
+        """Deletes the old graph and creates a new one one step ahead"""
+        complex_lines=self.grid.NextFrame() #get all the new lines from the grid. The PlotGrid calls to each Line object asking for new points, the Line then calls for new locations from each point based on their deformation pattern.
         for line in complex_lines:
             reals = [re(complex) for complex in line]
             imaginaries = [im(complex) for complex in line] #list comps for the real and imaginary parts of the line
