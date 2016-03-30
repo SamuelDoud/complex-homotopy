@@ -17,7 +17,11 @@ class Line(object):
         if self.simply_connected:
             self.points.append(self.points[0]) #this draws a line from the last point to the starting point...
             #needed if you draw a circle as there would not be a line connecting the two endpoints as they do not border eachother
-        
+
+    def info(self):
+        """Provides the information of this line in a consistent manner"""
+        return [self.name,self.number_of_points,self.color]
+
     def create_points(self):
         z = self.start #this is the first value on the domain
         points = [z]
@@ -29,10 +33,8 @@ class Line(object):
             points.append(temp_point) 
         return points
 
-    def next_frame(self):
-        """call for the next step in the deformation from each point contained on this line and send it up"""
-        for i in range(len(self.points)):
-            self.points.NextFrame()
+    def all_points_order(self):
+        return [order for order in self.points.point_order] #all point's homotopy's in this line
 
     def new_function(self, function, n=0):
         """Issue a new function to the points. This function is independent of the line's initial construction!

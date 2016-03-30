@@ -7,19 +7,12 @@ class point(object):
     def __init__(self, real, imag, function=None, n=1):
         self.real = real
         self.imag = imag
-        self.f_real = f_real
-        self.f_imag = f_imag
-        self.increment = 1 #init value for the incrementation (1 is for z to f(z), -1 is for f(z) to z)
         self.point_order = [(real, imag)]
         self.counter = 0
         self.n=n
         self.function = function
         if not self.function:
             self.updatePoint(self.function, self.n)#a function was provided, calculate the homotopy
-
-    def reset():
-        self.counter=0
-        self.increment=1
 
     def set_function(function, n=0):
         """Adds a new function to this point"""
@@ -34,16 +27,6 @@ class point(object):
         self.point_order=list_points
         self.n = len(self.point_order) #set n to zero to bring the animation back to the base state
         self.counter = 0 # reset the counter
-
-    def get_point(self):
-        """this would be naive, however n must be incremented so the next call actually returns a new point (may have to reset the graph!). so it is done verbosely"""
-        if counter % n == 0: #whenever counter is at a multiple of n, we are at the end of a cycle
-            self.increment*=-1 #this maps 1 to -1 and -1 to 1, reversing the animation
-        n+=increment #actually do the incremntation
-        #this configuration has the homotopy running in reverse!
-        #so if counter is equal to 0, set the increment to 1
-        #when the counter reaches n, set the increment to -1 
-        return self.point_order[n] #return the current points in the animation process.
 
     def update_point(self, function, desired_steps):
         """given a function and a desired numbers of steps, update this point in the grid to match that"""
