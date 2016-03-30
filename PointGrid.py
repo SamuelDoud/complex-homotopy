@@ -1,5 +1,6 @@
 ﻿import math
 import cmath
+import Line
 
 class PointGrid(object):
     """Point Grid holds all the points on the graph and their associations"""
@@ -19,12 +20,13 @@ class PointGrid(object):
                 
     def increment(self):
         """Take every point in every line and increment them... take these incremented points and """
-        for index, line in enumerate(lines): #go through each line in lines
-            self.current_display[index] = [point for point in line] #list comp to update this particular line
+        for index in range(len(self.lines)): #go through each line in lines
+            self.lines[i].NextFrame()
 
-    def displayNewPoints(self): #user calls this function to get the points that need to be displayed
+    def NextFrame(self):
+        """Calls on each line to increment its points"""
         self.increment()
-        return current_display
+        return self.lines
 
     def provideFunction(self,function,n):
         """Give a complex function to this function.
