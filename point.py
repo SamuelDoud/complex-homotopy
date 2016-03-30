@@ -39,7 +39,7 @@ class point(object):
         result_at_point = self.function.evaluateAt(complex(self.real, self.imag)) #get the result of f(z)
         self.f_real = re(result_at_point)
         self.f_imag = im(result_at_point) #these are the final points in the homotopy
-        for step in range(desired_steps):
+        for step in range(desired_steps + 1): #creates desired_steps anamations from the state z to the state f(z)
             t = step / (desired_steps+0.0)
             less_t = (1-t) #tracking of progress variables, this is not needed to be written explictly
             list_points.append((less_t*real + t*f_real, less_t*imag + t*f_imag)) #add to the list as a tuple
