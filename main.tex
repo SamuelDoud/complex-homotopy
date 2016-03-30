@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsfonts,amsthm,hyperref,enumerate}
+\usepackage{graphicx, array, tabu} %package to manage images
+\graphicspath{ {images/} }
+\setcounter{secnumdepth}{5}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\newtheorem*{theorem}{Theorem}
+
+\title{Complex Homotopy}
+\author{Samuel Doud}
+\date{March 2016}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Complex homotopy (name change possible) takes points in the $\mathbb{C}$ plane and maps them by a user-defined transformation $T:\mathbb{C} \rightarrow \mathbb{C}$.
+Integral to the understanding of the complex numbers is the intuitive visualization of the Cartesian $xy$-plane, where the $x$ represents the real part of the number and the $y$ axis contains the imaginary part of the complex number. An alternative description. In addition to rectangular coordinates, a polar system exists as well.
+
+\section{Technical Implementation}
+Complex Homotopy is built on the Python 3.4 environment. Python has a large community in scientific computing which has spawned libraries such as \textit{sympy, numpy,} and \textit{matplotlib}. These third party libraries each play an important role in the execution of Complex Homotopy. Additionally, Python is an object-oriented development language. This allows for Complex Homotopy to be a distributable application which would not be possible if it were programmed in a dedicated scientific language such as Mathematica.
+
+    \subsection{Classes and Program Flow}
+    This section will detail the class structure of Complex Homotopy and illustrate how the program takes its inputs and displays its outputs.
+        \subsubsection{Classes}
+            \paragraph{Point}
+            The point object is the representation of a  single point in the homotopy. The set of points that are to be displayed will be defined in the \textit{PointGrid} class. Each point independently contains the information required for animation. On creation the \textit{Line} object which contains the point will pass the user-defined function ($f$), the number of iterations ($n$), and its initial location on the graph ($z$). After ingesting this information, the point will use the initial point (call it $z$) and determine its final location as defined by $f(z)$. These two locations on the $\mathbb{C}$-plane contains the information needed to determine the points on the animation. The set of points contained in the animation of the transformation from $z$  to $f(z)$ ($f:\mathbb{C} \Rightarrow \mathbb{C}$) is determined by the equation:
+            $$\{t \in \mathbb{N} \cup\{0\} \mid t < n \mid (1-t)z+t*f(z)\}$$
+            This set is then iterated through by a function of the Point object \textit{updatePoint}. This will increment the Point's counter and display the Point's point in the $(counter\%n)$ element of set. This increment is defined as forwards or backwards, if $counter \equiv 0 \pmod n$ then the increment is multiplied by -1, effectively reversing the animation.
+            
+            \paragraph{Line}
+            This class is a list of points. A very lightweight class, it is used to determine which points to draw lines between and determine if a line is simply connected, if the line is simply connected, this means that the line's endpoints are at the same location in $\mathbb{C}$.
+                \subparagraph{Properties}
+                A key feature of the line is that it has a defined and unique name that is determined by its attributes. These attributes allow easy deletion and manipulation of lines by referencing the name of the line. Any change in the lines will affect the properties of the line.
+                \begin{enumerate}
+                    \item List of Points
+                    \item Name (name is reflective of the following properties)
+                    \item Boolean flag for simply connected
+                    \item Color - Color of the line
+                    \item Point Resolution - A number reflecting the current length of the list of Points
+                    \item Function - This is complex valued function that describe the line (not the $f(z)$ itself).
+                \end{enumerate}
+            
+            \paragraph{PointGrid}
+            PointGrid is the interface of the points. It contains a list of Lines which contain the Points, however, the graphing functionality will pipe through this class. Adding, deleting, manipulating Lines will occur through this
+            \paragraph{Function}
+            Class that takes a string and runs through sympy to make it an expression that sympy can work with. Then each point can use this function and substitute in its own $z$ to get its $f(z)$.
+    \subsection{Libraries}
+    The third party libraries that are utilized by Complex Homotopy
+        \subsubsection{sympy}
+        Sympy is utilized for its ability to handle complex functions. Importantly sympy can take a complex function and display its real and imaginary parts of a complex function. Recall, that as complex numbers are defined on $\mathbb{R}^2$ by its real and imaginary parts. By allowing for a $z$ to be substituted into a complex function $f$ and then outputting $f(z)$ that can be further split into $\mathfrak{R}(z)$ and $\mathfrak{I}(z)$. This gives us the location of $f(z)$ on the $xy$-plane.
+        \subsubsection{matplotlib}
+        This class is the standard Python graphing library. This forms an abstraction for the $xy$-plane to the users monitor. For example, $(100,100)$ on the $xy$-plane could export to any point on the user's window. If they change the range of points displayed on the graph by panning or magnifying, matplotlib handles the change internally.
+\end{document}
