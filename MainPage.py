@@ -1,13 +1,16 @@
-import tkinter as tk
+﻿import tkinter as tk
 import PointGrid
 import plot
 import Line
 import function as func
 import cmath
 import math
-from sympy import Symbol, symbols
+from sympy import Symbol, symbols, re, im, arg, Abs
 z=symbols('z',complex=True)
 functionObj = func.function(z**2)
+
+line = Line.Line(func.function(re(z)+2j),0,(5+0j),10,20,"black")
+pts = line.parameterize_points(functionObj)
 
 class Application(tk.Frame):
     def __init__(self, master=None):
