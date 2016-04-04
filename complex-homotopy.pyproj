@@ -3,16 +3,18 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{f0cab87d-9a1d-49df-acd0-295ed89c0a47}</ProjectGuid>
+    <ProjectGuid>{10455a5b-3cdc-4d04-99b1-c2b5e82f8d71}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>function.py</StartupFile>
+    <StartupFile>MainPage.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <InterpreterId>{2af0f10d-7135-4994-9156-5d01c9c11b7e}</InterpreterId>
-    <InterpreterVersion>3.4</InterpreterVersion>
+    <InterpreterId />
+    <InterpreterVersion />
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <Name>complex-homotopy</Name>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
@@ -22,11 +24,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="function.py" />
+    <Compile Include="Line.py" />
+    <Compile Include="MainPage.py" />
+    <Compile Include="plot.py" />
     <Compile Include="point.py" />
     <Compile Include="PointGrid.py" />
-  </ItemGroup>
-  <ItemGroup>
-    <InterpreterReference Include="{2af0f10d-7135-4994-9156-5d01c9c11b7e}\3.4" />
   </ItemGroup>
   <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
