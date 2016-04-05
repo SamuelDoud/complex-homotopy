@@ -32,6 +32,14 @@ class Line(object):
             points.append(point.point(f_z)) #create a point located at
         return points
 
+    def points_at_step(self,n):
+        reals=[]
+        imaginaries=[]
+        for point_index in range(len(self.points)):
+            reals.append(self.points[point_index].full_point_order[point.REAL][n])
+            imaginaries.append(self.points[point_index].full_point_order[point.IMAG][n])
+        return (reals,imaginaries)
+    
     def parameterize_points(self,function,steps=None):
         """New function for the points on the line to draw to"""
         if not steps:
