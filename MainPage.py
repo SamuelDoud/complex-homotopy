@@ -6,6 +6,7 @@ import function as func
 import cmath
 import math
 from sympy import Symbol, symbols, re, im, arg, Abs
+
 z=symbols('z',complex=True)
 functionObj = func.function(z**2)
 
@@ -14,7 +15,7 @@ pts = line.parameterize_points(functionObj)
 
 
 ptGrid = PointGrid.PointGrid(complex(-1+1j),complex(1-1j),20)
-ptGrid.provide_function(functionObj,25)
+ptGrid.provide_function(functionObj,25) #debugging
 
 class Application(tk.Frame):
     def __init__(self, master=None):
