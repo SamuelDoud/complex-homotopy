@@ -32,11 +32,14 @@ class Line(object):
             points.append(point.point(f_z)) #create a point located at
         return points
 
-    def parameterize_points(self,function):
+    def parameterize_points(self,function,steps=None):
+        """New function for the points on the line to draw to"""
+        if not steps:
+            steps=self.number_of_steps
         points=[]#temp list to store results
         for point in self.points:#take every point that has been defined by the create_points method
             f_z = function.evaluateAt(point.complex) #evaluate the function at this complex number
-            point.parameterize(f_z,self.number_of_steps) #call on the point to parameterize itself given a new endpoint
+            point.parameterize(f_z,steps) #call on the point to parameterize itself given a new endpoint
             points.append(point) #throw that into a temp list
         self.points=points #reassign the old set of points to the temporary one. The temp list was used as the old points were being iterated over concurrently
         return points #hanf the points back to the caller for ease of use

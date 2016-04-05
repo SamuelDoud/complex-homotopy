@@ -12,6 +12,10 @@ functionObj = func.function(z**2)
 line = Line.Line(func.function(re(z)+2j),0,(5+0j),10,20,"black")
 pts = line.parameterize_points(functionObj)
 
+
+ptGrid = PointGrid.PointGrid(complex(-1+1j),complex(1-1j),20)
+ptGrid.provide_function(functionObj,25)
+
 class Application(tk.Frame):
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
