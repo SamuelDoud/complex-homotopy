@@ -110,7 +110,6 @@ class PointGrid(object):
         self.imag_max*=pad
         self.imag_min*=pad
         return None
-
     def force_square(self):
         real_diff=self.real_max-self.real_min
         imag_diff=self.imag_max-self.imag_min
