@@ -15,7 +15,7 @@ class point(object):
 
     def parameterize(self, f_z, n_steps):
         total_list=[[],[]]
-        for t in [step/n_steps for step in range(n_steps+1)]:
+        for t in n_steps.linspace(0,1,n_steps+1):
             z=(1-t)*self.complex + t*f_z
             total_list[REAL].append(re(z))
             total_list[IMAG].append(im(z))
