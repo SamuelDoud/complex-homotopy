@@ -28,6 +28,7 @@ class point(object):
 def add_reverse(target):
     """Take a list, reverse it, and extend the original list with that"""
     #Is there a C/C++ type way to do this with pointers instead of actually copying and using unneeded memory?
-    og_target = list(target) #copy the list to avoid the next line affecting og_target
-    target.reverse()
-    return og_target + target
+    #copy the list to avoid the next line affecting target
+    reversed = list(target)
+    reversed.reverse()
+    return target + reversed
