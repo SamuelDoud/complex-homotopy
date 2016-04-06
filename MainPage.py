@@ -12,8 +12,9 @@ class Application(Frame):
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.pack()
-        self.createWidgets()
         self.unit_square = PointGrid.PointGrid(complex(-1+1j),complex(1-1j),20,20)
+        self.createWidgets()
+        
     def createWidgets(self):
         self.hi_there = Button(self)
         self.function_label = Label( root, text="Enter a f(z)")
@@ -29,11 +30,9 @@ class Application(Frame):
         self.QUIT = Button(self, text="QUIT", fg="red", command=root.destroy)
         self.QUIT.pack(side="bottom")
 
-    def say_hi(self):
-        print("hi there, everyone!")
-
     def launch(self):
-        functionObj = func.function(str(self.function_entry.get()))
+        z=symbols('z',complex=True)
+        functionObj = func.function(z**2)#str(self.function_entry.get()))
         self.unit_square.provide_function(functionObj,int(self.n_entry.get()))
         plot_window=plot.plot(self.unit_square)
         plot_window.show()

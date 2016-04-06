@@ -1,4 +1,6 @@
 ﻿from sympy import re, im
+import numpy as np
+
 REAL=0
 IMAG=1#constants used for point order indexes
 
@@ -15,7 +17,7 @@ class point(object):
 
     def parameterize(self, f_z, n_steps):
         total_list=[[],[]]
-        for t in [step/n_steps for step in range(n_steps+1)]:
+        for t in np.linspace(0,1,n_steps+1):#range t from 0 to 1 inclusive with n_step + 1 number of evenly spaced steps
             z=(1-t)*self.complex + t*f_z
             total_list[REAL].append(re(z))
             total_list[IMAG].append(im(z))
