@@ -1,26 +1,34 @@
-﻿from sympy import I, re, im, Abs, arg, conjugate, Symbol, symbols, lambdify
-from sympy.parsing.sympy_parser import parse_expr
-from sympy.abc import z
-import numpy
+﻿import numpy
+from sympy import Function, Symbol, symbols, lambdify
+from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication, split_symbols_custom, _token_splittable
 
 class function(object):
-    def __init__(self, expre):
-        self.z=symbols('z',complex=True)
-        if isinstance(expre,str):
-            self.expre = parse_expr(expre)
+    def __init__(self, expression):
+        if isinstance(expression, str):
+            self.z=symbols('z',complex=True)
+            transformations=standard_transformations + (implicit_multiplication,)
+            self.evaluator=function(parse_expr(expression, transformations=transformations))
+            self.flag=True
         else:
-            self.expre=expre
-        self.f_z=lambdify(self.z, self.expre, "numpy") #taking advantage of the reuse of the function object. Lamdba numby operations greatly speed up operations on large amounts of data with inital overhead
-        
-    def evaluateAt(self,w):
-        return self.f_z(w) #return the result!
+            self.z=symbols('z',complex=True)
+            self.f_z=lambdify(self.z, expression, "numpy") #taking advantage of the reuse of the function object. Lamdba numby operations greatly speed up operations on large amounts of data with inital overhead
+            self.flag=False
+    def evaluateAt(self,z):
+        if self.flag:
+            return self.evaluator.evaluateAt(z)
+        return self.f_z(z)
 
-z=symbols('z',complex=True)
-funct=function(z**2)
-print(funct.evaluateAt(complex(1+1j)))
+class nested_function(Function):
 
-funct=function("z**2")
-print(funct.evaluateAt(complex(1+1j)))
+    @classmethod
+    def eval(cls, expr, sym):
+        # automatic evaluation should be done here
+        # return None if not required
+        return None
 
-#2j
-#z**2
+
+    def evaluateAt(self, pt):
+        return self.args[0].subs(self.args[1], pt)
+
+s = function("z**2")
+print(s.evaluateAt(complex(1 + 1j)).expand())
