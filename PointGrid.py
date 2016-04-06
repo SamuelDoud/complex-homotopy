@@ -13,7 +13,7 @@ class PointGrid(object):
     def __init__(self, corner_upper_left, corner_lower_right, n_lines, n_points):
         self.lines =[]
         self.n_lines = n_lines
-        self.n_steps = 0
+        self.n_steps = 1
         self.n_points = n_points
         self.upper_left = corner_upper_left
         self.lower_right = corner_lower_right
@@ -84,7 +84,7 @@ class PointGrid(object):
         self.real_max=self.lines[0].points[0].point_order[REAL][0]
         self.imag_min=self.lines[0].points[0].point_order[IMAG][0]
         self.imag_max=self.lines[0].points[0].point_order[IMAG][0]
-        for n in range(self.n_steps*2): #go through every step in the lines. n_steps * 2 because we are collecting the reversal steps too
+        for n in range(self.n_steps*2+2): #go through every step in the lines. n_steps * 2 because we are collecting the reversal steps too
             temp_tuple = self.lines_at_step(n)
             #algo to set min/max
             test_real_max = max(max(line) for line in temp_tuple[REAL])
@@ -121,7 +121,7 @@ class PointGrid(object):
             self.real_min+=((imag_diff-real_diff)*2)
     def pre_computed_steps(self,n):
         """get the precomputed step n"""
-        return self.computed_steps[n]
+        return self.computed_steps[n % (self.n_steps * 2+1)]
 
     def provide_function(self,function,n):
         """Give a complex function to this function.
