@@ -1,10 +1,8 @@
-﻿import math
-import cmath
-import Line
-import pickle
+﻿import Line
 import function
 from sympy import I, re, im, Abs, arg, conjugate, expand, Symbol, symbols
 from sympy.abc import z
+import numpy as np
 
 REAL=0
 IMAG=1 #constants for consistent iterable access
@@ -69,12 +67,7 @@ class PointGrid(object):
     
     def lines_at_step(self, n):
         """Get the state of every line at this current state"""
-        aligned_tuple=([],[])#tuple that will return all lines
-        for line in self.lines:
-            temp_tuple = line.points_at_step(n)
-            aligned_tuple[REAL].append(temp_tuple[REAL])
-            aligned_tuple[IMAG].append(temp_tuple[IMAG])
-        return aligned_tuple
+        return [ln.points_at_step(n) for ln in self.lines]
 
     def pre_compute(self):
         """Take every lines order and save it in an easily accessible list so computation doesn't have to be performed on the fly.
@@ -110,6 +103,8 @@ class PointGrid(object):
         self.imag_max*=pad
         self.imag_min*=pad
         return None
+
+
     def force_square(self):
         real_diff=self.real_max-self.real_min
         imag_diff=self.imag_max-self.imag_min

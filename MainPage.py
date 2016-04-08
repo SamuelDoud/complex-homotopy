@@ -21,20 +21,22 @@ class Application(Frame):
         self.createWidgets()
 
     def createWidgets(self):
-        self.hi_there = Button(self)
         self.function_label = Label( root, text="Enter a f(z)")
         self.function_entry = Entry(root, bd=20)
         self.n_label = Label(root, text="Number of steps")
         self.n_entry = Entry(root,bd=5)
+        self.interval_label = Label(root, text="Length of interval")
+        self.interval_entry = Entry(root,bd=5)
         self.function_label.pack()
         self.function_entry.pack()
         self.n_label.pack()
         self.n_entry.pack()
+        self.interval_label.pack()
+        self.interval_entry.pack()
         self.submit = Button(root, text ="Submit", command = self.launch)
         self.submit.pack(side =BOTTOM) 
-        self.QUIT = Button(self, text="QUIT", fg="red", command=root.destroy)
-        self.QUIT.pack(side="bottom")
-        #self.update_graph(plot_window.plot_window(self.unit_square,self.master))
+        self.QUIT = Button(self, text="Quit", fg="red", command=root.destroy)
+        self.QUIT.pack(side=BOTTOM)
 
 
 
@@ -51,7 +53,10 @@ class Application(Frame):
         self.canvas = FigureCanvasTkAgg(f.fig,master=self)
         self.canvas.show()
         self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
-        f.animate()
+        interval=20
+        if int(self.interval_entry.get()):
+            interval = int(self.interval_entry.get())
+        f.animate(interval_length=interval)
 
 
 root = Tk()

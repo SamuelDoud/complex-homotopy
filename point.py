@@ -8,18 +8,23 @@ class point(object):
 
     def __init__(self, z):
         self.complex=z #save the point's complex number
-        self.point_order = [[],[]] #where the point's homotopies will go
-        self.full_point_order = [[],[]] #full order is a list that is 2 point orders attached by their tails. Think of the cartoon character CatDog, but just DogDog or CatCat
+        self.point_order = [] #where the point's homotopies will go
+        self.n_steps=1
 
     def parameterize(self, f_z, n_steps):
         """given the value of this point applied to a function, parameterize its path to that point on the complex plane"""
-        total_list=[[],[]]
+        total_list=[]
         for z in np.linspace(self.complex,f_z,n_steps+1):#range t from self.complex to f_z inclusive with n_step number of evenly spaced steps
-            total_list[REAL].append(z.real) #append the point calculated to the points order
-            total_list[IMAG].append(z.imag)
-        self.point_order=total_list #point order is the non-reversed list
-        self.full_point_order[REAL] = add_reverse(self.point_order[REAL]) #this allows the animation to run in reverse
-        self.full_point_order[IMAG] = add_reverse(self.point_order[IMAG])
+            self.point_order.append((z.real,z.imag))#append a tuple describing the point at this particular spot            
+        self.n_steps = len(self.point_order)
+
+    def get_location_at_step(self,step):
+        """The user can call for a step and get it back. The reason that a function is used is that the step n_steps + n actually refers to n_steps - n"""
+        index = step
+        if index >= (self.n_steps):
+            index = self.n_steps-(index % self.n_steps)-1 #reversal step
+            #could inject code here if reversals aren't wanted
+        return self.point_order[index]
 
     def data_dump(self):
         return {"reals":point_order[REAL],"imaginaries":point_order[IMAG]} #only dump the non-reversed list as storing that is pretty redunadant

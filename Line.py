@@ -1,10 +1,10 @@
-﻿from sympy import I, re, im, Abs, arg, conjugate, expand
-import cmath
+﻿import numpy as np
 import point
 
 class Line(object):
     """Line is a container of points and delegates operations to them. Additionally, Line containss information shared among the points on a Line such as the color of the line, if it is connected, how many points are on the line etc.. Lines are held within a PointGrid"""
-    def __init__(self, function, start, end,number_of_points, number_of_steps, color, simply_connected=False):
+    def __init__(self, function, start, end,number_of_points, number_of_steps, color, simply_connected=False,width=1):
+        self.width=width
         self.simply_connected=simply_connected
         #self.name=name #the name of the Line,
         self.color=color #the color of this line
@@ -33,12 +33,8 @@ class Line(object):
         return points
 
     def points_at_step(self,n):
-        reals=[]
-        imaginaries=[]
-        for point_index in range(len(self.points)):
-            reals.append(self.points[point_index].full_point_order[point.REAL][n])
-            imaginaries.append(self.points[point_index].full_point_order[point.IMAG][n])
-        return (reals,imaginaries)
+        list_of_tuples=[pt.get_location_at_step(n) for pt in self.points] #get the location of every point at the n-th step
+        return np.asarray(list_of_tuples).T.tolist()
     
     def parameterize_points(self,function,steps=None):
         """New function for the points on the line to draw to"""
