@@ -2,10 +2,6 @@
 import PointGrid
 import plot_window
 import function as func
-from sympy import Symbol, symbols, re, im, arg, Abs, sympify
-
-from matplotlib import animation
-
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
@@ -41,7 +37,6 @@ class Application(Frame):
 
 
     def launch(self):
-        z=symbols('z',complex=True)
         functionObj = func.function(self.function_entry.get())
         self.unit_square.provide_function(functionObj,int(self.n_entry.get()))
         plot_obj=plot_window.plot_window(self.unit_square)

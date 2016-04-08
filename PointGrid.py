@@ -1,5 +1,6 @@
 ﻿import Line
 import function
+from sympy import re, im, Symbol, symbols, I
 
 REAL=0
 IMAG=1 #constants for consistent iterable access
@@ -14,7 +15,7 @@ class PointGrid(object):
         self.lower_right = corner_lower_right
         self.real_step = (self.lower_right.real - self.upper_left.real) / n_lines
         self.imaginary_step = (self.lower_right.imag - self.upper_left.imag) / n_lines
-        self.z=symbols('z',complex=True)
+        self.z = symbols('z',complex=True)
         self.draw_lines()
         self.real_max=None
         self.real_min=None
@@ -28,11 +29,10 @@ class PointGrid(object):
 
     def draw_real(self):
         """Draw the lines with constant re(z)"""
-        z=symbols('z',complex=True)
         upper = complex(self.upper_left.real,self.upper_left.imag)
         lower = complex(self.upper_left.real,self.lower_right.imag)#inital states of the lower and upper bound of the line
         for step in range(self.n_lines+1): #draw a line for the number of steps determined by the user            
-            f_re_z = function.function(re(upper)+im(z)*I)#create a function (this may be improved if I can determine that adding x to f_re_z is possible)
+            f_re_z = function.function(re(upper)+im(self.z)*I)#create a function (this may be improved if I can determine that adding x to f_re_z is possible)
             line = Line.Line(f_re_z,upper,lower,self.n_points,self.n_points,"blue") #create a line with starting points given
             self.add_line(line) #add the line to the list at large
             upper += complex(self.real_step,0)
@@ -40,11 +40,10 @@ class PointGrid(object):
 
     def draw_imag(self):
         """Draw the lines with constant im(z)"""
-        z=symbols('z',complex=True)
         upper = complex(self.upper_left.real,self.upper_left.imag)#the initial states of the upper and lower bounds of the line
         lower = complex(self.lower_right.real,self.upper_left.imag)
         for step in range(self.n_lines+1):
-            f_im_z = function.function(re(z)+complex(0,(upper.imag)))
+            f_im_z = function.function(re(self.z)+complex(0,(upper.imag)))
             line = Line.Line(f_im_z,upper,lower,self.n_points,self.n_points,"red")
             self.add_line(line)
             upper += complex(0,self.imaginary_step)
@@ -75,34 +74,35 @@ class PointGrid(object):
         self.imag_min=self.lines[0].points[0].point_order[IMAG][0]
         self.imag_max=self.lines[0].points[0].point_order[IMAG][0]
         for n in range(self.n_steps*2+2): #go through every step in the lines. n_steps * 2 because we are collecting the reversal steps too
-            temp_tuple = self.lines_at_step(n)
-            #algo to set min/max
-            test_real_max = max(max(line) for line in temp_tuple[REAL])
-            test_real_min = min(min(line) for line in temp_tuple[REAL])
-            test_imag_min = min(min(line) for line in temp_tuple[IMAG])
-            test_imag_max = max(max(line) for line in temp_tuple[IMAG])
-            if self.real_max < test_real_max:
-                self.real_max = test_real_max
-            else:#if the max got set then there is no reason to test for the min
-                if self.real_min > test_real_min:
-                    self.real_min = test_real_min
-            if self.imag_max < test_imag_max:
-                self.imag_max = test_imag_max
-            else:
-                if self.imag_min > test_imag_min:
-                    self.imag_min = test_imag_min
-            self.computed_steps.append(temp_tuple)#add that tuple to the precomputed list
-        pad=1.05
+            self.computed_steps.append(self.lines_at_step(n))#add that tuple to the precomputed list
+        self.set_limits()
+
+    def set_limits(self):
+        for step in self.computed_steps:
+            for line in step:
+                temp_max = max(line[REAL])
+                temp_min = min(line[REAL])
+                if temp_max > self.real_max:
+                    self.real_max = temp_max
+                if temp_min < self.real_min:
+                    self.real_min = temp_min
+                temp_max = max(line[IMAG])
+                temp_min = min(line[IMAG])
+                if temp_max > self.imag_max:
+                    self.imag_max = temp_max
+                if temp_min < self.imag_min:
+                    self.imag_min = temp_min
+        pad=1.05 #add 5% so the window isn't cramped. Now that I think about it.. there is a more pythonic way to do this
         self.force_square()
-        #add 5% so the window isn't cramped. Now that I think about it.. there is a more pythonic way to do this
         self.real_max*=pad
         self.real_min*=pad
         self.imag_max*=pad
         self.imag_min*=pad
-        return None
-
 
     def force_square(self):
+        """
+        Force the min-maxes to form a square.
+        """
         real_diff=self.real_max-self.real_min
         imag_diff=self.imag_max-self.imag_min
         if real_diff > imag_diff:
@@ -111,6 +111,7 @@ class PointGrid(object):
         else:
             self.real_max-=((imag_diff-real_diff)*2)
             self.real_min+=((imag_diff-real_diff)*2)
+
     def pre_computed_steps(self,n):
         """get the precomputed step n"""
         return self.computed_steps[n % (self.n_steps * 2+1)]
