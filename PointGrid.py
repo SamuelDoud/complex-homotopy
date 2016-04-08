@@ -1,8 +1,5 @@
 ﻿import Line
 import function
-from sympy import I, re, im, Abs, arg, conjugate, expand, Symbol, symbols
-from sympy.abc import z
-import numpy as np
 
 REAL=0
 IMAG=1 #constants for consistent iterable access
