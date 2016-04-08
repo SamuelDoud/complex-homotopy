@@ -34,7 +34,6 @@ class plot_window(object):
         if GIF:
             raise NotImplementedError 
         
-
     def animate_compute(self, step):
         """
         Function that returns the lines that will be used to display this graph.
@@ -42,7 +41,6 @@ class plot_window(object):
         [self.lines[index].set_data(line[REAL],line[IMAG]) for index,line in enumerate(self.lines_at_step[step])] #this will actually update the graph (on the fly computation)
         #saving this data is too memory intensive for the small amount of computational power required
         return self.lines
-
 
     def animate(self,interval_length=20):
         """

@@ -3,6 +3,7 @@ import point
 
 class Line(object):
     """Line is a container of points and delegates operations to them. Additionally, Line containss information shared among the points on a Line such as the color of the line, if it is connected, how many points are on the line etc.. Lines are held within a PointGrid"""
+
     def __init__(self, function, start, end,number_of_points, number_of_steps, color, simply_connected=False,width=1):
         self.width=width
         self.simply_connected=simply_connected
@@ -17,10 +18,6 @@ class Line(object):
         if self.simply_connected:
             self.points.append(self.points[0]) #this draws a line from the last point to the starting point...
             #needed if you draw a circle as there would not be a line connecting the two endpoints as they do not border eachother
-
-    def info(self):
-        """Provides the information of this line in a consistent manner"""
-        return [self.name,self.number_of_points,self.color]
 
     def create_points(self):
         z = self.start #this is the first value on the domain

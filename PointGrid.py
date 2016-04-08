@@ -4,6 +4,7 @@ from sympy import re, im, Symbol, symbols, I
 
 REAL=0
 IMAG=1 #constants for consistent iterable access
+
 class PointGrid(object):
     """Point Grid holds all the points on the graph and their associations"""
     def __init__(self, corner_upper_left, corner_lower_right, n_lines, n_points):
@@ -25,7 +26,6 @@ class PointGrid(object):
     def draw_lines(self):
         self.draw_real()
         self.draw_imag()
-
 
     def draw_real(self):
         """Draw the lines with constant re(z)"""

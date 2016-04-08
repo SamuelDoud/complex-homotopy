@@ -34,16 +34,12 @@ class Application(Frame):
         self.QUIT = Button(self, text="Quit", fg="red", command=root.destroy)
         self.QUIT.pack(side=BOTTOM)
 
-
-
     def launch(self):
         functionObj = func.function(self.function_entry.get())
         self.unit_square.provide_function(functionObj,int(self.n_entry.get()))
         plot_obj=plot_window.plot_window(self.unit_square)
-        
         self.update_graph(plot_obj)
         
-
     def update_graph(self, f):  
         self.canvas = FigureCanvasTkAgg(f.fig,master=self)
         self.canvas.show()
@@ -52,7 +48,6 @@ class Application(Frame):
         if int(self.interval_entry.get()):
             interval = int(self.interval_entry.get())
         f.animate(interval_length=interval)
-
 
 root = Tk()
 app = Application(master=root)

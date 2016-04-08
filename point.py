@@ -26,9 +26,6 @@ class point(object):
             #could inject code here if reversals aren't wanted
         return self.point_order[index]
 
-    def data_dump(self):
-        return {"reals":point_order[REAL],"imaginaries":point_order[IMAG]} #only dump the non-reversed list as storing that is pretty redunadant
-
 def add_reverse(target):
     """Take a list, reverse it, and extend the original list with that"""
     #Is there a C/C++ type way to do this with pointers instead of actually copying and using unneeded memory?
