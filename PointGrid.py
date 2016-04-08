@@ -133,16 +133,4 @@ class PointGrid(object):
             self.lines[line_index].parameterize_points(function,n)
         self.pre_compute()#set the steps now so the program doesn't have to do this on the fly
 
-    def create_animation(self, filename, function, number_of_steps, starting_lines=None, limits=(-10,10,-10,10)):
-         """The creates a output of an animation based on the parameters provided.
-         Write this information to a file"""
-         if not starting_lines:
-            self.lines=starting_lines #provides a new set of lines, if none are provided, use the old lines
-         animation_data = [function,limits]
-         
-         self.provide_function(function, number_of_steps) #updates the points with the needed function and homotopy
-         for line in self.lines:
-            animation_data.append[line.info() + line.all_points_order()]#each line is a list of points which themselves are lists of their positions throughout the deformation
-         data_to_save = {"function":function.text,"steps":number_of_steps, "limits":limits,"animated_lines":animation_data}
-         pickle.dump(data_to_save, open(filename+"ch", "wb" ))#this serializes the data
          
