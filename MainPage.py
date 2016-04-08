@@ -4,7 +4,6 @@ import plot_window
 import function as func
 from sympy import Symbol, symbols, re, im, arg, Abs, sympify
 
-from matplotlib import pyplot as plt
 from matplotlib import animation
 
 import matplotlib
@@ -17,6 +16,7 @@ class Application(Frame):
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.pack()
+        self.master=master
         self.unit_square = PointGrid.PointGrid(complex(-1+1j),complex(1-1j),20,20)
         self.createWidgets()
 
@@ -34,27 +34,24 @@ class Application(Frame):
         self.submit.pack(side =BOTTOM) 
         self.QUIT = Button(self, text="QUIT", fg="red", command=root.destroy)
         self.QUIT.pack(side="bottom")
-        self.update_graph(plot_window.plot_window(self.unit_square).fig)
+        #self.update_graph(plot_window.plot_window(self.unit_square,self.master))
 
-    def say_hi(self):
-        print("hi there, everyone!")
+
 
     def launch(self):
         z=symbols('z',complex=True)
         functionObj = func.function(self.function_entry.get())
         self.unit_square.provide_function(functionObj,int(self.n_entry.get()))
         plot_obj=plot_window.plot_window(self.unit_square)
-        plot_obj.show()
-        self.update_graph(plot_obj.fig)
+        
+        self.update_graph(plot_obj)
+        
 
     def update_graph(self, f):  
-        canvas = FigureCanvasTkAgg(f, self)
-        canvas.show()
-        canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
-
-        toolbar = NavigationToolbar2TkAgg(canvas, self)
-        toolbar.update()
-        canvas._tkcanvas.pack(side=TOP, fill=BOTH, expand=True)
+        self.canvas = FigureCanvasTkAgg(f.fig,master=self)
+        self.canvas.show()
+        self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
+        f.animate()
 
 
 root = Tk()

@@ -14,8 +14,7 @@ class point(object):
     def parameterize(self, f_z, n_steps):
         """given the value of this point applied to a function, parameterize its path to that point on the complex plane"""
         total_list=[[],[]]
-        for t in np.linspace(0,1,n_steps+1):#range t from 0 to 1 inclusive with n_step + 1 number of evenly spaced steps
-            z=(1-t)*self.complex + t*f_z #Dr. Casey's method of parameterizing the homotopy. This is kinda the meat of the entire program
+        for z in np.linspace(self.complex,f_z,n_steps+1):#range t from self.complex to f_z inclusive with n_step number of evenly spaced steps
             total_list[REAL].append(z.real) #append the point calculated to the points order
             total_list[IMAG].append(z.imag)
         self.point_order=total_list #point order is the non-reversed list
