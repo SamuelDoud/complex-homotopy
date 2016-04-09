@@ -4,14 +4,13 @@ import point
 class Line(object):
     """Line is a container of points and delegates operations to them. Additionally, Line containss information shared among the points on a Line such as the color of the line, if it is connected, how many points are on the line etc.. Lines are held within a PointGrid"""
 
-    def __init__(self, function, start, end,number_of_points, number_of_steps, color, simply_connected=False,width=1):
+    def __init__(self, function, start, end,number_of_points, color, simply_connected=False,width=1):
         self.width=width
         self.simply_connected=simply_connected
         #self.name=name #the name of the Line,
         self.color=color #the color of this line
         self.function=function
         self.number_of_points=abs(number_of_points) #must be non-negative number of steps
-        self.number_of_steps=number_of_steps
         self.start=start
         self.end=end#the endpoints of this line
         self.points=self.create_points()
