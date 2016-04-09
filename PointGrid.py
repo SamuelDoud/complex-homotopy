@@ -1,56 +1,69 @@
 ﻿import Line
 import function
-from sympy import re, im, Symbol, symbols, I
+from sympy import re, im, arg, Abs, Symbol, symbols, I
 import numpy as np
-import random
 
 REAL=0
 IMAG=1 #constants for consistent iterable access
 
 class PointGrid(object):
     """Point Grid holds all the points on the graph and their associations"""
-    def __init__(self, corner_upper_left, corner_lower_right, n_lines, n_points):
+    def __init__(self):
         self.lines =[]
-        self.n_lines = n_lines
         self.n_steps = 1
-        self.n_points = n_points
-
-        self.real_step = (self.lower_right.real - self.upper_left.real) / n_lines
-        self.imaginary_step = (self.lower_right.imag - self.upper_left.imag) / n_lines
+        self.n_lines=0
+        self.group_counter=0
         self.z = symbols('z',complex=True)
         self.real_max=None
         self.real_min=None
         self.imag_max=None
         self.imag_min=None
-    
         
+    
+    def delete(self,group_number):
+        """
+        Remove every line in the list with a matching group number
+        """
+        for index,lines in enumerate(self.lines):
+            if lines.group == group_number:
+                self.lines.pop(index)
+                self.lines-=1
+        
+    def circle(self,radius, center=complex(0,0),points=100,color="black"):
+        self.group_counter+=1 #new group is being created
+        self.add_line(Line.Line.circle(radius,center,points,color,self.group_counter))
+        return self.group_counter
+            
     def grid_lines(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
-        group = 
+        """
+        Create a grid with specified corners
+        """
+        self.group_counter+=1
         self.draw_real(complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line)
         self.draw_imag(complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line)
+        return self.group_counter
 
     def draw_real(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
         """Draw the lines with constant re(z)"""
-        upper = complex(self.upper_left.real,self.upper_left.imag)
-        lower = complex(self.upper_left.real,self.lower_right.imag)#inital states of the lower and upper bound of the line
-        for step in range(self.n_lines+1): #draw a line for the number of steps determined by the user            
-            f_re_z = function.function(re(upper)+im(self.z)*I)#create a function (this may be improved if I can determine that adding x to f_re_z is possible)
-            line = Line.Line(f_re_z,upper,lower,self.n_points,self.n_points,"blue") #create a line with starting points given
+        upper = np.linspace(complex_high_imag_low_real,complex(complex_low_imag_high_real.real,complex_high_imag_low_real.imag),n_lines)#the initial states of the upper and lower bounds of the line
+        lower = np.linspace(complex(complex_high_imag_low_real.real,complex_low_imag_high_real.imag),complex_low_imag_high_real,n_lines)
+        for step in range(n_lines): #draw a line for the number of steps determined by the user            
+            f_re_z = function.function(re(upper[step])+im(self.z)*I)#create a function (this may be improved if I can determine that adding x to f_re_z is possible)
+            line = Line.Line(f_re_z,upper[step],lower[step],n_points_per_line,"blue",self.group_counter) #create a line with starting points given
             self.add_line(line) #add the line to the list at large
-            upper += complex(self.real_step,0)
-            lower += complex(self.real_step,0) #shift the line on the real axis by real step
 
     def draw_imag(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
         """Draw the lines with constant im(z)"""
-        upper = np.linspace(self.complex_high_imag_low_real,complex_low_imag_high_real.imag,n_lines+1)#the initial states of the upper and lower bounds of the line
-        lower = np.linspace(self.complex_low_imag_high_real.real,complex_high_imag_low_real.imag,n_lines+1)
-        for step in range(self.n_lines+1):
+        upper = np.linspace(complex_high_imag_low_real, complex(complex_high_imag_low_real.real,complex_low_imag_high_real.imag),n_lines)#the initial states of the upper and lower bounds of the line
+        lower = np.linspace(complex(complex_low_imag_high_real.real,complex_high_imag_low_real.imag),complex_low_imag_high_real,n_lines)
+        for step in range(n_lines):
             f_im_z = function.function(re(self.z)+complex(0,(upper[step].imag)))
-            line = Line.Line(f_im_z,upper[step],lower[step],n_points,n_points,"red")
+            line = Line.Line(f_im_z,upper[step],lower[step],n_points_per_line,"red",self.group_counter)
             self.add_line(line)
    
     def add_line(self, line):
         self.lines.append(line)#add the new Line object to the list
+        self.n_lines+=1
 
     def removeLine(self, line_name):
         #line names share prefixes and gradually get more specific....

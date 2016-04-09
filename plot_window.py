@@ -10,9 +10,9 @@ class plot_window(object):
     """This class creates the plot in which the homotopy is displayed"""
     def __init__(self,grid):
         self.grid=grid
-        self.fig=plt.figure(figsize=(5,4), dpi=100)
+        self.fig=plt.figure(figsize=(6,6), dpi=100)
         self.ax = plt.axes(xlim=(self.grid.real_min, self.grid.real_max),ylim=(self.grid.imag_min, self.grid.imag_max))
-        self.lines = [self.ax.plot([],[],lw=self.grid.lines[line].width)[0] for line in range(self.grid.n_lines*2+2)]
+        self.lines = [self.ax.plot([],[],lw=self.grid.lines[line].width)[0] for line in range(self.grid.n_lines)]
         self.ax.set_xlabel("Real")
         self.ax.set_ylabel("Imaginary")    
         self.lines_at_step=[self.grid.lines_at_step(i) for i in range(self.grid.n_steps*2+2)]
