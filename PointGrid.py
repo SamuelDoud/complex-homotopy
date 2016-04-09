@@ -1,6 +1,8 @@
 ﻿import Line
 import function
 from sympy import re, im, Symbol, symbols, I
+import numpy as np
+import random
 
 REAL=0
 IMAG=1 #constants for consistent iterable access
@@ -12,22 +14,22 @@ class PointGrid(object):
         self.n_lines = n_lines
         self.n_steps = 1
         self.n_points = n_points
-        self.upper_left = corner_upper_left
-        self.lower_right = corner_lower_right
+
         self.real_step = (self.lower_right.real - self.upper_left.real) / n_lines
         self.imaginary_step = (self.lower_right.imag - self.upper_left.imag) / n_lines
         self.z = symbols('z',complex=True)
-        self.draw_lines()
         self.real_max=None
         self.real_min=None
         self.imag_max=None
         self.imag_min=None
+    
         
-    def draw_lines(self):
-        self.draw_real()
-        self.draw_imag()
+    def grid_lines(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
+        group = 
+        self.draw_real(complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line)
+        self.draw_imag(complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line)
 
-    def draw_real(self):
+    def draw_real(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
         """Draw the lines with constant re(z)"""
         upper = complex(self.upper_left.real,self.upper_left.imag)
         lower = complex(self.upper_left.real,self.lower_right.imag)#inital states of the lower and upper bound of the line
@@ -38,16 +40,14 @@ class PointGrid(object):
             upper += complex(self.real_step,0)
             lower += complex(self.real_step,0) #shift the line on the real axis by real step
 
-    def draw_imag(self):
+    def draw_imag(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
         """Draw the lines with constant im(z)"""
-        upper = complex(self.upper_left.real,self.upper_left.imag)#the initial states of the upper and lower bounds of the line
-        lower = complex(self.lower_right.real,self.upper_left.imag)
+        upper = np.linspace(self.complex_high_imag_low_real,complex_low_imag_high_real.imag,n_lines+1)#the initial states of the upper and lower bounds of the line
+        lower = np.linspace(self.complex_low_imag_high_real.real,complex_high_imag_low_real.imag,n_lines+1)
         for step in range(self.n_lines+1):
-            f_im_z = function.function(re(self.z)+complex(0,(upper.imag)))
-            line = Line.Line(f_im_z,upper,lower,self.n_points,self.n_points,"red")
+            f_im_z = function.function(re(self.z)+complex(0,(upper[step].imag)))
+            line = Line.Line(f_im_z,upper[step],lower[step],n_points,n_points,"red")
             self.add_line(line)
-            upper += complex(0,self.imaginary_step)
-            lower += complex(0,self.imaginary_step) #shift the bounds by the imaginary step
    
     def add_line(self, line):
         self.lines.append(line)#add the new Line object to the list
