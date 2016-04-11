@@ -1,6 +1,7 @@
 ﻿import Line
 import function
-from sympy import re, im, Symbol, symbols, I
+from sympy import re, im, arg, Abs, Symbol, symbols, I
+import numpy as np
 
 REAL=0
 IMAG=1 #constants for consistent iterable access
@@ -9,13 +10,9 @@ class PointGrid(object):
     """Point Grid holds all the points on the graph and their associations"""
     def __init__(self, corner_upper_left, corner_lower_right, n_lines, n_points):
         self.lines =[]
-        self.n_lines = n_lines
         self.n_steps = 1
-        self.n_points = n_points
-        self.upper_left = corner_upper_left
-        self.lower_right = corner_lower_right
-        self.real_step = (self.lower_right.real - self.upper_left.real) / n_lines
-        self.imaginary_step = (self.lower_right.imag - self.upper_left.imag) / n_lines
+        self.n_lines=0
+        self.group_counter=0
         self.z = symbols('z',complex=True)
         self.draw_lines()
         self.real_max=None
@@ -27,30 +24,27 @@ class PointGrid(object):
         self.draw_real()
         self.draw_imag()
 
-    def draw_real(self):
+    def draw_real(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
         """Draw the lines with constant re(z)"""
-        upper = complex(self.upper_left.real,self.upper_left.imag)
-        lower = complex(self.upper_left.real,self.lower_right.imag)#inital states of the lower and upper bound of the line
-        for step in range(self.n_lines+1): #draw a line for the number of steps determined by the user            
-            f_re_z = function.function(re(upper)+im(self.z)*I)#create a function (this may be improved if I can determine that adding x to f_re_z is possible)
-            line = Line.Line(f_re_z,upper,lower,self.n_points,self.n_points,"blue") #create a line with starting points given
+        upper = np.linspace(complex_high_imag_low_real,complex(complex_low_imag_high_real.real,complex_high_imag_low_real.imag),n_lines)#the initial states of the upper and lower bounds of the line
+        lower = np.linspace(complex(complex_high_imag_low_real.real,complex_low_imag_high_real.imag),complex_low_imag_high_real,n_lines)
+        for step in range(n_lines): #draw a line for the number of steps determined by the user            
+            f_re_z = function.function(re(upper[step])+im(self.z)*I)#create a function (this may be improved if I can determine that adding x to f_re_z is possible)
+            line = Line.Line(f_re_z,upper[step],lower[step],n_points_per_line,"blue",self.group_counter) #create a line with starting points given
             self.add_line(line) #add the line to the list at large
-            upper += complex(self.real_step,0)
-            lower += complex(self.real_step,0) #shift the line on the real axis by real step
 
-    def draw_imag(self):
+    def draw_imag(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
         """Draw the lines with constant im(z)"""
-        upper = complex(self.upper_left.real,self.upper_left.imag)#the initial states of the upper and lower bounds of the line
-        lower = complex(self.lower_right.real,self.upper_left.imag)
-        for step in range(self.n_lines+1):
-            f_im_z = function.function(re(self.z)+complex(0,(upper.imag)))
-            line = Line.Line(f_im_z,upper,lower,self.n_points,self.n_points,"red")
+        upper = np.linspace(complex_high_imag_low_real, complex(complex_high_imag_low_real.real,complex_low_imag_high_real.imag),n_lines)#the initial states of the upper and lower bounds of the line
+        lower = np.linspace(complex(complex_low_imag_high_real.real,complex_high_imag_low_real.imag),complex_low_imag_high_real,n_lines)
+        for step in range(n_lines):
+            f_im_z = function.function(re(self.z)+complex(0,(upper[step].imag)))
+            line = Line.Line(f_im_z,upper[step],lower[step],n_points_per_line,"red",self.group_counter)
             self.add_line(line)
-            upper += complex(0,self.imaginary_step)
-            lower += complex(0,self.imaginary_step) #shift the bounds by the imaginary step
    
     def add_line(self, line):
         self.lines.append(line)#add the new Line object to the list
+        self.n_lines+=1
 
     def removeLine(self, line_name):
         #line names share prefixes and gradually get more specific....
@@ -78,6 +72,12 @@ class PointGrid(object):
         self.set_limits()
 
     def set_limits(self):
+        """
+        Go through every step and find the min/max of both the imaginary and real parts and set these as teh limits of the graph.
+        This can be overrrode by the user if they input custom limits.
+        """
+        if self.limits:
+            pass #the user provided limits if self.limits is not equal to None. Therefore, this function is not to be executed
         for step in self.computed_steps:
             for line in step:
                 temp_max = max(line[REAL])
@@ -114,7 +114,7 @@ class PointGrid(object):
 
     def pre_computed_steps(self,n):
         """get the precomputed step n"""
-        return self.computed_steps[n % (self.n_steps * 2+1)]
+        return self.computed_steps[n % (self.n_steps * 2+1)] #return the step n using a modulo the number of steps so that an overflow is not possible.
 
     def provide_function(self,function,n):
         """Give a complex function to this function.
