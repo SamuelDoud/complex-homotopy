@@ -2,27 +2,53 @@
 import function
 from sympy import re, im, arg, Abs, Symbol, symbols, I
 import numpy as np
+import concurrent.futures
 
 REAL=0
 IMAG=1 #constants for consistent iterable access
 
 class PointGrid(object):
     """Point Grid holds all the points on the graph and their associations"""
-    def __init__(self, corner_upper_left, corner_lower_right, n_lines, n_points):
+    def __init__(self, limits=None):
+        self.user_limits=limits
+        if self.user_limits:
+            self.set_user_limits()
+        else:
+            self.real_max=None
+            self.real_min=None
+            self.imag_max=None
+            self.imag_min=None
         self.lines =[]
         self.n_steps = 1
         self.n_lines=0
         self.group_counter=0
         self.z = symbols('z',complex=True)
-        self.draw_lines()
-        self.real_max=None
-        self.real_min=None
-        self.imag_max=None
-        self.imag_min=None
+    
+    def delete(self,group_number):
+        """
+        Remove every line in the list with a matching group number
+        """
+        for index,lines in enumerate(self.lines):
+            if lines.group == group_number:
+                self.lines.pop(index) #remove index from the list of lines
+                self.n_lines-=1 #lower the count of lines by one 
         
-    def draw_lines(self):
-        self.draw_real()
-        self.draw_imag()
+    def circle(self,radius, center=complex(0,0),points=100,color="black"):
+        """
+        Draws a circle of the given radius. User can set attributes such as center, the number of points, and the color of  the circle through kwargs.
+        """
+        self.group_counter+=1 #new group is being created
+        self.add_line(Line.Line.circle(radius,center,points,color,self.group_counter))
+        return self.group_counter
+            
+    def grid_lines(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
+        """
+        Create a grid with specified corners
+        """
+        self.group_counter+=1
+        self.draw_real(complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line)
+        self.draw_imag(complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line)
+        return self.group_counter
 
     def draw_real(self,complex_high_imag_low_real, complex_low_imag_high_real,n_lines,n_points_per_line):
         """Draw the lines with constant re(z)"""
@@ -37,14 +63,16 @@ class PointGrid(object):
         """Draw the lines with constant im(z)"""
         upper = np.linspace(complex_high_imag_low_real, complex(complex_high_imag_low_real.real,complex_low_imag_high_real.imag),n_lines)#the initial states of the upper and lower bounds of the line
         lower = np.linspace(complex(complex_low_imag_high_real.real,complex_high_imag_low_real.imag),complex_low_imag_high_real,n_lines)
-        for step in range(n_lines):
+        for step in range(n_lines): #this loop takes us through every line
             f_im_z = function.function(re(self.z)+complex(0,(upper[step].imag)))
             line = Line.Line(f_im_z,upper[step],lower[step],n_points_per_line,"red",self.group_counter)
             self.add_line(line)
-   
+
     def add_line(self, line):
+        #could implement a sorting method here...
+        #self.lines.sort(key=lambda key_value: key_value.name)
         self.lines.append(line)#add the new Line object to the list
-        self.n_lines+=1
+        self.n_lines+=1 #a line has been added so the count is obviously greate
 
     def removeLine(self, line_name):
         #line names share prefixes and gradually get more specific....
@@ -63,37 +91,37 @@ class PointGrid(object):
         """Take every lines order and save it in an easily accessible list so computation doesn't have to be performed on the fly.
         Also, this function will track the min/max of both the real and imaginary axis"""
         self.computed_steps =[]
-        self.real_min=self.lines[0].points[0].point_order[REAL][0]
-        self.real_max=self.lines[0].points[0].point_order[REAL][0]
-        self.imag_min=self.lines[0].points[0].point_order[IMAG][0]
-        self.imag_max=self.lines[0].points[0].point_order[IMAG][0]
         for n in range(self.n_steps*2+2): #go through every step in the lines. n_steps * 2 because we are collecting the reversal steps too
             self.computed_steps.append(self.lines_at_step(n))#add that tuple to the precomputed list
-        self.set_limits()
+        self.set_limits()#set the limits of the graph based upon the computation
+
+    def set_user_limits(self):
+        self.real_max,self.real_min,self.imag_max,self.imag_min=self.user_limits
 
     def set_limits(self):
-        """
-        Go through every step and find the min/max of both the imaginary and real parts and set these as teh limits of the graph.
-        This can be overrrode by the user if they input custom limits.
-        """
-        if self.limits:
-            pass #the user provided limits if self.limits is not equal to None. Therefore, this function is not to be executed
-        for step in self.computed_steps:
-            for line in step:
-                temp_max = max(line[REAL])
+        if self.user_limits: #the user has specified their own limits. These limits take prrecedence
+            pass
+        if self.real_max == self.real_min == self.imag_min ==self.imag_max == None: #we need to give initial values in this case
+            self.real_min=self.lines[0].points[0].point_order[REAL][0]
+            self.real_max=self.lines[0].points[0].point_order[REAL][0]
+            self.imag_min=self.lines[0].points[0].point_order[IMAG][0]
+            self.imag_max=self.lines[0].points[0].point_order[IMAG][0]#The initial states of the min/max
+        for step in self.computed_steps: #go through every step
+            for line in step: #go through every line in that step
+                temp_max = max(line[REAL])#get the max/min of the reals and run a simple algo to find the actual min.max in the list
                 temp_min = min(line[REAL])
                 if temp_max > self.real_max:
                     self.real_max = temp_max
                 if temp_min < self.real_min:
                     self.real_min = temp_min
-                temp_max = max(line[IMAG])
+                temp_max = max(line[IMAG])#get the max/min of the imaginaries and run a simple algo to find the actual min.max in the list
                 temp_min = min(line[IMAG])
                 if temp_max > self.imag_max:
                     self.imag_max = temp_max
                 if temp_min < self.imag_min:
                     self.imag_min = temp_min
         pad=1.05 #add 5% so the window isn't cramped. Now that I think about it.. there is a more pythonic way to do this
-        self.force_square()
+        self.force_square() #make the limits square
         self.real_max*=pad
         self.real_min*=pad
         self.imag_max*=pad
@@ -114,7 +142,8 @@ class PointGrid(object):
 
     def pre_computed_steps(self,n):
         """get the precomputed step n"""
-        return self.computed_steps[n % (self.n_steps * 2+1)] #return the step n using a modulo the number of steps so that an overflow is not possible.
+        return self.computed_steps[n % (self.n_steps * 2+1)]
+
 
     def provide_function(self,function,n):
         """Give a complex function to this function.
@@ -125,5 +154,6 @@ class PointGrid(object):
         for line_index in range(len(self.lines)):
             self.lines[line_index].parameterize_points(function,n)
         self.pre_compute()#set the steps now so the program doesn't have to do this on the fly
+    
 
          

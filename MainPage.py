@@ -3,17 +3,17 @@ import PointGrid
 import plot_window
 import function as func
 import matplotlib
+from builtins import complex
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
-
 
 class Application(Frame):
     def __init__(self, master=None):
         Frame.__init__(self, master)
         self.pack()
         self.master=master
-        self.unit_square = PointGrid.PointGrid(complex(-1+1j),complex(1-1j),20,20)
+        self.grid = PointGrid.PointGrid()
         self.createWidgets()
 
     def createWidgets(self):
@@ -35,9 +35,11 @@ class Application(Frame):
         self.QUIT.pack(side=BOTTOM)
 
     def launch(self):
+        self.grid.circle(1)
+        self.grid.grid_lines(complex(-1,1),complex(1,-1),50,50)
         functionObj = func.function(self.function_entry.get())
-        self.unit_square.provide_function(functionObj,int(self.n_entry.get()))
-        plot_obj=plot_window.plot_window(self.unit_square)
+        self.grid.provide_function(functionObj,int(self.n_entry.get()))
+        plot_obj=plot_window.plot_window(self.grid)
         self.update_graph(plot_obj)
         
     def update_graph(self, f):  
