@@ -16,7 +16,9 @@ class plot_window(object):
         self.ax.set_xlabel("Real")
         self.ax.set_ylabel("Imaginary")    
         self.lines_at_step=[self.grid.lines_at_step(i) for i in range(self.grid.n_steps*2+2)]
-
+        self.lines_to_display=[]
+        for lines in self.lines_at_step:
+            self.lines_to_display.append([plt.Line2D(line[REAL],line[IMAG]) for line in lines])
     def start(self):
         """Go to the intial state"""
         return self.animate_compute(0) #Takes what would be the first frame
