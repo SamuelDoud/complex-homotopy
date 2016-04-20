@@ -13,7 +13,11 @@ class function(object):
                 self.f_z=lambdify(self.z, self.expr, "numpy") #taking advantage of the reuse of the function object. Lamdba numby operations greatly speed up operations on large amounts of data with inital overhead
 
     def evaluateAt(self,z):
-        if self.use_eval:
-            return eval(self.expr)
-        return self.f_z(z)
+        
+        try:
+            if self.use_eval:
+                return eval(self.expr)
+            return self.f_z(z)
+        except ZeroDivisionError:
+            raise ZeroDivisionError
 

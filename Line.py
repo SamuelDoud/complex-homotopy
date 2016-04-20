@@ -39,7 +39,7 @@ class Line(object):
         Taking a function, assign all z's on that line to a f(z)
         """
         zs = np.linspace(self.start,self.end,self.number_of_points) #this is the first value on the domain
-        return [point.point(f_z) for f_z in ist(map(self.function.evaluateAt, zs))]
+        return [point.point(f_z) for f_z in list(map(self.function.evaluateAt, zs))]
 
 
 
@@ -54,9 +54,13 @@ class Line(object):
         points=[]#temp list to store results
         self.function=function
         for point in self.points:#take every point that has been defined by the create_points method
-            f_z = self.function.evaluateAt(point.complex) #evaluate the function at this complex number
-            point.parameterize(f_z,steps) #call on the point to parameterize itself given a new endpoint
-            points.append(point) #throw that into a temp list
+            try:
+                f_z = self.function.evaluateAt(point.complex) #evaluate the function at this complex number
+                point.parameterize(f_z,steps) #call on the point to parameterize itself given a new endpoint
+                points.append(point) #throw that into a temp list
+            except ZeroDivisionError:
+                self.points.remove(point) #this point is a singularity and must be removed to allow the graph to operate
+                print("A singularity at " + str(point.complex) + ".")
         self.points=points #reassign the old set of points to the temporary one. The temp list was used as the old points were being iterated over concurrently
         return points #hanf the points back to the caller for ease of use
 
