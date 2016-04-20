@@ -2,6 +2,7 @@
 import matplotlib.animation as animation
 from matplotlib.figure import Figure
 #from multiprocessing import Pool
+plt.rcParams['animation.ffmpeg_path'] = 'C:\ffmpeg'
 
 import PointGrid
 
@@ -12,9 +13,12 @@ INDEX=2
 class plot_window(object):
     """This class creates the plot in which the homotopy is displayed"""
     def __init__(self,grid):
-        self.grid=grid
-        self.fig=plt.figure(figsize=(6,6), dpi=100)
+        self.grid = grid
+        self.fig = plt.figure(figsize=(6,6), dpi=100)
         plt.ion()
+        Writer = animation.writers['ffmpeg']
+        self.ffmpeg_writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+         
         self.new_limits()
         self.lines = [self.ax.plot([],[],lw=self.grid.lines[line].width)[0] for line in range(self.grid.n_lines)]
         self.ax.set_xlabel("Real")
@@ -35,9 +39,9 @@ class plot_window(object):
         """
         Save the homotopy as a video file or animated image file
         """
-        raise NotImplementedError #need to install FFMPEG
+        #raise NotImplementedError #need to install FFMPEG
         if video:
-            anim.save(name+'.mp4', fps=30, extra_args=['-vcodec','libx264'])
+            self.anim.save(name+'.mp4', fps=30, extra_args=['-vcodec','libx264'],writer=self.ffmpeg_writer)
         if GIF:
             raise NotImplementedError 
 
@@ -65,4 +69,4 @@ class plot_window(object):
         Run the animation through the parameters passed, namely the interval between frames 
         """
         self.anim = animation.FuncAnimation(self.fig, self.animate_compute, init_func=self.start,
-                               frames=self.grid.n_steps*2+2, interval=interval_length, blit=True)
+                              interval=interval_length, blit=True)
