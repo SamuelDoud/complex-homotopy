@@ -133,11 +133,11 @@ class PointGrid(object):
         real_diff=self.real_max-self.real_min
         imag_diff=self.imag_max-self.imag_min
         if real_diff > imag_diff:
-            self.imag_max-=((real_diff-imag_diff)*2)
-            self.imag_min+=((real_diff-imag_diff)*2)
+            self.imag_max+=((real_diff-imag_diff)/2)
+            self.imag_min-=((real_diff-imag_diff)/2)
         else:
-            self.real_max-=((imag_diff-real_diff)*2)
-            self.real_min+=((imag_diff-real_diff)*2)
+            self.real_max+=((imag_diff-real_diff)/2)
+            self.real_min-=((imag_diff-real_diff)/2)
 
     def pre_computed_steps(self,n):
         """get the precomputed step n. Contains a modulo to prevent overflow"""
