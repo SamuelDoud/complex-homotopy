@@ -1,4 +1,5 @@
 ﻿import numpy as np
+
 REAL=0
 IMAG=1#constants used for point order indexes
 
@@ -13,9 +14,7 @@ class point(object):
 
     def parameterize(self, f_z, n_steps):
         """given the value of this point applied to a function, parameterize its path to that point on the complex plane"""
-        total_list=[]
-        for z in np.linspace(self.complex,f_z,n_steps+1):#range t from self.complex to f_z inclusive with n_step number of evenly spaced steps
-            self.point_order.append((z.real,z.imag))#append a tuple describing the point at this particular spot            
+        self.point_order=[((z.real,z.imag)) for z in np.linspace(self.complex, f_z, n_steps+1)]#append a tuple describing the point at this particular spot            
         self.n_steps = len(self.point_order)
 
     def get_location_at_step(self,step):
@@ -24,7 +23,10 @@ class point(object):
         if index >= (self.n_steps):
             index = self.n_steps-(index % self.n_steps)-1 #reversal step
             #could inject code here if reversals aren't wanted
-        return self.point_order[index]
+        try:
+            return self.point_order[index]
+        except:
+            return None
 
 def add_reverse(target):
     """Take a list, reverse it, and extend the original list with that"""
