@@ -45,6 +45,7 @@ class Application(Frame):
             self.grid.grid_lines(complex(-1,1),complex(1,-1),10,10)
 
     def launch(self):
+
         try:
             functionObj = func.function(self.function_entry.get())
         except:
@@ -55,11 +56,13 @@ class Application(Frame):
             n = 1 #no animation
         #interval cannot be changed after lauch
         self.grid.provide_function(functionObj,int(self.n_entry.get()))
+        
         if not self.animating_already:
             self.plot_obj=plot_window.plot_window(self.grid)
             self.update_graph(self.plot_obj)
-        else:
-            self.plot_obj.new_limits() #throw the new limits in on the graph
+        self.plot_obj.new_limits()
+        #else:
+        #    self.plot_obj.new_limits() #throw the new limits in on the graph
         
     def update_graph(self, f):
         self.canvas = FigureCanvasTkAgg(f.fig,master=self)
