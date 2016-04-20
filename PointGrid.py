@@ -1,8 +1,9 @@
-﻿import Line
-import function
-from sympy import re, im, arg, Abs, Symbol, symbols, I
+﻿from sympy import re, im, arg, Abs, Symbol, symbols, I
 import numpy as np
 import concurrent.futures
+
+import Line
+import function
 
 REAL=0
 IMAG=1 #constants for consistent iterable access
@@ -69,6 +70,9 @@ class PointGrid(object):
             self.add_line(line)
 
     def add_line(self, line):
+        """
+        Add a line to the grid. This function tracks stats on this as well.
+        """
         #could implement a sorting method here...
         #self.lines.sort(key=lambda key_value: key_value.name)
         self.lines.append(line)#add the new Line object to the list
@@ -90,13 +94,16 @@ class PointGrid(object):
     def pre_compute(self):
         """Take every lines order and save it in an easily accessible list so computation doesn't have to be performed on the fly.
         Also, this function will track the min/max of both the real and imaginary axis"""
-        self.computed_steps =[]
-        for n in range(self.n_steps*2+2): #go through every step in the lines. n_steps * 2 because we are collecting the reversal steps too
-            self.computed_steps.append(self.lines_at_step(n))#add that tuple to the precomputed list
+        self.computed_steps =list(map(self.lines_at_step, range(self.n_steps*2+2)))
+        #for n in range(self.n_steps*2+2): #go through every step in the lines. n_steps * 2 because we are collecting the reversal steps too
+        #    self.computed_steps.append(self.lines_at_step(n))#add that tuple to the precomputed list
         self.set_limits()#set the limits of the graph based upon the computation
 
     def set_user_limits(self):
-        self.real_max,self.real_min,self.imag_max,self.imag_min=self.user_limits
+        """
+        Pass a tuple of (real max, real min, imag max, and imag min) to set your own limits
+        """
+        self.real_max,self.real_min,self.imag_max,self.imag_min=self.user_limits #tuple unpacking
 
     def set_limits(self):
         if self.user_limits: #the user has specified their own limits. These limits take prrecedence
@@ -141,7 +148,7 @@ class PointGrid(object):
             self.real_min+=((imag_diff-real_diff)*2)
 
     def pre_computed_steps(self,n):
-        """get the precomputed step n"""
+        """get the precomputed step n. Contains a modulo to prevent overflow"""
         return self.computed_steps[n % (self.n_steps * 2+1)]
 
 
