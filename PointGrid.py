@@ -98,6 +98,10 @@ class PointGrid(object):
         #for n in range(self.n_steps*2+2): #go through every step in the lines. n_steps * 2 because we are collecting the reversal steps too
         #    self.computed_steps.append(self.lines_at_step(n))#add that tuple to the precomputed list
         self.set_limits()#set the limits of the graph based upon the computation
+        #stick the index onto every line. There has to be a better way to do this. Useful for multiprocessing piping
+        for step in self.computed_steps:
+            for index in range(len(step)):
+                step[index].append(index)
 
     def set_user_limits(self):
         """
@@ -108,31 +112,19 @@ class PointGrid(object):
     def set_limits(self):
         if self.user_limits: #the user has specified their own limits. These limits take prrecedence
             pass
-        if self.real_max == self.real_min == self.imag_min ==self.imag_max == None: #we need to give initial values in this case
-            self.real_min=self.lines[0].points[0].point_order[REAL][0]
-            self.real_max=self.lines[0].points[0].point_order[REAL][0]
-            self.imag_min=self.lines[0].points[0].point_order[IMAG][0]
-            self.imag_max=self.lines[0].points[0].point_order[IMAG][0]#The initial states of the min/max
-        for step in self.computed_steps: #go through every step
-            for line in step: #go through every line in that step
-                temp_max = max(line[REAL])#get the max/min of the reals and run a simple algo to find the actual min.max in the list
-                temp_min = min(line[REAL])
-                if temp_max > self.real_max:
-                    self.real_max = temp_max
-                if temp_min < self.real_min:
-                    self.real_min = temp_min
-                temp_max = max(line[IMAG])#get the max/min of the imaginaries and run a simple algo to find the actual min.max in the list
-                temp_min = min(line[IMAG])
-                if temp_max > self.imag_max:
-                    self.imag_max = temp_max
-                if temp_min < self.imag_min:
-                    self.imag_min = temp_min
+        flattend_steps = [item for sublist in self.computed_steps for item in sublist] #flatten the list.
+        # Credit to Stack Overflow user Alex Martelli (http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python)
+        complex_flattened_steps=list(zip(*flattend_steps))
+        reals=[]
+        imags=[]
+        [reals.extend(line) for line in complex_flattened_steps[REAL]]
+        [imags.extend(line) for line in complex_flattened_steps[IMAG]]
         pad=1.05 #add 5% so the window isn't cramped. Now that I think about it.. there is a more pythonic way to do this
-        self.force_square() #make the limits square
-        self.real_max*=pad
-        self.real_min*=pad
-        self.imag_max*=pad
-        self.imag_min*=pad
+        self.real_max = max(reals) * pad
+        self.real_min = min(reals) * pad
+        self.imag_max = max(imags) * pad
+        self.imag_min = min(imags) * pad
+        self.force_square() #make the limits square so the graph isn't distorted
 
     def force_square(self):
         """
