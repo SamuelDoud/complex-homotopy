@@ -1,4 +1,6 @@
-﻿from sympy import re, im, arg, Abs, Symbol, symbols, I
+﻿import statistics
+
+from sympy import re, im, arg, Abs, Symbol, symbols, I
 import numpy as np
 import concurrent.futures
 
@@ -10,8 +12,9 @@ IMAG=1 #constants for consistent iterable access
 
 class PointGrid(object):
     """Point Grid holds all the points on the graph and their associations"""
-    def __init__(self, limits=None):
+    def __init__(self, limits=None, remove_outliers=False):
         self.user_limits=limits
+        self.remove_outliers = remove_outliers
         if self.user_limits:
             self.set_user_limits()
         else:
@@ -24,7 +27,7 @@ class PointGrid(object):
         self.n_lines=0
         self.group_counter=0
         self.z = symbols('z',complex=True)
-    
+        self.limit_mem = [None] * (self.n_steps + 2)
     def delete(self,group_number):
         """
         Remove every line in the list with a matching group number
@@ -119,12 +122,47 @@ class PointGrid(object):
         imags=[]
         [reals.extend(line) for line in complex_flattened_steps[REAL]]
         [imags.extend(line) for line in complex_flattened_steps[IMAG]]
+        self.set_limits_agnostic(reals,imags)
+
+    def limits_at_step(self,step):
+        """
+        The user has elected to set the limits based the current display
+        """
+        if not self.limit_mem[step % self.n_steps]:
+            current_points = list(zip(*self.lines_at_step(step)))
+            self.set_limits_agnostic(current_points[REAL][0], current_points[IMAG][0])
+            self.limit_mem[step]=((self.real_max, self.real_min, self.imag_max,self.imag_min))
+        else:
+            self.real_max, self.real_min, self.imag_max, self.imag_min = self.limit_mem[step % self.n_steps] #tuple unpacking from memory
+            #we have the step in memory
+
+    def set_limits_agnostic(self,reals,imags):
+        """
+        This function will set the limits based on the point data passed to it.
+        Works for both the limits_at_step and overall set_limits
+        """
+        if self.remove_outliers: #if this feature is active, then outliers will be removed (need to implement a customizible definition of an outlier)
+            reals=self.remove_outliers(reals)
+            imags=self.remove_outliers(imags)
+
         pad=1.05 #add 5% so the window isn't cramped. Now that I think about it.. there is a more pythonic way to do this
         self.real_max = max(reals) * pad
         self.real_min = min(reals) * pad
         self.imag_max = max(imags) * pad
         self.imag_min = min(imags) * pad
         self.force_square() #make the limits square so the graph isn't distorted
+        
+    def remove_outliers(self,points, z_limit=3):
+        """
+        This removes outliers from the setting of limits
+        """
+        low = 0
+        high = 1
+        st_dev = statistics.stdev(points)
+        median = statistics.median(points)
+        #define an outlier as any point +/-z*st_dev off the median
+        limits = (median - st_dev*z_limit, median + st_dev*z_limit) #must lie within range in order to not be an outlier
+        return [pt for pt in points if pt >= limits[low] and pt <= limits[high]]
 
     def force_square(self):
         """
@@ -149,10 +187,9 @@ class PointGrid(object):
         Then, operate on each point by the function
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function 
         after this function is completed, all the points will have their homotopy computed"""
+        
         self.n_steps=n
+        self.limit_mem = [None] * (self.n_steps+2) #wipe the memory of the limits and creates a list of size n_steps
         for line_index in range(len(self.lines)):
             self.lines[line_index].parameterize_points(function,n)
-        self.pre_compute()#set the steps now so the program doesn't have to do this on the fly
-    
-
-         
+        self.pre_compute()#set the steps now so the program doesn't have to do this on the fly 

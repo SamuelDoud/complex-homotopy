@@ -16,9 +16,9 @@ class plot_window(object):
         self.grid = grid
         self.fig = plt.figure(figsize=(6,6), dpi=100)
         plt.ion()
-        Writer = animation.writers['ffmpeg']
-        self.ffmpeg_writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-         
+        #Writer = animation.writers['ffmpeg']
+        #self.ffmpeg_writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+        self.updating_limits = True
         self.new_limits()
         self.lines = [self.ax.plot([],[],lw=self.grid.lines[line].width)[0] for line in range(self.grid.n_lines)]
         self.ax.set_xlabel("Real")
@@ -52,7 +52,9 @@ class plot_window(object):
         """
         Function that returns the lines that will be used to display this graph.
         """
-
+        if 1 == 0 and self.updating_limits: #not implemented yet
+            self.grid.limits_at_step(step)
+            self.new_limits()
         [ self.lines[index].set_data(line[REAL],line[IMAG]) for index,line in enumerate(self.grid.pre_computed_steps(step)) ] #this will actually update the graph (on the fly computation) using list comp
         #with Pool(4) as pool:
         #    self.lines=pool.map(self.set_line,self.grid.pre_computed_steps(step))

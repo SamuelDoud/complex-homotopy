@@ -30,6 +30,6 @@ class function(object):
             if self.use_eval:
                 return eval(self.expr)
             return self.f_z(z)
-        except ZeroDivisionError:
+        except:# ZeroDivisionError:
             raise ZeroDivisionError #send the error back to the line class for error handling
 

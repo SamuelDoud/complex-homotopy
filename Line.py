@@ -4,6 +4,9 @@ import numpy as np
 
 import point
 
+PLUS=0
+MINUS=1
+
 class Line(object):
     """Line is a container of points and delegates operations to them. Additionally, Line containss information shared among the points on a Line such as the color of the line, if it is connected, how many points are on the line etc.. Lines are held within a PointGrid"""
 
@@ -49,18 +52,44 @@ class Line(object):
     
     def parameterize_points(self,function,steps=None):
         """New function for the points on the line to draw to"""
+        singularities = []
         if not steps:
             steps=self.number_of_steps
-        points=[]#temp list to store results
+        else:
+            self.number_of_steps=steps
         self.function=function
-        for point in self.points:#take every point that has been defined by the create_points method
+        for index, pt in enumerate(self.points):#take every point that has been defined by the create_points method
             try:
-                f_z = self.function.evaluateAt(point.complex) #evaluate the function at this complex number
-                point.parameterize(f_z,steps) #call on the point to parameterize itself given a new endpoint
-                points.append(point) #throw that into a temp list
+                f_z = self.function.evaluateAt(pt.complex) #evaluate the function at this complex number
+                pt.parameterize(f_z,steps) #call on the point to parameterize itself given a new endpoint
+                self.points[index]=pt #throw that into a temp list
             except ZeroDivisionError:
-                self.points.remove(point) #this point is a singularity and must be removed to allow the graph to operate
-                print("A singularity at " + str(point.complex) + ".")
-        self.points=points #reassign the old set of points to the temporary one. The temp list was used as the old points were being iterated over concurrently
-        return points #hanf the points back to the caller for ease of use
+                #we should build points around an epsilon to provide better resolution!
+                singularities.append(pt)
+                self.points.remove(pt) #this point is a singularity and must be removed to allow the graph to operate
+                print("A singularity at " + str(pt.complex) + ".")
+        map(self.build_around, singularities) #deal with each singularity. Need to wait as the functionality adds points to the line
+        return singularities is not None
+        #we should add points to the line if we are operating on that list iteratively
 
+    def build_around(self,z,index):
+        self.singularity=index #the index of the singularity we are currently working with. need
+        start=5 #start close
+        end=3 #build outward from z
+        samples=12
+        new_points=[(point.point(z + epsilon), point.point(z - epsilon)) for epsilon in [10**(-1 * power) for power in np.linspace(start,end,samples)]]
+        map(inject_points, new_points)
+        self.points.sort()
+        
+    def inject_points(self,tuple_of_pm_epsilon,):
+        """
+        Take the lines and inject them at the singuarity.
+        Also, parameterize them
+        To be used in conjuction with the map function in build_around.
+        """
+        plus_epsilon, minus_epsilon = tuple_of_pm_epsilon #tuple unpacking
+        #parameterize the points
+        plus_epsilon.parameterize(self.function.evaluateAt(plus_epsilon),self.number_of_steps)
+        minus_epsilon.parameterize(self.function.evaluateAt(minus_epsilon),self.number_of_steps)
+        self.points.insert(self.singularity+1,tuple_of_pm_epsilon[PLUS])
+        self.points.insert(self.singularity,tuple_of_pm_epsilon[MINUS])
