@@ -12,7 +12,7 @@ IMAG=1 #constants for consistent iterable access
 
 class PointGrid(object):
     """Point Grid holds all the points on the graph and their associations"""
-    def __init__(self, limits=None, remove_outliers=False):
+    def __init__(self, limits=None, remove_outliers=True):
         self.user_limits=limits
         self.remove_outliers = remove_outliers
         if self.user_limits:
@@ -142,8 +142,8 @@ class PointGrid(object):
         Works for both the limits_at_step and overall set_limits
         """
         if self.remove_outliers: #if this feature is active, then outliers will be removed (need to implement a customizible definition of an outlier)
-            reals=self.remove_outliers(reals)
-            imags=self.remove_outliers(imags)
+            reals=self.remove_outliers_operation(reals)
+            imags=self.remove_outliers_operation(imags)
 
         pad=1.05 #add 5% so the window isn't cramped. Now that I think about it.. there is a more pythonic way to do this
         self.real_max = max(reals) * pad
@@ -152,7 +152,7 @@ class PointGrid(object):
         self.imag_min = min(imags) * pad
         self.force_square() #make the limits square so the graph isn't distorted
         
-    def remove_outliers(self,points, z_limit=3):
+    def remove_outliers_operation(self,points, z_limit=3):
         """
         This removes outliers from the setting of limits
         """
