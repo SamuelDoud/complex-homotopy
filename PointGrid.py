@@ -187,7 +187,7 @@ class PointGrid(object):
         Then, operate on each point by the function
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function 
         after this function is completed, all the points will have their homotopy computed"""
-        
+        self.function = function
         self.n_steps=n
         self.limit_mem = [None] * (self.n_steps+2) #wipe the memory of the limits and creates a list of size n_steps
         for line_index in range(len(self.lines)):
