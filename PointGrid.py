@@ -81,7 +81,7 @@ class PointGrid(object):
         self.lines.append(line)#add the new Line object to the list
         self.n_lines+=1 #a line has been added so the count is obviously greate
 
-    def removeLine(self, line_name):
+    def remove_line(self, line_name):
         #line names share prefixes and gradually get more specific....
         #standard.. "LINE_TypeOfLine_setName_LineNumber"
         #if the user calls x.remove("LINE"), then all lines are removed

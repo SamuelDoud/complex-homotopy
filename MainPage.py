@@ -17,13 +17,16 @@ class Application(Frame):
         self.pack()
         self.master=master
         self.grid = PointGrid.PointGrid()
-        
+        self.outlier_remover = IntVar()
+        self.outlier_remover.set(0)
         self.create_widgets()
         self.animating_already = False
         self.add_lines()
         self.launch()
 
     def create_widgets(self):
+        self.outlier_remover_check_box = Checkbutton(self, text = "Remove outliers", variable = self.outlier_remover,
+                 onvalue = 1, offvalue = 0, height=5, width = 20)
         self.save_video = Button(self, text="Save as Video", command=self.save_video_handler)
         self.function_label = Label( root, text="Enter a f(z)")
         self.function_entry = Entry(root, bd=20)
@@ -37,10 +40,11 @@ class Application(Frame):
         self.n_entry.pack()
         self.interval_label.pack()
         self.interval_entry.pack()
-        self.submit = Button(root, text ="Submit", command = self.launch)
+        self.submit = Button(self, text ="Submit", command = self.launch)
         self.submit.pack(side =BOTTOM) 
         self.QUIT = Button(self, text="Quit", fg="red", command=root.destroy)
         self.QUIT.pack(side=BOTTOM)
+        self.outlier_remover_check_box.pack(side=BOTTOM)
         self.save_video.pack(side=BOTTOM)
 
     def add_lines(self, list_of_lines=None):
@@ -60,6 +64,8 @@ class Application(Frame):
         """
         #take the input from the user.. if its null, set ito the identity function
         self.current_function = self.function_entry.get() if self.function_entry.get() else self.identity
+
+
         try:
             functionObj = func.function(self.current_function)
         except:
@@ -80,6 +86,7 @@ class Application(Frame):
             except ValueError:
                 interval=20
             self.plot_obj.anim._interval = interval
+        self.plot_obj.grid.remove_outliers = self.outlier_remover.get() == 1 #set the boolean that controls the outlier operation in the pointgrid to that of the user
         self.plot_obj.new_limits()
         #else:
         #    self.plot_obj.new_limits() #throw the new limits in on the graph

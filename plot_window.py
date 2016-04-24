@@ -104,6 +104,7 @@ class plot_window(object):
         """
         Take the new limits and apply them to the plot.
         """
+        self.grid.set_limits()
         self.ax=plt.gca()
         self.ax.set_xlim([self.grid.real_min, self.grid.real_max]) 
         self.ax.set_ylim([self.grid.imag_min, self.grid.imag_max])
