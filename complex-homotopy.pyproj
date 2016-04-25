@@ -23,11 +23,11 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="function.py" />
+    <Compile Include="ComplexFunction.py" />
     <Compile Include="Line.py" />
     <Compile Include="MainPage.py" />
-    <Compile Include="plot_window.py" />
-    <Compile Include="point.py" />
+    <Compile Include="PlotWindow.py" />
+    <Compile Include="ComplexPoint.py" />
     <Compile Include="PointGrid.py" />
   </ItemGroup>
   <ItemGroup>
