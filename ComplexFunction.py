@@ -40,4 +40,3 @@ class ComplexFunction(object):
         except:
             #send the error back to the line class for error handling
             raise ZeroDivisionError
-

@@ -14,40 +14,32 @@ class Line(object):
     of the line, if it is connected, how many points are on the line etc.. Lines
     are held within a PointGrid
     """
-    def __init__(self, function, start, end, number_of_points, color, group,
-                 simply_connected=False, width=1, points=None):
+    def __init__(self, function, start, end, number_of_points, points=None):
         self.singularity = []
+        self.singularity_index = -1
         self.number_of_steps = 0
-        self.width = width
-        self.simply_connected = simply_connected
-        #self.name=name #the name of the Line,
-        self.color = color #the color of this line
+        self.width = 1
         self.function = function
         #must be non-negative number of steps
-        self.number_of_points = abs(number_of_points)
+        self.number_of_points = number_of_points
         self.start = start
         #the endpoints of this line
         self.end = end
-        if points:
-            self.points = points
-        else:
+        if not points:
             self.points = self.create_points()
-        #shares the group varriable with other lines in this set. Made for deletion
-        self.group = group
-        if self.simply_connected:
-            self.points.append(self.points[0])
-            #This draws a line from the last point to the starting point.
-            #Needed if you draw a circle as there would not be a line connecting the two endpoints
-            #as they do not border eachother
+        else:
+            self.points = points
 
     @classmethod
-    def circle(cls, radius, center=complex(0, 0), points=100, color="black", group=0):
+    def circle(cls, radius, center=complex(0, 0), points=100):
         """
         Alternative constructor for creating circle
         """
         thetas = np.linspace(0, 2 * np.pi, points)
         points = [ComplexPoint.ComplexPoint(cmath.rect(radius, theta) + center) for theta in thetas]
-        return cls(0, 0, 0, 0, color, group, simply_connected=True, points=points)
+        #circles and other simply connected objects need this in order to be a closed set.
+        points.append(points[0])
+        return cls(0, 0, 0, 0, points)
 
     def create_points(self):
         """
@@ -56,7 +48,7 @@ class Line(object):
         #this is the first value on the domain
         zs_to_be_evaluated = np.linspace(self.start, self.end, self.number_of_points)
         return [ComplexPoint.ComplexPoint(f_z) for f_z in list(map(self.function.evaluate_at_point,
-                                                     zs_to_be_evaluated))]
+                                                                   zs_to_be_evaluated))]
 
     def points_at_step(self, this_step, to_consider=False):
         """
@@ -64,9 +56,11 @@ class Line(object):
         """
         #get the location of every point at the n-th step
         if not to_consider:
-            list_of_tuples = [point.get_location_at_step(this_step) for point in self.points]
+            list_of_tuples = [point.get_location_at_step(this_step)
+                              for point in self.points]
         else:
-            list_of_tuples = [point.get_location_at_step(this_step) for point in self.points if not point.ignore_in_outliers]
+            list_of_tuples = [point.get_location_at_step(this_step)
+                              for point in self.points if not point.ignore_in_outliers]
         #take the list's transpose
         return np.asarray(list_of_tuples).T.tolist()
 
@@ -116,11 +110,10 @@ class Line(object):
         end = 3 #build outward from z
         samples = 12
         new_points = [(ComplexPoint.ComplexPoint(singularity_point + epsilon,
-                                                 ignore_in_outliers=True),
-                                                 ComplexPoint.ComplexPoint(singularity_point -
-                                                 epsilon, ignore_in_outliers=True))
-                      for epsilon in [complex(10 ** (-1 * power),10 ** (-1 * power)) for power in
-                                    np.linspace(start, end, samples)]]
+                                                 True),
+                       ComplexPoint.ComplexPoint(singularity_point - epsilon, True))
+                      for epsilon in [complex(10 ** (-1 * power), 10 ** (-1 * power)) for power in
+                                      np.linspace(start, end, samples)]]
         map(self.inject_points, new_points)
 
     def inject_points(self, tuple_of_pm_epsilon):

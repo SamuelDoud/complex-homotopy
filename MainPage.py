@@ -1,7 +1,7 @@
 ﻿from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, IntVar, BOTTOM, BOTH
 import matplotlib
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import PointGrid
 import PlotWindow
@@ -18,9 +18,8 @@ class Application(Frame):
         Calls on the function to create widgets and eventually, launches the window.
         """
         Frame.__init__(self, master)
-        self.id = 0
+        self.id_number_counter = 0
         self.line_collection = []
-        
         self.canvas = None
         self.identity = "z"
         self.identity_function = func.ComplexFunction(self.identity)
@@ -43,15 +42,15 @@ class Application(Frame):
                                                      variable=self.outlier_remover,
                                                      onvalue=1, offvalue=0, height=5, width=20)
         self.save_video = Button(self, text="Save as Video", command=self.save_video_handler)
-        self.function_label = Label(root_of_tkinter, text="Enter a f(z)")
-        self.function_entry = Entry(root_of_tkinter, bd=20)
-        self.n_label = Label(root_of_tkinter, text="Number of steps")
-        self.n_entry = Entry(root_of_tkinter, bd=5)
-        self.interval_label = Label(root_of_tkinter, text="Length of interval")
-        self.interval_entry = Entry(root_of_tkinter, bd=5)
+        self.function_label = Label(ROOT, text="Enter a f(z)")
+        self.function_entry = Entry(ROOT, bd=20)
+        self.n_label = Label(ROOT, text="Number of steps")
+        self.n_entry = Entry(ROOT, bd=5)
+        self.interval_label = Label(ROOT, text="Length of interval")
+        self.interval_entry = Entry(ROOT, bd=5)
         self.submit = Button(self, text="Submit", command=self.launch)
         self.submit.pack(side=BOTTOM)
-        self.quit = Button(self, text="Quit", fg="red", command=root_of_tkinter.destroy)
+        self.quit = Button(self, text="Quit", fg="red", command=ROOT.destroy)
         self.quit.pack(side=BOTTOM)
         self.outlier_remover_check_box.pack(side=BOTTOM)
         self.save_video.pack(side=BOTTOM)
@@ -66,24 +65,24 @@ class Application(Frame):
         """
         Adds a set of lines to the collection and appends a id tag
         """
-        self.line_collection.append((lines, self.id))
+        self.line_collection.append((lines, self.id_number_counter))
         #increment the id tag
-        self.id += 1
+        self.id_number_counter += 1
         #return the id tag less one (as to refer to this object)
-        return self.id - 1
-    
-    def remove_from_collection(self, id):
+        return self.id_number_counter - 1
+
+    def remove_from_collection(self, id_number):
         """
         Removes a line collection from the list.
         """
         #search for the line
-        #TODO, this is an ordered set. Use a binary search
+        #This is an ordered set. Using a binary search
         length = len(self.line_collection)
         index = length // 2
         last_index = index + 1
-        delta = index // 2
-        while self.line_collection[index][1] != id:
-            if self.line_collection[index][1] > id:
+        delta = index // 2 + 1
+        while self.line_collection[index][1] != id_number:
+            if self.line_collection[index][1] > id_number:
                 index -= delta
             else:
                 index += delta
@@ -96,14 +95,23 @@ class Application(Frame):
         return True
 
     def build_sample(self):
+        """
+        A sampler method to test adding and removing shapes.
+        """
         id1 = self.add_lines(self.grid.circle(1))
         id2 = self.add_lines(self.grid.grid_lines(complex(-1, 1), complex(1, -1), 10, 10))
-        self.remove_from_collection(id2)
-    
+        self.remove_from_collection(id1)
+
     def flattend_lines(self):
+        """
+        The collection of lines is a list of tuples with
+        each tuple containing a list of lines and an id.
+        This method takes all the lines in the collection
+        and returns them as one list.
+        """
         stripped_of_id = [line[0] for line in self.line_collection]
         return [item for sublist in stripped_of_id for item in sublist]
-        
+
     def add_lines(self, list_of_lines):
         """
         Given a list of lines, add them to the Plot.
@@ -114,11 +122,18 @@ class Application(Frame):
             self.grid.add_line(line)
         return self.add_to_collection(list_of_lines)
 
-    def build_circle(self, radius, center=complex(0,0)):
-        return self.add_lines(self.grid.circle(radius,center))
+    def build_circle(self, radius, center=complex(0, 0)):
+        """
+        Build a circle from a popup
+        """
+        return self.add_lines(self.grid.circle(radius, center))
 
     def build_grid(self, upper_right, lower_left, lines_num):
+        """
+        Build a grid from a popup.
+        """
         return self.add_lines(self.grid.grid_lines(upper_right, lower_left, lines_num, lines_num))
+
     def save_video_handler(self):
         """
         Dispatches the Plot to save the video.
@@ -137,14 +152,14 @@ class Application(Frame):
             try:
                 #check if the fuction is valid
                 function_object = func.ComplexFunction(self.current_function)
-            except:
+            except Exception:
                 #fallback to the identity
                 function_object = self.identity_function
         else:
             function_object = self.identity_function
         try:
             steps_from_user = int(self.n_entry.get())
-        except:
+        except Exception:
             steps_from_user = 1 #no animation
         #interval cannot be changed after launch
         self.grid.provide_function(function_object, steps_from_user, self.flattend_lines())
@@ -177,6 +192,6 @@ class Application(Frame):
         plot_object.animate(interval_length=interval)
 
 
-root_of_tkinter = Tk()
-WINDOW = Application(master=root_of_tkinter)
+ROOT = Tk()
+WINDOW = Application(master=ROOT)
 WINDOW.mainloop()

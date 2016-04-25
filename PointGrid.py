@@ -2,7 +2,6 @@
 
 from sympy import re, im, arg, Abs, Symbol, symbols, I
 import numpy as np
-import concurrent.futures
 
 import Line
 import ComplexFunction
@@ -33,7 +32,6 @@ class PointGrid(object):
         self.lines = []
         self.n_steps = 1
         self.n_lines = 0
-        self.group_counter = 0
         self.complex_variable_symbol = symbols('z', complex=True)
         self.limit_mem = [None] * (self.n_steps + 2)
 
@@ -48,25 +46,28 @@ class PointGrid(object):
                 #lower the count of lines by one
                 self.n_lines -= 1
 
-    def circle(self, radius, center=complex(0, 0), points=100, color="black"):
+    def circle(self, radius, center=complex(0, 0), points=100):
         """
-        Draws a circle of the given radius. User can set attributes such as center, the number of points, and the color of  the circle through kwargs.
+        Draws a circle of the given radius. User can set attributes such as center,
+        the number of points, and the color of  the circle through kwargs.
         """
         #new group is being created
-        self.group_counter += 1
-        return Line.Line.circle(radius, center, points, color, self.group_counter)
+        return Line.Line.circle(radius, center, points)
 
-    def grid_lines(self, complex_high_imag_low_real, complex_low_imag_high_real, n_lines, n_points_per_line):
+    def grid_lines(self, complex_high_imag_low_real, complex_low_imag_high_real,
+                   n_lines, n_points_per_line):
         """
         Create a grid with specified corners
         """
-        self.group_counter += 1
         lines = []
-        lines.extend(self.draw_real(complex_high_imag_low_real, complex_low_imag_high_real, n_lines, n_points_per_line))
-        lines.extend(self.draw_imag(complex_high_imag_low_real, complex_low_imag_high_real, n_lines, n_points_per_line))
+        lines.extend(self.draw_real(complex_high_imag_low_real, complex_low_imag_high_real,
+                                    n_lines, n_points_per_line))
+        lines.extend(self.draw_imag(complex_high_imag_low_real, complex_low_imag_high_real,
+                                    n_lines, n_points_per_line))
         return lines
 
-    def draw_real(self, complex_high_imag_low_real, complex_low_imag_high_real, n_lines, n_points_per_line):
+    def draw_real(self, complex_high_imag_low_real, complex_low_imag_high_real,
+                  n_lines, n_points_per_line):
         """
         Draw the lines with constant re(z)
         """
@@ -84,8 +85,7 @@ class PointGrid(object):
             f_re_z = ComplexFunction.ComplexFunction(re(upper[step]) +
                                                      im(self.complex_variable_symbol) * I)
             #create a line with starting points given
-            line = Line.Line(f_re_z, upper[step], lower[step], n_points_per_line,
-                             "blue", self.group_counter)
+            line = Line.Line(f_re_z, upper[step], lower[step], n_points_per_line)
             lines.append(line) #add the line to the list at large
         return lines
 
@@ -96,12 +96,17 @@ class PointGrid(object):
         """
         lines = []
         #the initial states of the upper and lower bounds of the line
-        upper = np.linspace(complex_high_imag_low_real, complex(complex_high_imag_low_real.real, complex_low_imag_high_real.imag), n_lines)
-        lower = np.linspace(complex(complex_low_imag_high_real.real, complex_high_imag_low_real.imag), complex_low_imag_high_real, n_lines)
+        upper = np.linspace(complex_high_imag_low_real, complex(complex_high_imag_low_real.real,
+                                                                complex_low_imag_high_real.imag),
+                            n_lines)
+        lower = np.linspace(complex(complex_low_imag_high_real.real,
+                                    complex_high_imag_low_real.imag),
+                            complex_low_imag_high_real, n_lines)
         #this loop takes us through every line
         for step in range(n_lines):
-            f_im_z = ComplexFunction.ComplexFunction(re(self.complex_variable_symbol) + complex(0, (upper[step].imag)))
-            line = Line.Line(f_im_z, upper[step], lower[step], n_points_per_line, "red", self.group_counter)
+            f_im_z = ComplexFunction.ComplexFunction(re(self.complex_variable_symbol) +
+                                                     complex(0, (upper[step].imag)))
+            line = Line.Line(f_im_z, upper[step], lower[step], n_points_per_line)
             lines.append(line)
         return lines
 
@@ -121,10 +126,17 @@ class PointGrid(object):
         return [ln.points_at_step(this_step) for ln in self.lines]
 
     def lines_to_consider_at_step(self, this_step):
+        """
+        Get the points that don't have the marker on them..
+        """
         return [ln.points_at_step(this_step, to_consider=True) for ln in self.lines]
 
     def lines_to_consider(self):
-        self.computed_steps_to_consider = list(map(self.lines_to_consider_at_step, range(self.n_steps * 2 + 2)))
+        """
+        Gets all the points that do not have the ignore flag active.
+        """
+        self.computed_steps_to_consider = list(map(self.lines_to_consider_at_step,
+                                                   range(self.n_steps * 2 + 2)))
 
     def pre_compute(self):
         """
@@ -148,14 +160,17 @@ class PointGrid(object):
         """
         Calls on the PointGrid to create a set of limits or defer to the user's judgement.
         """
-        if self.user_limits: #the user has specified their own limits. These limits take prrecedence
+        #the user has specified their own limits. These limits take prrecedence
+        if self.user_limits:
             pass
         if not self.computed_steps_to_consider:
             lines = self.computed_steps
         else:
             lines = self.computed_steps_to_consider
-        flattend_steps = [item for sublist in lines for item in sublist] #flatten the list.
-        # Credit to Stack Overflow user Alex Martelli (http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python)
+        #flatten the list
+        flattend_steps = [item for sublist in lines for item in sublist]
+        #Credit to Stack Overflow user Alex Martelli
+        #stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
         complex_flattened_steps = list(zip(*flattend_steps))
         reals = []
         imags = []
@@ -187,7 +202,7 @@ class PointGrid(object):
             reals = remove_outliers_operation(reals)
             imags = remove_outliers_operation(imags)
         #add 5% so the window isn't cramped.
-        pad=1.05
+        pad = 1.05
         self.real_max = max(reals) * pad
         self.real_min = min(reals) * pad
         self.imag_max = max(imags) * pad
@@ -239,7 +254,8 @@ class PointGrid(object):
         self.limit_mem = [None] * (self.n_steps + 2)
         singularity = []
         for line_index in range(len(self.lines)):
-            singularity.append(self.lines[line_index].parameterize_points(function, number_of_steps_to_compute))
+            singularity.append(self.lines[line_index].parameterize_points(function,
+                                                                          number_of_steps_to_compute))
         #set the steps now so the program doesn't have to do this on the fly
         #if a singularity exists, set the lines to consider limits
         if any(singularity):
@@ -258,5 +274,6 @@ def remove_outliers_operation(points, z_limit=3):
     st_dev = statistics.stdev(points)
     median = statistics.median(points)
     #define an outlier as any point +/-z*st_dev off the median
-    limits = (median - st_dev*z_limit, median + st_dev*z_limit) #must lie within range in order to not be an outlier
+    #must lie within range in order to not be an outlier
+    limits = (median - st_dev*z_limit, median + st_dev*z_limit)
     return [pt for pt in points if pt >= limits[low] and pt <= limits[high]]

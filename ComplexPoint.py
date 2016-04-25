@@ -38,7 +38,7 @@ class ComplexPoint(object):
             #could inject code here if reversals aren't wanted
         try:
             return self.point_order[index]
-        except:
+        except IndexError:
             return None
 
 def add_reverse(target):

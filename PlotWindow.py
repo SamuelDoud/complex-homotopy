@@ -18,7 +18,11 @@ class PlotWindow(object):
     This class creates the plot in which the homotopy is displayed.
     Can be used in a tkinter window OR can be used like an API
     """
-    def __init__(self, grid, updating_limits=False, start_color=(0.0, 0.0, 1.0), end_color=(1.0, 0.0, 0.0)):
+    def __init__(self, grid, updating_limits=False,
+                 start_color=(0.0, 0.0, 1.0), end_color=(1.0, 0.0, 0.0)):
+        """
+        Create the intial state of the plot. This will just be the image of z onto z.
+        """
         self.anim = None
         self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
@@ -28,7 +32,9 @@ class PlotWindow(object):
         #self.ffmpeg_writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
         self.updating_limits = updating_limits #
         self.new_limits() #take the inital limits from self.grid and apply to the graph
-        self.lines = [self.axes.plot([], [], lw=self.grid.lines[line].width)[0] for line in range(self.grid.n_lines)]
+        self.lines = [self.axes.plot([], [],
+                                     lw=self.grid.lines[line].width)[0]
+                      for line in range(self.grid.n_lines)]
         self.axes.set_xlabel("Real")
         self.axes.set_ylabel("Imaginary")
         self._start_color = start_color #private as their is logic to change these colors
@@ -73,7 +79,8 @@ class PlotWindow(object):
         """
         #raise NotImplementedError #need to install FFMPEG
         if video:
-            self.anim.save(filename + '.mp4', fps=30, extra_args=['-vcodec', 'libx264'], writer=self.ffmpeg_writer)
+            self.anim.save(filename + '.mp4', fps=30, extra_args=['-vcodec', 'libx264'],
+                           writer=self.ffmpeg_writer)
         if gif:
             raise NotImplementedError
 
@@ -85,7 +92,9 @@ class PlotWindow(object):
             self.grid.limits_at_step(step)
             self.new_limits()
         #this will actually update the graph (on the fly computation) using list comp
-        [self.lines[index].set_data(line[REAL], line[IMAG]) for index, line in enumerate(self.grid.pre_computed_steps(step))]
+        [self.lines[index].set_data(line[REAL],
+                                    line[IMAG])
+         for index, line in enumerate(self.grid.pre_computed_steps(step))]
         self.color_compute(step)
         for line in self.lines: #apply the color to every line
             line._color = self.color
