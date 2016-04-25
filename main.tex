@@ -5,58 +5,85 @@
 \setcounter{secnumdepth}{5}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
+\usepackage{hyperref}
 \newtheorem*{theorem}{Theorem}
 
 \title{Complex Homotopy}
 \author{Samuel Doud}
-\date{March 2016}
+\date{April 27, 2016}
 
 \begin{document}
 
 \maketitle
 
 \section{Introduction}
-Complex homotopy (name change possible) takes points in the $\mathbb{C}$ plane and maps them by a user-defined transformation $T:\mathbb{C} \rightarrow \mathbb{C}$.
-Integral to the understanding of the complex numbers is the intuitive visualization of the Cartesian $xy$-plane, where the $x$ represents the real part of the number and the $y$ axis contains the imaginary part of the complex number. An alternative description. In addition to rectangular coordinates, a polar system exists as well.
-
-\section{Technical Implementation}
-Complex Homotopy is built on the Python 3.4 environment. Python has a large community in scientific computing which has spawned libraries such as \textit{sympy, numpy,} and \textit{matplotlib}. These third party libraries each play an important role in the execution of Complex Homotopy. Additionally, Python is an object-oriented development language. This allows for Complex Homotopy to be a distributable application which would not be possible if it were programmed in a dedicated scientific language such as Mathematica.
-
-    \subsection{Classes and Program Flow}
-    This section will detail the class structure of Complex Homotopy and illustrate how the program takes its inputs and displays its outputs.
-        \subsubsection{Classes}
-            \paragraph{Point}
-            The point object is the representation of a  single point in the homotopy. The set of points that are to be displayed will be defined in the \textit{PointGrid} class. Each point independently contains the information required for animation. On creation the \textit{Line} object which contains the point will pass the user-defined function ($f$), the number of iterations ($n$), and its initial location on the graph ($z$). After ingesting this information, the point will use the initial point (call it $z$) and determine its final location as defined by $f(z)$. These two locations on the $\mathbb{C}$-plane contains the information needed to determine the points on the animation. The set of points contained in the animation of the transformation from $z$  to $f(z)$ ($f:\mathbb{C} \Rightarrow \mathbb{C}$) is determined by the equation:
-            $$\{t \in \mathbb{N} \cup\{0\} \mid t < n \mid (1-t)z+t*f(z)\}$$
-            This set is then iterated through by a function of the Point object \textit{updatePoint}. This will increment the Point's counter and display the Point's point in the $(counter\%n)$ element of set. This increment is defined as forwards or backwards, if $counter \equiv 0 \pmod n$ then the increment is multiplied by -1, effectively reversing the animation.
-            
-            \paragraph{Line}
-            This class is a list of points. A very lightweight class, it is used to determine which points to draw lines between and determine if a line is simply connected, if the line is simply connected, this means that the line's endpoints are at the same location in $\mathbb{C}$.
-                \subparagraph{Properties}
-                A key feature of the line is that it has a defined and unique name that is determined by its attributes. These attributes allow easy deletion and manipulation of lines by referencing the name of the line. Any change in the lines will affect the properties of the line.
-                \begin{enumerate}
-                    \item List of Points
-                    \item Name (name is reflective of the following properties)
-                    \item Boolean flag for simply connected
-                    \item Color - Color of the line
-                    \item Point Resolution - A number reflecting the current length of the list of Points
-                    \item Function - This is complex valued function that describe the line (not the $f(z)$ itself).
-                \end{enumerate}
-            
-            \paragraph{PointGrid}
-            PointGrid is the interface of the points. It contains a list of Lines which contain the Points, however, the graphing functionality will pipe through this class. Adding, deleting, manipulating Lines will occur through this
-            \paragraph{Function}
-            Class that takes a string and runs through sympy to make it an expression that sympy can work with. Then each point can use this function and substitute in its own $z$ to get its $f(z)$.
-        \subsubsection{Program Flow}
-        A summary:
-        \begin{enumerate}
-            \item Program Launches\\
-                This displays a window which offers two options creating a new 
-        \end{enumerate}
+    Complex Homotopy is a simple \textit{Python} application that maps complex numbers from to the complex plane to the complex plane. Formally,
+    $$T:\mathbb{C}\Rightarrow \mathbb{C}.$$
+    Throughout this documentation, I will refer to the complex numbers as $\mathbb{C}$. A complex number is a mixture of imaginary and real numbers. The imaginary number $i$ is equal to $\sqrt{-1}$. It can be helpful to imagine the complex numbers as a plane, much like the $xy-\text{plane}$, however, on the $xy-\text{plane}$ we are visualing a function. On the complex plane, we are simply visualizing a set. That is were the use of this program comes in.
+    Observe the function 
+    $$y=x^{2}$$
+    Now, observe the same function on the complex "unit grid" and "unit circle".
+    $$f(z) = z^{2}$$
+    \begin{figure}[h]
+        \centering
+        \includegraphics[scale=.5]{z}
+        \caption{$z$}
+        \label{fig:my_label}
+    \end{figure}
+    \begin{figure}[h]
+        \centering
+        \includegraphics[scale=.5]{z2}
+        \caption{$z^{2}$}
+        \label{fig:my_label}
+    \end{figure}
+    \begin{figure}[h]
+        \centering
+        \includegraphics[scale=.66]{x2}
+        \caption{$y=x^{2}$}
+        \label{fig:my_label}
+    \end{figure}
+    Notice how two images were needed for the complex function. With the $xy$, we can intuitively see the result of the function from the graph, but the complex function is not so easy. In fact, squaring a complex number squares its absolute value and increases its angle measure two-fold. But how would you know that other than analyzing the function?\\
+    This program animates the image of $z$ onto $f(z)$ so it is easier for students to observe what is actually occurring with the complex function. Hopefully, it can become as intuitive as any $xy$ function.
+    a.  An Overview of your project
+    b.  A description of your successes (i.e., what did you accomplish).
+    c.  Obstacles and changes of directions (i.e., how did your project change form over the semester, based on what you experienced)
+    d.  What did you learn?  
+    e.  Future directions (i.e., if you had one more month?).
+\section{Successes}
+    The inital goal of this project was to create a system in which a user could watch a set of points be operated on by a complexz function over time. In that sense, this project was highly successful. This system is in place and mostly works. There are some features that you would see on a graphing calculator that are not yet implemented, but they are in the pipeline and more importantly, they are secondary to the actual graphing.
+\section{Obstacles and changes}
+\section{What I Learned}
+\section{Future Directions}
+    It is likely that I will in fact have another month to work on this project. There is an ever-growing list of items I'd like to implement.
+    \begin{itemize}
+        \item A decent GUI
+            I have almost never done any work with GUIs. As I spent nearly all my time getting features to run properly on the graphing side, I neglected the graphical layout of the application. This would be the number 1 priority of mine if I had more time. You don't seek out and use applications that look like mine. They look, and are, poorly designed.
+        \item A web interface/API\\
+            The structure for this is already in place as the graphing class and the GUI class of this application are already separate. I would like to see a simple web app to display these graphs as well as an API for batch requests of graphs.
+        \item A better system for handling division by zero.
+            As it currently stands, if a point is a \textit{singularity}, it is ejected from the computation and a fixed number of points "close" to that are added. However, there are many problems surrounding this. Since we are creating new points, should they be considered in figuring out the limits of the graph? What if these new points are themselves singularities (we could then run into the problem of infinite recursion)?
+        \item A more intuitive way to remove items from the graph.\\
+            As it currently stands, each shape or object is assigned an ID which allows the object to be removed from the graph. However, the interface to which performs this is very rudimentary.
+        \item Multi-layered functions\\
+            This would allow the user to specify to specify two or more functions to operate sequentially. For example, $f(z) = z**2$ and $g(z) = z + 1$. If the user ran $g(f(z))$ they would first see the function $f$ operate, then see the result of that applied to the function $g(z)$. This could be much more clear than just $f(z) = z**2 + 1$.
+    \end{itemize}
+\section{Technical}
     \subsection{Libraries}
     The third party libraries that are utilized by Complex Homotopy
         \subsubsection{sympy}
-        Sympy is utilized for its ability to handle complex functions. Importantly sympy can take a complex function and display its real and imaginary parts of a complex function. Recall, that as complex numbers are defined on $\mathbb{R}^2$ by its real and imaginary parts. By allowing for a $z$ to be substituted into a complex function $f$ and then outputting $f(z)$ that can be further split into $\mathfrak{R}(z)$ and $\mathfrak{I}(z)$. This gives us the location of $f(z)$ on the $xy$-plane.
+        Sympy is a symbolic algebra library for \textit{Python}. It can solve systems of equations, simplify polynomials, and just about anything else algebraic. The use of \textit{sympy} in \textit{Complex Homotopy} is that it allows for the interpretation of complex functions. For example, $f(z) = z^{2}$; \textit{sympy} can evaluate this function as if it were a complex function and it can handle it symbolically.\\
+        If I were to be passed the function $\frac{z^{2} + 1}{2}$ I could "shunt" it to break the function down into steps:
+        \begin{enumerate}
+            \item Square it
+            \item Add one
+            \item Divide by two
+        \end{enumerate}
+        If this was implemented, then there would be no need to use \textit{sympy}. However, \textit{sympy} is a tested library that is much more robust than anything I could hope to write. The "Shunting Yard" algorithim is a very diffucult one and opens a pathway for bugs to enter the program. Additionally, \textit{sympy} can make use of \textit{numpy}'s ability to "drop-down" to \textit{C} and run calculations on the SIMD processors of your CPU, enabling  \href{http://docs.sympy.org/dev/modules/numeric-computation.html}{much faster computation}.
         \subsubsection{matplotlib}
-        This class is the standard Python graphing library. This forms an abstraction for the $xy$-plane to the users monitor. For example, $(100,100)$ on the $xy$-plane could export to any point on the user's window. If they change the range of points displayed on the graph by panning or magnifying, matplotlib handles the change internally.
+        This class is the standard Python graphing library. This forms an abstraction for the $xy$-plane to the users monitor. For example, $(100,100)$ on the $xy$-plane could export to any point on the user's window but will remain in the same position relative to the origin of the graph as the user moves the window. Additionally, matplotlib can handle animation, which is obviously pivotal in this program. Within the animation there is the ability to export the animation as a video file. This functionality requires \textit{ffmpeg} and is therefore is difficult to distribute this feature.
+        \subsection{numpy}
+        Numpy allows for fast calculation of ranges of numbers. Typically in \textit{Python} we would use the built-in \textit{range(n)} function. However, this function only works with positive integers. On the other hand, \textit{numpy} has a \textit{linspace} and \textit{arrange} function that will operate with complex numbers as inputs. For example, if I write
+        $$\text{numpy.linspace}(0+0j,\ 1+1j,\ 50)$$
+        I will get 50 complex numbers between $0+0j$ and $1+1j$.
+    
 \end{document}
