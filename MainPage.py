@@ -1,4 +1,4 @@
-﻿from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, IntVar, BOTTOM, BOTH
+﻿from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, BOTTOM, BOTH
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -6,6 +6,57 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import PointGrid
 import PlotWindow
 import ComplexFunction as func
+
+class circle_builder_popup(object):
+    def __init__(self, master):
+        self.top = Toplevel(master)
+        self.radius = Label(self.top, text="Radius")
+        self.radius_entry = Entry(self.top, bd=5)
+        self.center = Label(self.top, text="Center")
+        self.center_entry = Entry(self.top, bd=5)
+        self.build_circle_submit = Button(self.top, text="Build!", command=self.cleanup)
+        self.radius.grid(row=0, column=0)
+        self.radius_entry.grid(row=0, column=1)
+        self.center.grid(row=1, column=0)
+        self.center_entry.grid(row=1, column=1)
+        self.build_circle_submit.grid(row=2, column=0, columnspan=2)
+
+    def cleanup(self):
+        center = complex(0,0)
+        if self.center_entry.get():
+            center = complex(self.center_entry.get())
+        self.circle_tuple = (float(self.radius_entry.get()), center)
+        self.top.destroy()
+
+class grid_builder_popup(object):
+    def __init__(self, master):
+        self.top = Toplevel(master)
+        self.top_left_label = Label(self.top, text="\"Top Left\"")
+        self.top_left_entry = Entry(self.top, bd=5)        
+        self.bottom_right_label = Label(self.top, text="\"Bottom Right\"")
+        self.bottom_right_entry = Entry(self.top, bd=5)
+        self.resolution_label = Label(self.top, text="Lines")
+        self.resolution_entry = Entry(self.top, bd=5)
+        self.build_grid_submit = Button(self.top, text="Build!", command=self.cleanup)
+        self.top_left_label.grid(row=0, column=0)
+        self.top_left_entry.grid(row=0, column=1)
+        self.bottom_right_label.grid(row=1, column=0)
+        self.bottom_right_entry.grid(row=1, column=1)
+        self.resolution_label.grid(row=2, column=0)
+        self.resolution_entry.grid(row=2, column=1)
+        self.build_grid_submit.grid(row=3, column=0, columnspan=2)
+
+    def cleanup(self):
+        self.lines = 0
+        if self.resolution_entry.get().isnumeric():
+            self.lines = int(self.resolution_entry.get())
+        self.top_left = complex(self.top_left_entry.get())
+        self.bottom_right = complex(self.bottom_right_entry.get())
+        #If these conditions are true then we do not have a grid
+        if self.top_left.real > self.bottom_right.real or self.bottom_right.imag > self.top_left.imag or self.lines == 0:
+            self.bottom_right = self.top_left = complex(0,0)
+            self.lines = 0
+        self.top.destroy()
 
 class Application(Frame):
     """
@@ -18,6 +69,7 @@ class Application(Frame):
         Calls on the function to create widgets and eventually, launches the window.
         """
         Frame.__init__(self, master)
+        ROOT.title("Complex Homotopy")
         self.id_number_counter = 0
         self.line_collection = []
         self.canvas = None
@@ -44,11 +96,12 @@ class Application(Frame):
         self.outlier_remover_check_box = Checkbutton(ROOT, text="Remove outliers",
                                                      variable=self.outlier_remover,
                                                      onvalue=1, offvalue=0, height=5, width=20)
-        self.pop_from_collection = Button(ROOT, text="Remove", command=self.remove_from_collection)
+        self.pop_from_collection = Button(ROOT, text="Remove last", command=self.remove_from_collection)
         self.submit = Button(ROOT, text="Submit", command=self.launch)
         self.function_label = Label(ROOT, text="Enter a f(z)")
         self.save_video = Button(ROOT, text="Save as Video", command=self.save_video_handler)
         self.interval_label = Label(ROOT, text="Length of interval")
+        self.remove_front = Button(ROOT, text="Remove first", command=self.remove_first)
         self.n_label = Label(ROOT, text="Number of steps")
         self.real_max_label = Label(ROOT, text="Real max")
         self.real_min_label = Label(ROOT, text="Real min")
@@ -61,6 +114,8 @@ class Application(Frame):
         self.function_entry = Entry(ROOT, bd=common_bd)
         self.n_entry = Entry(ROOT, bd=common_bd)
         self.interval_entry = Entry(ROOT, bd=common_bd)
+        self.circle_launcher = Button(ROOT, command=self.circle_popup, text="Circle Builder")
+        self.grid_launcher = Button(ROOT, command=self.grid_popup , text="Grid Builder")
 
     def pack_widgets(self):
         """
@@ -69,24 +124,28 @@ class Application(Frame):
         Pythonically, this code is probably bad. I am referencing variables that are created
         outside of this method but not in the __init__ method.
         """
-        self.submit.grid(row=5, column=1, columnspan=2)
-        self.pop_from_collection.grid(row=6,column=0)
-        self.outlier_remover_check_box.grid(row=5, column=0)
-        self.save_video.grid(row=6, column=0, columnspan=3)
+        #WTF tab ordering
         self.function_label.grid(row=2, column=0)
         self.function_entry.grid(row=2, column=1)
         self.n_label.grid(row=3, column=0)
         self.n_entry.grid(row=3, column=1)
         self.interval_label.grid(row=4, column=0)
         self.interval_entry.grid(row=4, column=1)
+        self.circle_launcher.grid(row=5,column=0)
+        self.grid_launcher.grid(row=5,column=1)
+        self.submit.grid(row=5, column=2)
+        self.outlier_remover_check_box.grid(row=5, column=3)
+        self.remove_front.grid(row=6,column=0)
+        self.pop_from_collection.grid(row=6,column=1)     
+        self.save_video.grid(row=6, column=2)
         self.real_max_label.grid(row=2, column=3)
         self.real_max_entry.grid(row=2, column=4)
         self.real_min_label.grid(row=2, column=6)
         self.real_min_entry.grid(row=2, column=5)
-        self.imag_min_label.grid(row=3, column=6)
-        self.imag_min_entry.grid(row=3, column=5)
         self.imag_max_label.grid(row=3, column=3)
         self.imag_max_entry.grid(row=3, column=4)
+        self.imag_min_label.grid(row=3, column=6)
+        self.imag_min_entry.grid(row=3, column=5)
 
     def add_to_collection(self, lines):
         """
@@ -135,11 +194,15 @@ class Application(Frame):
             else:
                 return False
 
+    def remove_first(self):
+        self.line_collection.pop(0)
+        self.point_grid.new_lines(self.flattend_lines())
+
     def build_sample(self):
         """
         A sampler method to test adding and removing shapes.
         """
-        id1 = self.add_lines(self.point_grid.circle(1))
+        id1 = self.add_lines(self.point_grid.circle(1,complex(1,1)))
         id2 = self.add_lines(self.point_grid.grid_lines(complex(-1, 1), complex(1, -1), 10, 10))
         #self.remove_from_collection(id1)
 
@@ -161,6 +224,8 @@ class Application(Frame):
             list_of_lines = [list_of_lines]
         for line in list_of_lines:
             self.point_grid.add_line(line)
+        self.point_grid.changed_flag_unhandled = True
+        
         return self.add_to_collection(list_of_lines)
 
     def build_circle(self, radius, center=complex(0, 0)):
@@ -277,12 +342,19 @@ class Application(Frame):
             interval = 20
         self.animating_already = True
         plot_object.animate(interval_length=interval)
-
-    def circle_builder_popup(self):
-        pass
-
-    def grid_builder_popup(self):
-        pass
+        
+    def circle_popup(self):
+        self.popup_window = circle_builder_popup(self.master)
+        self.master.wait_window(self.popup_window.top)
+        self.build_circle(self.popup_window.circle_tuple[0], self.popup_window.circle_tuple[1])
+        self.launch()
+    
+    def grid_popup(self):
+        self.popup_window = grid_builder_popup(self.master)
+        self.master.wait_window(self.popup_window.top)
+        self.build_grid(self.popup_window.top_left, self.popup_window.bottom_right,
+                        self.popup_window.lines)
+        self.launch()
 
 ROOT = Tk()
 WINDOW = Application(master=ROOT)

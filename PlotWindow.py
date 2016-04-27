@@ -90,10 +90,12 @@ class PlotWindow(object):
         """
         if self.grid.changed_flag_unhandled:
                 self.lines = [self.axes.plot([], [],
-                                    lw=self.grid.lines[line].width)[0]
-                    for line in range(len(self.grid.lines))]
+                                                lw=self.grid.lines[line].width)[0]
+                                for line in range(len(self.grid.lines))]
                 if not self.grid.lines:
                     self.lines=[]
+                else:
+                    self.grid.pre_compute()
                 self.grid.changed_flag_unhandled = False
         if 1 == 0 and self.updating_limits: #not implemented yet
             self.grid.limits_at_step(step)
