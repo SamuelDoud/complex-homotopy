@@ -149,12 +149,18 @@ class PointGrid(object):
         #set the limits of the graph based upon the computation
         self.set_limits()
 
-    def set_user_limits(self):
+    def set_user_limits(self, limits_tuple):
         """
         Pass a tuple of (real max, real min, imag max, and imag min) to set your own limits
         """
         #tuple unpacking
-        self.real_max, self.real_min, self.imag_max, self.imag_min = self.user_limits
+        if None in limits_tuple:
+            #forcing to None allows for the user to go back to auto limits
+            self.user_limits = None
+        else:
+            #set the limits manually and store in a tuple
+            self.real_max, self.real_min, self.imag_max, self.imag_min = limits_tuple
+            self.user_limits = (self.real_max, self.real_min, self.imag_max, self.imag_min)
 
     def set_limits(self):
         """
@@ -162,7 +168,7 @@ class PointGrid(object):
         """
         #the user has specified their own limits. These limits take prrecedence
         if self.user_limits:
-            pass
+            return
         if not self.computed_steps_to_consider:
             lines = self.computed_steps
         else:
