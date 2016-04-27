@@ -52,9 +52,17 @@
 \section{Successes}
     The initial goal of this project was to create a system in which a user could watch a set of points be operated on by a complex function over time. In that sense, this project was highly successful. This system is in place and mostly works. There are some features that you would see on a graphing calculator that are not yet implemented, but they are in the pipeline and more importantly, they are secondary to the actual graphing.
 \section{Obstacles and changes}
+    \begin{itemize}
+        \item Caching lines. The most difficult computation is not projecting the points, its calculating the arrangement of the lines and creating the line objects themselves.
+        \item Eval exposure. I ran into problems surrounding interpreting equations from sympy. I could enter functions via the code an utilize ultra-fast numpy computations, but I could not get this to work from a string. Unfortuently, this disability forced me to utilize the eval function. Eval allows the user to inject code into the program, a highly dangerous proposition given the future goals of this program.
+        \item Handling divison by zero.
+        \item Dealing with concepts such as mean and standard deviation become diffucult when we expand to two dimensions.
+        \item Graphical interface. This is just my lack of skill here.
+        \item Controlling the animation. This is diffucult as I cannot seem to control the animation in terms of speed and controling the frame it is on. I built the automobile but I don't have a wheel.
+    \end{itemize}
 \section{What I Learned}
 \section{Future Directions}
-    It is likely that I will in fact have another month to work on this project. There is an ever-growing list of items I'd like to implement.
+    This is not a hypothical.
     \begin{itemize}
         \item A decent GUI
             I have almost never done any work with GUIs. As I spent nearly all my time getting features to run properly on the graphing side, I neglected the graphical layout of the application. This would be the number 1 priority of mine if I had more time. You don't seek out and use applications that look like mine. They look, and are, poorly designed.
@@ -64,6 +72,8 @@
             As it currently stands, if a point is a \textit{singularity}, it is ejected from the computation and a fixed number of points "close" to that are added. However, there are many problems surrounding this. Since we are creating new points, should they be considered in figuring out the limits of the graph? What if these new points are themselves singularities (we could then run into the problem of infinite recursion)?
         \item A more intuitive way to remove items from the graph.\\
             As it currently stands, each shape or object is assigned an ID which allows the object to be removed from the graph. However, the interface to which performs this is very rudimentary.
+        \item Have multicolored lines\\
+            If a circle was multicolored, changes in its argument would be visible.
         \item Multi-layered functions\\
             This would allow the user to specify to specify two or more functions to operate sequentially. For example, $f(z) = z**2$ and $g(z) = z + 1$. If the user ran $g(f(z))$ they would first see the function $f$ operate, then see the result of that applied to the function $g(z)$. This could be much more clear than just $f(z) = z**2 + 1$.
     \end{itemize}
