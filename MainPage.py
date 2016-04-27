@@ -41,9 +41,10 @@ class Application(Frame):
         """
         common_bd = 5
         #checkbox to control outlier logic
-        self.outlier_remover_check_box = Checkbutton(self, text="Remove outliers",
+        self.outlier_remover_check_box = Checkbutton(ROOT, text="Remove outliers",
                                                      variable=self.outlier_remover,
                                                      onvalue=1, offvalue=0, height=5, width=20)
+        self.pop_from_collection = Button(ROOT, text="Remove", command=self.remove_from_collection)
         self.submit = Button(ROOT, text="Submit", command=self.launch)
         self.function_label = Label(ROOT, text="Enter a f(z)")
         self.save_video = Button(ROOT, text="Save as Video", command=self.save_video_handler)
@@ -69,6 +70,7 @@ class Application(Frame):
         outside of this method but not in the __init__ method.
         """
         self.submit.grid(row=5, column=1, columnspan=2)
+        self.pop_from_collection.grid(row=6,column=0)
         self.outlier_remover_check_box.grid(row=5, column=0)
         self.save_video.grid(row=6, column=0, columnspan=3)
         self.function_label.grid(row=2, column=0)
@@ -120,14 +122,15 @@ class Application(Frame):
                     last_index = index
                     delta //= 2
                 self.line_collection.pop(index)
+                #redraw
                 self.point_grid.new_lines(self.flattend_lines())
                 return True
             except IndexError:
                 return False
         else:
             if self.line_collection:
-                #successfully popped a set of lines from the stack
                 self.line_collection.pop()
+                self.point_grid.new_lines(self.flattend_lines())
                 return True
             else:
                 return False
@@ -138,7 +141,7 @@ class Application(Frame):
         """
         id1 = self.add_lines(self.point_grid.circle(1))
         id2 = self.add_lines(self.point_grid.grid_lines(complex(-1, 1), complex(1, -1), 10, 10))
-        self.remove_from_collection(id1)
+        #self.remove_from_collection(id1)
 
     def flattend_lines(self):
         """
@@ -170,7 +173,7 @@ class Application(Frame):
         """
         Build a grid from a popup.
         """
-        return self.add_lines(self.grid.grid_lines(upper_right, lower_left, lines_num, lines_num))
+        return self.add_lines(self.point_grid.grid_lines(upper_right, lower_left, lines_num, lines_num))
 
     def save_video_handler(self):
         """
@@ -230,7 +233,7 @@ class Application(Frame):
         all_clear = True
         limits = (real_max, real_min, imag_max, imag_min)
         if None in limits:
-            all_clear =  False
+            all_clear = False
         else:
             if real_max <= real_min or imag_max <= imag_min:
                 all_clear = False

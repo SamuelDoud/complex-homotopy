@@ -34,7 +34,7 @@ class PlotWindow(object):
         self.new_limits() #take the inital limits from self.grid and apply to the graph
         self.lines = [self.axes.plot([], [],
                                      lw=self.grid.lines[line].width)[0]
-                      for line in range(self.grid.n_lines)]
+                      for line in range(len(self.grid.lines))]
         self.axes.set_xlabel("Real")
         self.axes.set_ylabel("Imaginary")
         self._start_color = start_color #private as their is logic to change these colors
@@ -88,6 +88,13 @@ class PlotWindow(object):
         """
         Function that returns the lines that will be used to display this graph.
         """
+        if self.grid.changed_flag_unhandled:
+                self.lines = [self.axes.plot([], [],
+                                    lw=self.grid.lines[line].width)[0]
+                    for line in range(len(self.grid.lines))]
+                if not self.grid.lines:
+                    self.lines=[]
+                self.grid.changed_flag_unhandled = False
         if 1 == 0 and self.updating_limits: #not implemented yet
             self.grid.limits_at_step(step)
             self.new_limits()

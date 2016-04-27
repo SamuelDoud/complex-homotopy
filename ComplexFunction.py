@@ -14,7 +14,8 @@ class ComplexFunction(object):
         Given a function, in either string or expression format, create an object that
         can evaluate any complex number given to it.
         """
-        self.use_eval = False #work to get rid of this
+        #work to get rid of this
+        self.use_eval = False
         if isinstance(expression, str):
             self.use_eval = True
             self.expr = expression

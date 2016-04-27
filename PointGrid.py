@@ -17,6 +17,7 @@ class PointGrid(object):
         """
         Create a point grid.
         """
+        self.changed_flag_unhandled = False
         self.computed_steps_to_consider = None
         self.function = None
         self.computed_steps = []
@@ -240,9 +241,12 @@ class PointGrid(object):
         Remove lines from the Point Grid
         """
         self.lines = []
-        self.n_lines = 0
         if lines_to_add:
             self.lines = lines_to_add
+            #adding sequentally protects 
+            self.n_lines = len(self.lines)
+            self.changed_flag_unhandled = True
+            self.pre_compute()
 
     def provide_function(self, function, number_of_steps_to_compute, collection_of_lines):
         """Give a complex function to this function.
