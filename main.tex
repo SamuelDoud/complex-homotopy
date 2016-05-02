@@ -6,6 +6,7 @@
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{hyperref}
+\usepackage{float}
 \newtheorem*{theorem}{Theorem}
 
 \title{Complex Homotopy}
@@ -17,26 +18,26 @@
 \maketitle
 
 \section{Introduction}
-    Complex Homotopy is a simple \textit{Python} application that maps complex numbers from to the complex plane to the complex plane. Formally,
+    Complex Homotopy is currently \textit{Python} application that maps a set of complex numbers from to the complex plane to the complex plane by a user-defined function. Formally,
     $$T:\mathbb{C}\Rightarrow \mathbb{C}.$$
-    Throughout this documentation, I will refer to the complex numbers as $\mathbb{C}$. A complex number is a mixture of imaginary and real numbers. The imaginary number $i$ is equal to $\sqrt{-1}$. It can be helpful to imagine the complex numbers as a plane, much like the $xy-\text{plane}$, however, on the $xy-\text{plane}$ we are visualing a function. On the complex plane, we are simply visualizing a set. That is were the use of this program comes in.
+    Throughout this documentation, I will refer to the complex numbers as $\mathbb{C}$. A complex number is a mixture of imaginary and real numbers. The imaginary number $i$ is equal to $\sqrt{-1}$. It can be helpful to imagine the complex numbers as a plane, much like the $xy-\text{plane}$, however, on the $xy-\text{plane}$ we are visualing a function. On the complex plane, we are simply visualizing a set of complex numbers. That is were the use of this program comes in.
     Observe the function 
     $$y=x^{2}$$
     Now, observe the same function on the complex "unit grid" and "unit circle".
     $$f(z) = z^{2}$$
-    \begin{figure}[h]
+    \begin{figure}[H]
         \centering
         \includegraphics[scale=.5]{z}
         \caption{$z$}
         \label{fig:my_label}
     \end{figure}
-    \begin{figure}[h]
+    \begin{figure}[H]
         \centering
         \includegraphics[scale=.5]{z2}
         \caption{$z^{2}$}
         \label{fig:my_label}
     \end{figure}
-    \begin{figure}[h]
+    \begin{figure}[H]
         \centering
         \includegraphics[scale=.66]{x2}
         \caption{$y=x^{2}$}
@@ -54,15 +55,24 @@
 \section{Obstacles and changes}
     \begin{itemize}
         \item Caching lines. The most difficult computation is not projecting the points, its calculating the arrangement of the lines and creating the line objects themselves.
-        \item Eval exposure. I ran into problems surrounding interpreting equations from sympy. I could enter functions via the code an utilize ultra-fast numpy computations, but I could not get this to work from a string. Unfortuently, this disability forced me to utilize the eval function. Eval allows the user to inject code into the program, a highly dangerous proposition given the future goals of this program.
-        \item Handling divison by zero.
-        \item Dealing with concepts such as mean and standard deviation become diffucult when we expand to two dimensions.
+        \item Eval exposure. I ran into problems surrounding interpreting equations from sympy. I could enter functions via the code an utilize ultra-fast numpy computations, but I could not get this to work from a string. Unfortunately, this disability forced me to utilize the eval function. Eval allows the user to inject code into the program, a highly dangerous proposition given the future goals of this program.
+        \item Handling division by zero.
+        \item Dealing with concepts such as mean and standard deviation become difficult when we expand to two dimensions.
         \item Graphical interface. This is just my lack of skill here.
-        \item Controlling the animation. This is diffucult as I cannot seem to control the animation in terms of speed and controling the frame it is on. I built the automobile but I don't have a wheel.
+        \item Controlling the animation. This is difficult as I cannot seem to control the animation in terms of speed and controlling the frame it is on. I built the automobile but I don't have a wheel.
     \end{itemize}
 \section{What I Learned}
+    \begin{itemize}
+        \item Data needs to be strictly packaged.\\
+            Throughout the operation of the homotopy, lines are being redrawn from pre-computed lines stored in the \textit{Lines} class. When the pre-computation takes place consideration must be taken for the final structure that the data must be in to draw the lines on the plot. This is not just for the clarity of the code's sake, but how efficiently the lines can be drawn. The less time transforming arrays, the faster a new frame can be drawn.
+        \item Prefer built-in methods to third party and self-built.\\
+            Python provides a rich set of functions in its standard library not to mention the third party libraries. If the function you are building is not program specific, there is actually negative reason to building your own. For example, transforming a list of tuples into a two dimensioned list is a simple (and wicked fast) \textit{zip()} call away. Doing this by hand would be slower computationally, expensive time-wise, and more likely to contain bugs.
+        \item Using the built-in debugger.\\
+            When a project grows beyond a short script the bugs can compound themselves to cause tarantulas instead of spiders. Tools used include: breakpoints and watches. I should incorporate unit testing in the future.
+        \item Building maintainable and extensible code.\\
+            With the research grant as a possibility, I decided early on to make this program as modular as possible so as to modify its functionality in the future. To that end I became a stickler to the PEP08 guidelines and ran a linter to ensure code legality.
+    \end{itemize}
 \section{Future Directions}
-    This is not a hypothical.
     \begin{itemize}
         \item A decent GUI
             I have almost never done any work with GUIs. As I spent nearly all my time getting features to run properly on the graphing side, I neglected the graphical layout of the application. This would be the number 1 priority of mine if I had more time. You don't seek out and use applications that look like mine. They look, and are, poorly designed.
@@ -88,12 +98,12 @@
             \item Add one
             \item Divide by two
         \end{enumerate}
-        If this was implemented, then there would be no need to use \textit{sympy}. However, \textit{sympy} is a tested library that is much more robust than anything I could hope to write. The "Shunting Yard" algorithim is a very diffucult one and opens a pathway for bugs to enter the program. Additionally, \textit{sympy} can make use of \textit{numpy}'s ability to "drop-down" to \textit{C} and run calculations on the SIMD processors of your CPU, enabling  \href{http://docs.sympy.org/dev/modules/numeric-computation.html}{much faster computation}.
+        If this was implemented, then there would be no need to use \textit{sympy}. However, \textit{sympy} is a tested library that is much more robust than anything I could hope to write. The "Shunting Yard" algorithm is a very difficult one and opens a pathway for bugs to enter the program. Additionally, \textit{sympy} can make use of \textit{numpy}'s ability to "drop-down" to \textit{C} and run calculations on the SIMD processors of your CPU, enabling  \href{http://docs.sympy.org/dev/modules/numeric-computation.html}{much faster computation}.
         \subsubsection{matplotlib}
         This class is the standard Python graphing library. This forms an abstraction for the $xy$-plane to the users monitor. For example, $(100,100)$ on the $xy$-plane could export to any point on the user's window but will remain in the same position relative to the origin of the graph as the user moves the window. Additionally, matplotlib can handle animation, which is obviously pivotal in this program. Within the animation there is the ability to export the animation as a video file. This functionality requires \textit{ffmpeg} and is therefore is difficult to distribute this feature.
         \subsection{numpy}
         Numpy allows for fast calculation of ranges of numbers. Typically in \textit{Python} we would use the built-in \textit{range(n)} function. However, this function only works with positive integers. On the other hand, \textit{numpy} has a \textit{linspace} and \textit{arrange} function that will operate with complex numbers as inputs. For example, if I write
         $$\text{numpy.linspace}(0+0j,\ 1+1j,\ 50)$$
-        I will get 50 complex numbers between $0+0j$ and $1+1j$.
+        I will then get 50 complex numbers between $0+0j$ and $1+1j$.
     
 \end{document}
