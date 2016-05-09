@@ -90,6 +90,8 @@ class Application(Frame):
         """
         Frame.__init__(self, master)
         ROOT.title("Complex Homotopy")
+        #how long between frames in milliseconds
+        self.default_interval = 20
         self.id_number_counter = 0
         self.line_collection = []
         self.canvas = None
@@ -120,7 +122,6 @@ class Application(Frame):
         self.submit = Button(ROOT, text="Submit", command=self.launch)
         self.function_label = Label(ROOT, text="Enter a f(z)")
         self.save_video = Button(ROOT, text="Save as Video", command=self.save_video_handler)
-        self.interval_label = Label(ROOT, text="Length of interval")
         self.remove_front = Button(ROOT, text="Remove first", command=self.remove_first)
         self.n_label = Label(ROOT, text="Number of steps")
         self.real_max_label = Label(ROOT, text="Real max")
@@ -133,7 +134,6 @@ class Application(Frame):
         self.imag_max_entry = Entry(ROOT, bd=common_bd)
         self.function_entry = Entry(ROOT, bd=common_bd)
         self.n_entry = Entry(ROOT, bd=common_bd)
-        self.interval_entry = Entry(ROOT, bd=common_bd)
         self.circle_launcher = Button(ROOT, command=self.circle_popup, text="Circle Builder")
         self.grid_launcher = Button(ROOT, command=self.grid_popup , text="Grid Builder")
 
@@ -149,8 +149,6 @@ class Application(Frame):
         self.function_entry.grid(row=2, column=1)
         self.n_label.grid(row=3, column=0)
         self.n_entry.grid(row=3, column=1)
-        self.interval_label.grid(row=4, column=0)
-        self.interval_entry.grid(row=4, column=1)
         self.circle_launcher.grid(row=5,column=0)
         self.grid_launcher.grid(row=5,column=1)
         self.submit.grid(row=5, column=2)
@@ -305,11 +303,7 @@ class Application(Frame):
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
             self.update_graph(self.plot_object)
-        else:
-            try:
-                interval = int(self.interval_entry.get())
-            except ValueError:
-                interval = 20
+            interval = self.default_interval
             self.plot_object.anim._interval = interval
         #set the boolean that controls the outlier operation in the pointgrid to that of the user
         self.plot_object.grid.remove_outliers = self.outlier_remover.get() == 1
@@ -367,10 +361,7 @@ class Application(Frame):
         #self.canvas.show()
         self.canvas.get_tk_widget().grid(row=0, column=0, columnspan=6)
         #self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
-        try:
-            interval = int(self.interval_entry.get())
-        except ValueError:
-            interval = 20
+        interval = self.default_interval
         self.animating_already = True
         plot_object.animate(interval_length=interval)
         
