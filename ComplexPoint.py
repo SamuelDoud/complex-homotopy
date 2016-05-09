@@ -23,13 +23,10 @@ class ComplexPoint(object):
         """
         #append a tuple describing the point at this particular spot
         if not append:
-            try:
-                self.point_order = [((z.real, z.imag)) for z in np.linspace(self.complex, f_z, n_steps+1)]
-            except:
-                pass
+            self.point_order = [((z.real, z.imag)) for z in np.linspace(self.complex, f_z, n_steps)]
         else:
             last_complex = self.point_order[-1]
-            self.point_order += [((z.real, z.imag)) for z in np.linspace(complex(last_complex[REAL], last_complex[IMAG]), f_z, n_steps+1)]
+            self.point_order = self.point_order[:-1] + [((z.real, z.imag)) for z in np.linspace(complex(last_complex[REAL], last_complex[IMAG]), f_z, n_steps)]
         self.n_steps = len(self.point_order)
 
     def get_location_at_step(self, step):
@@ -49,7 +46,8 @@ class ComplexPoint(object):
             return None
     def add_reverse_to_point_order(self):
         """
-        Take the point order and append its head to its tail to emulate a loop
+        Take the point order and merge its head to its tail to emulate a loop
         """
-        self.point_order += reversed(self.point_order)
-        self.n_steps = len(self.point_order)
+        if len(self.point_order) > 1:
+            self.point_order = self.point_order[:-1] + list(reversed(self.point_order))
+            self.n_steps = len(self.point_order)

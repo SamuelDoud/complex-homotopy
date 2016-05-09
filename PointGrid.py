@@ -259,7 +259,7 @@ class PointGrid(object):
         self.functions = functions
         #delete these lines. There existence determines actions
         self.computed_steps_to_consider = []
-        self.n_steps = number_of_steps_to_compute * len(functions) * 2 + 2
+        
         #wipe the memory of the limits and creates a list of size n_steps
         self.limit_mem = [None] * (self.n_steps)
         singularity = []
@@ -267,7 +267,10 @@ class PointGrid(object):
             singularity.append(self.lines[line_index].parameterize_points(functions,
                                                                           number_of_steps_to_compute))
         #set the steps now so the program doesn't have to do this on the fly
-        #if a singularity exists, set the lines to consider limits
+        #this is actually taking the number of steps at the first point on the first line only
+        #assuming that this is going to be consistent throughout the plane
+        self.n_steps = self.lines[0].number_of_steps
+        #if a singularity exists, set the lines to consider limit
         if any(singularity):
             self.lines_to_consider()
         self.pre_compute()
