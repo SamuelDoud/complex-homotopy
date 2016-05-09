@@ -114,12 +114,12 @@ class PlotWindow(object):
         """
         Determine a color based on how far along the animation is.
         """
-        if self.grid.n_steps == 1:
+        if self.grid.n_steps <= 1:
             #the graph is not moving. Therefore, its start color is the self_color
             self.color = list(self._start_color)
         else:
             #using a sinsodual curve to change the color
-            modifier = (math.cos((step/(self.grid.n_steps +1)) * math.pi) + 1) / 2.0
+            modifier = (math.cos((2*step/(self.grid.n_steps +1)) * math.pi) + 1) / 2.0
             for index in range(len(self._start_color)):
                 self.color[index] = self._start_color[index] + (self.color_diff[index] * modifier)
 
