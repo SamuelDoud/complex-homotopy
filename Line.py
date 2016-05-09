@@ -47,8 +47,7 @@ class Line(object):
         """
         #this is the first value on the domain
         zs_to_be_evaluated = np.linspace(self.start, self.end, self.number_of_points)
-        return [ComplexPoint.ComplexPoint(f_z) for f_z in list(map(self.function.evaluate_at_point,
-                                                                   zs_to_be_evaluated))]
+        return [ComplexPoint.ComplexPoint(f_z) for f_z in zs_to_be_evaluated]
 
     def points_at_step(self, this_step, to_consider=False):
         """

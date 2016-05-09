@@ -272,7 +272,6 @@ class PointGrid(object):
             self.lines_to_consider()
         self.pre_compute()
         
-
 def remove_outliers_operation(points, z_limit=3):
     """
     This removes outliers from the setting of limits.
