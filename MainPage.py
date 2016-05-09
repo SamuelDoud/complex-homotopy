@@ -8,7 +8,14 @@ import PlotWindow
 import ComplexFunction as func
 
 class circle_builder_popup(object):
+    """
+    Class that launches a popup and collects user data to pass data back to the main window
+    to build a circle.
+    """
     def __init__(self, master):
+        """
+        Establish the GUI of this popup
+        """
         self.top = Toplevel(master)
         self.radius = Label(self.top, text="Radius")
         self.radius_entry = Entry(self.top, bd=5)
@@ -22,6 +29,9 @@ class circle_builder_popup(object):
         self.build_circle_submit.grid(row=2, column=0, columnspan=2)
 
     def cleanup(self):
+        """
+        Collect the data from the user and package it into object variables, then close.
+        """
         center = complex(0,0)
         if self.center_entry.get():
             center = complex(self.center_entry.get())
@@ -29,7 +39,14 @@ class circle_builder_popup(object):
         self.top.destroy()
 
 class grid_builder_popup(object):
+    """
+    Class that launches a popup and collects user data to pass data back to the main window
+    to build a grid.
+    """
     def __init__(self, master):
+        """
+        Establish the GUI of this popup
+        """
         self.top = Toplevel(master)
         self.top_left_label = Label(self.top, text="\"Top Left\"")
         self.top_left_entry = Entry(self.top, bd=5)        
@@ -47,6 +64,9 @@ class grid_builder_popup(object):
         self.build_grid_submit.grid(row=3, column=0, columnspan=2)
 
     def cleanup(self):
+        """
+        Collect the data from the user and package it into object variables, then close.
+        """
         self.lines = 0
         if self.resolution_entry.get().isnumeric():
             self.lines = int(self.resolution_entry.get())
@@ -159,7 +179,8 @@ class Application(Frame):
 
     def remove_from_collection(self, id_number=None):
         """
-        Removes a line collection from the list.
+        Removes a line collection from the list. If no index is passed, the collection is
+        treated like a stack
         """
         #search for the line
         #This is an ordered set. Using a binary search
@@ -195,6 +216,10 @@ class Application(Frame):
                 return False
 
     def remove_first(self):
+        """
+        Take the first item on the collection and remove it.
+        Then recalculate the graph.
+        """
         self.line_collection.pop(0)
         self.point_grid.new_lines(self.flattend_lines())
 
@@ -255,21 +280,28 @@ class Application(Frame):
         #take the input from the user.. if its null, set ito the identity function
         self.point_grid.set_user_limits(self.fetch_limits())
         if self.function_entry.get():
-            self.current_function = self.function_entry.get()
-            try:
-                #check if the fuction is valid
-                function_object = func.ComplexFunction(self.current_function)
-            except Exception:
-                #fallback to the identity
-                function_object = self.identity_function
+            function_objects = []
+            function_strings = str(self.function_entry.get()).split(';') #split by the semi-colon
+            for function_string in function_strings:
+                #add each passed string to the list of functions
+                try:
+                    #check if the fuction is valid
+                    function_object = func.ComplexFunction(function_string.strip())
+                except Exception:
+                    #fallback to the identity function
+                    function_object = self.identity_function
+                #add the user or identity function to the function stack
+                function_objects.append(function_object)
         else:
-            function_object = self.identity_function
+            #fallback to identity if no string is provided
+            function_objects = [self.identity_function]
         try:
+            #see if the user supplied a number of steps.
             steps_from_user = int(self.n_entry.get())
         except Exception:
             steps_from_user = 1 #no animation
         #interval cannot be changed after launch
-        self.point_grid.provide_function(function_object, steps_from_user, self.flattend_lines())
+        self.point_grid.provide_function(function_objects, steps_from_user, self.flattend_lines())
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
             self.update_graph(self.plot_object)
@@ -326,7 +358,6 @@ class Application(Frame):
             #return the numeric value of the user data multiplied by its sign
             return float(is_there_a_negative_sign)*multiplier
 
-
     def update_graph(self, plot_object):
         """
         Create the frame on which the matplotlib figure will be displayed.
@@ -344,12 +375,20 @@ class Application(Frame):
         plot_object.animate(interval_length=interval)
         
     def circle_popup(self):
+        """
+        Launch the circle popup window
+        then buil the circle
+        """
         self.popup_window = circle_builder_popup(self.master)
         self.master.wait_window(self.popup_window.top)
         self.build_circle(self.popup_window.circle_tuple[0], self.popup_window.circle_tuple[1])
         self.launch()
     
     def grid_popup(self):
+        """
+        launch a pop-up window to build a user-defined grid
+        then build the grid
+        """
         self.popup_window = grid_builder_popup(self.master)
         self.master.wait_window(self.popup_window.top)
         self.build_grid(self.popup_window.top_left, self.popup_window.bottom_right,

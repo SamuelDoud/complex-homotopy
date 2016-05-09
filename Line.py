@@ -64,38 +64,55 @@ class Line(object):
         #take the list's transpose
         return np.asarray(list_of_tuples).T.tolist()
 
-    def parameterize_points(self, function, steps=None):
+    def parameterize_points(self, functions, steps=None, reversed_now=False):
         """
         New function for the points on the line to draw to
         """
-        singularities = []
+        do_append = False
+        if reversed_now:
+            do_append = True
         if not steps:
+            #don't change the number of steps
             steps = self.number_of_steps
         else:
             self.number_of_steps = steps
-        self.function = function
-        #take every point that has been defined by the create_points method
-        for index, pt_from_points in enumerate(self.points):
-            try:
-                #evaluate the function at this complex number
-                f_z = self.function.evaluate_at_point(pt_from_points.complex)
-                #call on the point to parameterize itself given a new endpoint
-                pt_from_points.parameterize(f_z, steps)
-                #call on the point to parameterize itself given a new endpoint
-                self.points[index] = pt_from_points
-            except ZeroDivisionError:
-                #we should build points around an epsilon to provide better resolution!
-                singularities.append((pt_from_points, index))
-                #this point is a singularity and must be removed to allow the graph to operate
-                print("A singularity at " + str(pt_from_points.complex) + ".")
-        #remove the singularity points from the master list of points
-        singularities.reverse()
-        for point in singularities:
-            self.points.pop(point[1])
-        #deal with each singularity. Need to wait as the functionality adds points to the line
-        for point in singularities:
-            self.build_around(point)
-        return singularities != []
+        for function in functions:
+            #going through each function in the list of functions
+            singularities = []
+            #take every point that has been defined by the create_points method
+            for index, pt_from_points in enumerate(self.points):
+                try:
+                    #evaluate the function at this complex number
+                    if do_append:
+                        z = pt_from_points.point_order[-1]
+                        f_z = function.evaluate_at_point(complex(z[ComplexPoint.REAL], z[ComplexPoint.IMAG]))
+                    else:
+                        f_z = function.evaluate_at_point(pt_from_points.complex)
+                    #call on the point to parameterize itself given a new endpoint
+                    pt_from_points.parameterize(f_z, steps, append=do_append)
+                    #call on the point to parameterize itself given a new endpoint
+                    self.points[index] = pt_from_points
+                except ZeroDivisionError:
+                    #we should build points around an epsilon to provide better resolution!
+                    singularities.append((pt_from_points, index))
+                    #this point is a singularity and must be removed to allow the graph to operate
+                    print("A singularity at " + str(pt_from_points.complex) + ".")
+            #remove the singularity points from the master list of points
+            singularities.reverse()
+            for point in singularities:
+                self.points.pop(point[1])
+            #deal with each singularity. Need to wait as the functionality adds points to the line
+            for point in singularities:
+                self.build_around(point)
+            #now move on to append
+            do_append = True
+        if not reversed_now:
+            for point in self.points:
+                y = point.point_order
+                point.add_reverse_to_point_order()
+                x = point.point_order
+
+
         #we should add points to the line if we are operating on that list iteratively
 
     def build_around(self, singularity):

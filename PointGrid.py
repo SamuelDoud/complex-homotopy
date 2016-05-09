@@ -137,7 +137,7 @@ class PointGrid(object):
         Gets all the points that do not have the ignore flag active.
         """
         self.computed_steps_to_consider = list(map(self.lines_to_consider_at_step,
-                                                   range(self.n_steps * 2 + 2)))
+                                                   range(self.n_steps)))
 
     def pre_compute(self):
         """
@@ -146,7 +146,7 @@ class PointGrid(object):
         Also, this function will track the min/max of both the real and imaginary axis
         """
         #Get every step in this homotopy and map it to this list.
-        self.computed_steps = list(map(self.lines_at_step, range(self.n_steps * 2 + 2)))
+        self.computed_steps = list(map(self.lines_at_step, range(self.n_steps)))
         #set the limits of the graph based upon the computation
         self.set_limits()
 
@@ -234,7 +234,7 @@ class PointGrid(object):
         """
         Get the precomputed step n. Contains a modulo to prevent overflow
         """
-        return self.computed_steps[this_step % (self.n_steps * 2 + 1)]
+        return self.computed_steps[this_step % (self.n_steps)]
 
     def new_lines(self, lines_to_add=None):
         """
@@ -248,7 +248,7 @@ class PointGrid(object):
             self.changed_flag_unhandled = True
             self.pre_compute()
 
-    def provide_function(self, function, number_of_steps_to_compute, collection_of_lines):
+    def provide_function(self, functions, number_of_steps_to_compute, collection_of_lines):
         """Give a complex function to this function.
         Then, operate on each point by the function
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function
@@ -256,21 +256,22 @@ class PointGrid(object):
         self.new_lines()
         for line in collection_of_lines:
             self.add_line(line)
-        self.function = function
+        self.functions = functions
         #delete these lines. There existence determines actions
         self.computed_steps_to_consider = []
-        self.n_steps = number_of_steps_to_compute
+        self.n_steps = number_of_steps_to_compute * len(functions) * 2 + 2
         #wipe the memory of the limits and creates a list of size n_steps
-        self.limit_mem = [None] * (self.n_steps + 2)
+        self.limit_mem = [None] * (self.n_steps)
         singularity = []
         for line_index in range(len(self.lines)):
-            singularity.append(self.lines[line_index].parameterize_points(function,
+            singularity.append(self.lines[line_index].parameterize_points(functions,
                                                                           number_of_steps_to_compute))
         #set the steps now so the program doesn't have to do this on the fly
         #if a singularity exists, set the lines to consider limits
         if any(singularity):
             self.lines_to_consider()
         self.pre_compute()
+        
 
 def remove_outliers_operation(points, z_limit=3):
     """

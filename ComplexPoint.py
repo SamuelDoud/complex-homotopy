@@ -16,13 +16,17 @@ class ComplexPoint(object):
         self.n_steps = 1
         self.ignore_in_outliers = ignore_in_outliers
 
-    def parameterize(self, f_z, n_steps):
+    def parameterize(self, f_z, n_steps, append=False):
         """
         Given the value of this point applied to a function, parameterize its path
         to that point on the complex plane
         """
         #append a tuple describing the point at this particular spot
-        self.point_order = [((z.real, z.imag)) for z in np.linspace(self.complex, f_z, n_steps+1)]
+        if not append:
+            self.point_order = [((z.real, z.imag)) for z in np.linspace(self.complex, f_z, n_steps+1)]
+        else:
+            last_complex = self.point_order[-1]
+            self.point_order += [((z.real, z.imag)) for z in np.linspace(complex(last_complex[REAL], last_complex[IMAG]), f_z, n_steps+1)]
         self.n_steps = len(self.point_order)
 
     def get_location_at_step(self, step):
@@ -40,12 +44,9 @@ class ComplexPoint(object):
             return self.point_order[index]
         except IndexError:
             return None
-
-def add_reverse(target):
-    """
-    Take a list, reverse it, and extend the original list with that
-    """
-    #copy the list to avoid the next line affecting target
-    reversed_list = list(target)
-    reversed_list.reverse()
-    return target + reversed_list
+    def add_reverse_to_point_order(self):
+        """
+        Take the point order and append its head to its tail to emulate a loop
+        """
+        self.point_order += reversed(self.point_order)
+        self.n_steps = len(self.point_order)
