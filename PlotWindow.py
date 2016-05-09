@@ -38,7 +38,7 @@ class PlotWindow(object):
         self.axes.set_xlabel("Real")
         self.axes.set_ylabel("Imaginary")
         self._start_color = start_color #private as their is logic to change these colors
-        self._end_color = end_color #rbg tuple that specify the color endpoints
+        self._end_color = end_color #rgb tuple that specify the color endpoints
         self.color = list(self._start_color) #the color that will actually be displayed
         self.reset_color_diff()
 
@@ -117,11 +117,12 @@ class PlotWindow(object):
         if self.grid.n_steps <= 1:
             #the graph is not moving. Therefore, its start color is the self_color
             self.color = list(self._start_color)
-        else:
-            #using a sinsodual curve to change the color
-            modifier = (math.cos((2*step/(self.grid.n_steps +1)) * math.pi) + 1) / 2.0
-            for index in range(len(self._start_color)):
-                self.color[index] = self._start_color[index] + (self.color_diff[index] * modifier)
+            return
+        step = step % self.grid.n_steps
+        #using a sinsodual curve to change the color
+        modifier = (math.cos((2*step/(self.grid.n_steps +1)) * math.pi) + 1) / 2.0
+        for index in range(len(self._start_color)):
+            self.color[index] = self._end_color[index] - (self.color_diff[index] * modifier)
 
 
     def new_limits(self):
