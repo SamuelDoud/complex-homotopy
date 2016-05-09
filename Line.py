@@ -37,8 +37,10 @@ class Line(object):
         """
         thetas = np.linspace(0, 2 * np.pi, points)
         points = [ComplexPoint.ComplexPoint(cmath.rect(radius, theta) + center) for theta in thetas]
-        #circles and other simply connected objects need this in order to be a closed set.
-        points.append(points[0])
+        #circles and other simply connected objects need this in order to be a closed set
+        #must create a new point instead of attaching the head to the tail.
+        #if that is done then the functions will evaluate twice over this point
+        points.append(ComplexPoint.ComplexPoint(points[0].complex))
         return cls(0, 0, 0, 0, points)
 
     def create_points(self):
@@ -83,14 +85,15 @@ class Line(object):
                 try:
                     #evaluate the function at this complex number
                     if do_append:
+                        #take the last point in the point order
                         z = pt_from_points.point_order[-1]
+                        #evaluate the function with the last point in the point order as a complex number
                         f_z = function.evaluate_at_point(complex(z[ComplexPoint.REAL], z[ComplexPoint.IMAG]))
                     else:
                         f_z = function.evaluate_at_point(pt_from_points.complex)
                     #call on the point to parameterize itself given a new endpoint
                     pt_from_points.parameterize(f_z, steps, append=do_append)
                     #call on the point to parameterize itself given a new endpoint
-                    self.points[index] = pt_from_points
                 except ZeroDivisionError:
                     #we should build points around an epsilon to provide better resolution!
                     singularities.append((pt_from_points, index))
@@ -107,12 +110,9 @@ class Line(object):
             do_append = True
         if not reversed_now:
             for point in self.points:
-                y = point.point_order
                 point.add_reverse_to_point_order()
-                x = point.point_order
-
-
-        #we should add points to the line if we are operating on that list iteratively
+        #take the length of the point order of the first point
+        self.number_of_steps = len(self.points[0].point_order)
 
     def build_around(self, singularity):
         """
