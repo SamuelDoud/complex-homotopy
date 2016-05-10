@@ -156,14 +156,14 @@ class Application(Frame):
         self.remove_front.grid(row=6,column=0)
         self.pop_from_collection.grid(row=6,column=1)     
         self.save_video.grid(row=6, column=2)
-        self.real_max_label.grid(row=2, column=3)
-        self.real_max_entry.grid(row=2, column=4)
-        self.real_min_label.grid(row=2, column=6)
-        self.real_min_entry.grid(row=2, column=5)
-        self.imag_max_label.grid(row=3, column=3)
-        self.imag_max_entry.grid(row=3, column=4)
-        self.imag_min_label.grid(row=3, column=6)
-        self.imag_min_entry.grid(row=3, column=5)
+        self.real_max_label.grid(row=2, column=2)
+        self.real_max_entry.grid(row=2, column=3)
+        self.real_min_label.grid(row=2, column=5)
+        self.real_min_entry.grid(row=2, column=4)
+        self.imag_max_label.grid(row=3, column=2)
+        self.imag_max_entry.grid(row=3, column=3)
+        self.imag_min_label.grid(row=3, column=5)
+        self.imag_min_entry.grid(row=3, column=4)
 
     def add_to_collection(self, lines):
         """
