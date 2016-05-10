@@ -1,4 +1,6 @@
-﻿from sympy import Function, Symbol, symbols, lambdify, re, im, arg, Abs, E, sympify
+﻿from sympy import (Function, Symbol, symbols, lambdify, re, im, arg, Abs, E, sympify, sin, sinc,
+                             cos, cosh, acos, acosh, acot, acoth, acsc, asec, asech, asin, asinh,
+                             atan, atan2, atanh, conjugate, tan, tanh)
 from sympy.abc import z
 
 class ComplexFunction(object):
@@ -30,6 +32,6 @@ class ComplexFunction(object):
         """
         try:
             return self.f_z(input)
-        except:
+        except ZeroDivisionError:
             #send the error back to the line class for error handling
             raise ZeroDivisionError
