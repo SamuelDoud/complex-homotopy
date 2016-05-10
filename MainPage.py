@@ -104,6 +104,8 @@ class Application(Frame):
         self.point_grid = PointGrid.PointGrid()
         self.outlier_remover = IntVar()
         self.outlier_remover.set(0)
+        self.reverse_checkbox_var = IntVar()
+        self.reverse_checkbox_var.set(0)
         self.create_widgets()
         self.pack_widgets()
         self.animating_already = False
@@ -118,9 +120,12 @@ class Application(Frame):
         """
         common_bd = 5
         #checkbox to control outlier logic
-        self.outlier_remover_check_box = Checkbutton(ROOT, text="Remove outliers",
+        self.outlier_remover_checkbox = Checkbutton(ROOT, text="Remove outliers",
                                                      variable=self.outlier_remover,
-                                                     onvalue=1, offvalue=0, height=5, width=20)
+                                                     onvalue=1, offvalue=0, height=1, width=12)
+        self.reverse_checkbox = Checkbutton(ROOT, text="Reverse",
+                                                     variable=self.reverse_checkbox_var,
+                                                     onvalue=1, offvalue=0, height=1, width=6)
         self.pop_from_collection = Button(ROOT, text="Remove last", command=self.remove_from_collection)
         self.submit = Button(ROOT, text="Submit", command=self.launch)
         self.function_label = Label(ROOT, text="Enter a f(z)")
@@ -155,7 +160,8 @@ class Application(Frame):
         self.circle_launcher.grid(row=5, column=0)
         self.grid_launcher.grid(row=5, column=1)
         self.submit.grid(row=5, column=2)
-        self.outlier_remover_check_box.grid(row=5, column=3)
+        self.outlier_remover_checkbox.grid(row=5, column=3)
+        self.reverse_checkbox.grid(row=6, column=3)
         self.remove_front.grid(row=6, column=0)
         self.pop_from_collection.grid(row=6, column=1)
         self.save_video.grid(row=6, column=2)
@@ -300,11 +306,16 @@ class Application(Frame):
             steps_from_user = int(self.n_entry.get())
         except Exception:
             steps_from_user = 1 #no animation
-        self.point_grid.provide_function(function_objects, steps_from_user, self.flattend_lines())
+        #get tif the user has check the animation box
+        reverse = self.reverse_checkbox_var.get() == 1
+        self.point_grid.provide_function(function_objects, steps_from_user, self.flattend_lines(),
+                                         reverse=reverse)
         #code for if this is the initial run of the launch method
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
             self.update_graph()
+        #allows the color computation to deal with if the animation is reversing
+        self.plot_object.reverse = reverse
         #set the animation to the beginning
         self.plot_object.frame_number = 0
         #set the boolean that controls the outlier operation in the pointgrid to that of the user

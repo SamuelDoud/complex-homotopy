@@ -248,7 +248,7 @@ class PointGrid(object):
             self.changed_flag_unhandled = True
             self.pre_compute()
 
-    def provide_function(self, functions, number_of_steps_to_compute, collection_of_lines):
+    def provide_function(self, functions, number_of_steps_to_compute, collection_of_lines, reverse=False):
         """Give a complex function to this function.
         Then, operate on each point by the function
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function
@@ -257,14 +257,14 @@ class PointGrid(object):
         for line in collection_of_lines:
             self.add_line(line)
         self.functions = functions
-        #delete these lines. There existence determines actions
+        #delete these lines. Their existence determines actions
         self.computed_steps_to_consider = []
         #wipe the memory of the limits and creates a list of size n_steps
         self.limit_mem = [None] * (self.n_steps)
         singularity = []
         for line_index in range(len(self.lines)):
             singularity.append(self.lines[line_index].parameterize_points(functions,
-                                                                          number_of_steps_to_compute))
+                                                                          number_of_steps_to_compute, reverse=reverse))
         #set the steps now so the program doesn't have to do this on the fly
         #this is actually taking the number of steps at the first point on the first line only
         #assuming that this is going to be consistent throughout the plane

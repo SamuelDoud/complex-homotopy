@@ -23,6 +23,7 @@ class PlotWindow(object):
         """
         Create the intial state of the plot. This will just be the image of z onto z.
         """
+        self.reverse = False
         self.pause = False
         self.frame_number = 0
         self.anim = None
@@ -140,6 +141,9 @@ class PlotWindow(object):
         """
         Determine a color based on how far along the animation is.
         """
+        #workaround for a if the animation is not reversing
+        if not self.reverse:
+            step /= 2
         if self.grid.n_steps <= 1:
             #the graph is not moving. Therefore, its start color is the self_color
             self.color = list(self._start_color)

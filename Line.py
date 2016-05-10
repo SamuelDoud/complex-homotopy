@@ -65,13 +65,11 @@ class Line(object):
         #take the list's transpose
         return np.asarray(list_of_tuples).T.tolist()
 
-    def parameterize_points(self, functions, steps=None, reversed_now=False):
+    def parameterize_points(self, functions, steps=None, reverse=False):
         """
         New function for the points on the line to draw to
         """
         do_append = False
-        if reversed_now:
-            do_append = True
         if not steps:
             #don't change the number of steps
             steps = self.number_of_steps
@@ -109,7 +107,8 @@ class Line(object):
                 self.build_around(point)
             #now move on to append
             do_append = True
-        if not reversed_now:
+        #the user wants to reverse the function
+        if reverse:
             for point in self.points:
                 point.add_reverse_to_point_order()
         #take the length of the point order of the first point
