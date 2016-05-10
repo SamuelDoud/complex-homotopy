@@ -86,9 +86,10 @@ class Line(object):
                     #evaluate the function at this complex number
                     if do_append:
                         #take the last point in the point order
-                        z = pt_from_points.point_order[-1]
-                        #evaluate the function with the last point in the point order as a complex number
-                        f_z = function.evaluate_at_point(complex(z[ComplexPoint.REAL], z[ComplexPoint.IMAG]))
+                        last = pt_from_points.point_order[-1]
+                        #eval the funct w/ the last point in the point order as a complex number
+                        f_z = function.evaluate_at_point(complex(last[ComplexPoint.REAL],
+                                                                 last[ComplexPoint.IMAG]))
                     else:
                         f_z = function.evaluate_at_point(pt_from_points.complex)
                     #call on the point to parameterize itself given a new endpoint

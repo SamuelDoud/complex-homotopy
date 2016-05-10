@@ -1,6 +1,6 @@
 ﻿from sympy import (Function, Symbol, symbols, lambdify, re, im, arg, Abs, E, sympify, sin, sinc,
-                             cos, cosh, acos, acosh, acot, acoth, acsc, asec, asech, asin, asinh,
-                             atan, atan2, atanh, conjugate, tan, tanh)
+                   cos, cosh, acos, acosh, acot, acoth, acsc, asec, asech, asin, asinh,
+                   atan, atan2, atanh, conjugate, tan, tanh)
 from sympy.abc import z
 
 class ComplexFunction(object):

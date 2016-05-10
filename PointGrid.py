@@ -243,7 +243,7 @@ class PointGrid(object):
         self.lines = []
         if lines_to_add:
             self.lines = lines_to_add
-            #adding sequentally protects 
+            #adding sequentally protects
             self.n_lines = len(self.lines)
             self.changed_flag_unhandled = True
             self.pre_compute()
@@ -259,7 +259,6 @@ class PointGrid(object):
         self.functions = functions
         #delete these lines. There existence determines actions
         self.computed_steps_to_consider = []
-        
         #wipe the memory of the limits and creates a list of size n_steps
         self.limit_mem = [None] * (self.n_steps)
         singularity = []
@@ -274,7 +273,7 @@ class PointGrid(object):
         if any(singularity):
             self.lines_to_consider()
         self.pre_compute()
-        
+
 def remove_outliers_operation(points, z_limit=3):
     """
     This removes outliers from the setting of limits.
