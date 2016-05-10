@@ -7,7 +7,7 @@ import PointGrid
 import PlotWindow
 import ComplexFunction as func
 
-class circle_builder_popup(object):
+class CircleBuilderPopup(object):
     """
     Class that launches a popup and collects user data to pass data back to the main window
     to build a circle.
@@ -27,18 +27,20 @@ class circle_builder_popup(object):
         self.center.grid(row=1, column=0)
         self.center_entry.grid(row=1, column=1)
         self.build_circle_submit.grid(row=2, column=0, columnspan=2)
+        self.top_left = 0
+        self.bottom_right = 0
 
     def cleanup(self):
         """
         Collect the data from the user and package it into object variables, then close.
         """
-        center = complex(0,0)
+        center = complex(0, 0)
         if self.center_entry.get():
             center = complex(self.center_entry.get())
         self.circle_tuple = (float(self.radius_entry.get()), center)
         self.top.destroy()
 
-class grid_builder_popup(object):
+class GridBuilderPopup(object):
     """
     Class that launches a popup and collects user data to pass data back to the main window
     to build a grid.
@@ -49,7 +51,7 @@ class grid_builder_popup(object):
         """
         self.top = Toplevel(master)
         self.top_left_label = Label(self.top, text="\"Top Left\"")
-        self.top_left_entry = Entry(self.top, bd=5)        
+        self.top_left_entry = Entry(self.top, bd=5)
         self.bottom_right_label = Label(self.top, text="\"Bottom Right\"")
         self.bottom_right_entry = Entry(self.top, bd=5)
         self.resolution_label = Label(self.top, text="Lines")
@@ -91,7 +93,7 @@ class Application(Frame):
         Frame.__init__(self, master)
         ROOT.title("Complex Homotopy")
         #how long between frames in milliseconds
-        self.default_interval = 20
+        self.default_interval = 15
         self.id_number_counter = 0
         self.line_collection = []
         self.canvas = None
@@ -105,6 +107,7 @@ class Application(Frame):
         self.create_widgets()
         self.pack_widgets()
         self.animating_already = False
+        self.already_paused = False
         self.build_sample()
         #show the graph
         self.launch()
@@ -149,12 +152,12 @@ class Application(Frame):
         self.function_entry.grid(row=2, column=1)
         self.n_label.grid(row=3, column=0)
         self.n_entry.grid(row=3, column=1)
-        self.circle_launcher.grid(row=5,column=0)
-        self.grid_launcher.grid(row=5,column=1)
+        self.circle_launcher.grid(row=5, column=0)
+        self.grid_launcher.grid(row=5, column=1)
         self.submit.grid(row=5, column=2)
         self.outlier_remover_check_box.grid(row=5, column=3)
-        self.remove_front.grid(row=6,column=0)
-        self.pop_from_collection.grid(row=6,column=1)     
+        self.remove_front.grid(row=6, column=0)
+        self.pop_from_collection.grid(row=6, column=1)
         self.save_video.grid(row=6, column=2)
         self.real_max_label.grid(row=2, column=2)
         self.real_max_entry.grid(row=2, column=3)
@@ -225,7 +228,7 @@ class Application(Frame):
         """
         A sampler method to test adding and removing shapes.
         """
-        id1 = self.add_lines(self.point_grid.circle(1,complex(1,1)))
+        id1 = self.add_lines(self.point_grid.circle(1, complex(1, 1)))
         id2 = self.add_lines(self.point_grid.grid_lines(complex(-1, 1), complex(1, -1), 10, 10))
         #self.remove_from_collection(id1)
 
@@ -248,7 +251,6 @@ class Application(Frame):
         for line in list_of_lines:
             self.point_grid.add_line(line)
         self.point_grid.changed_flag_unhandled = True
-        
         return self.add_to_collection(list_of_lines)
 
     def build_circle(self, radius, center=complex(0, 0)):
@@ -298,13 +300,13 @@ class Application(Frame):
             steps_from_user = int(self.n_entry.get())
         except Exception:
             steps_from_user = 1 #no animation
-        #interval cannot be changed after launch
         self.point_grid.provide_function(function_objects, steps_from_user, self.flattend_lines())
+        #code for if this is the initial run of the launch method
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
-            self.update_graph(self.plot_object)
-            interval = self.default_interval
-            self.plot_object.anim._interval = interval
+            self.update_graph()
+        #set the animation to the beginning
+        self.plot_object.frame_number = 0
         #set the boolean that controls the outlier operation in the pointgrid to that of the user
         self.plot_object.grid.remove_outliers = self.outlier_remover.get() == 1
         self.plot_object.new_limits()
@@ -352,39 +354,66 @@ class Application(Frame):
             #return the numeric value of the user data multiplied by its sign
             return float(is_there_a_negative_sign)*multiplier
 
-    def update_graph(self, plot_object):
+    def update_graph(self):
         """
         Create the frame on which the matplotlib figure will be displayed.
         Also, kick off the animation.
         """
-        self.canvas = FigureCanvasTkAgg(plot_object.fig, master=ROOT)
+        self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=ROOT)
+        self.plot_object.fig.canvas.mpl_connect('button_press_event', self.plot_object.toggle_pause)
         #self.canvas.show()
         self.canvas.get_tk_widget().grid(row=0, column=0, columnspan=6)
         #self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
-        interval = self.default_interval
         self.animating_already = True
-        plot_object.animate(interval_length=interval)
-        
+        self.plot_object.animate(interval_length=self.default_interval)
+
     def circle_popup(self):
         """
         Launch the circle popup window
         then buil the circle
         """
-        self.popup_window = circle_builder_popup(self.master)
+        self.popup_open()
+        self.popup_window = CircleBuilderPopup(self.master)
         self.master.wait_window(self.popup_window.top)
-        self.build_circle(self.popup_window.circle_tuple[0], self.popup_window.circle_tuple[1])
-        self.launch()
-    
+        try:
+            self.build_circle(self.popup_window.circle_tuple[0], self.popup_window.circle_tuple[1])
+            self.launch()
+        except AttributeError:
+            print("no data")
+        self.popup_close()
+
     def grid_popup(self):
         """
         launch a pop-up window to build a user-defined grid
         then build the grid
         """
-        self.popup_window = grid_builder_popup(self.master)
+        self.popup_open()
+        self.popup_window = GridBuilderPopup(self.master)
         self.master.wait_window(self.popup_window.top)
-        self.build_grid(self.popup_window.top_left, self.popup_window.bottom_right,
-                        self.popup_window.lines)
-        self.launch()
+        try:
+            self.build_grid(self.popup_window.top_left, self.popup_window.bottom_right,
+                            self.popup_window.lines)
+            self.launch()
+        except AttributeError:
+            print("no data")
+        self.popup_close()
+
+    def popup_open(self):
+        """
+        Checks and stores if the animation is paused, then pauses the animation
+        """
+        self.already_paused = False
+        if not self.plot_object.pause:
+            self.plot_object.pause_animation()
+        else:
+            self.already_paused = True
+
+    def popup_close(self):
+        """
+        Resumes the animation if the user had the animation running before launching the popup
+        """
+        if not self.already_paused:
+            self.plot_object.resume_animation()
 
 ROOT = Tk()
 WINDOW = Application(master=ROOT)

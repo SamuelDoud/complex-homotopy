@@ -23,13 +23,16 @@ class PlotWindow(object):
         """
         Create the intial state of the plot. This will just be the image of z onto z.
         """
+        self.pause = False
+        self.frame_number = 0
         self.anim = None
         self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
         self.fig = plt.figure(figsize=(6, 6), dpi=100)
+        self.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
         #Writer = animation.writers['ffmpeg']
-        #self.ffmpeg_writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+        #self.ffmpeg_writer = Writer(fps=66, metadata=dict(artist='Me'), bitrate=1800)
         self.updating_limits = updating_limits #
         self.new_limits() #take the inital limits from self.grid and apply to the graph
         self.lines = [self.axes.plot([], [],
@@ -41,6 +44,26 @@ class PlotWindow(object):
         self._end_color = end_color #rgb tuple that specify the color endpoints
         self.color = list(self._start_color) #the color that will actually be displayed
         self.reset_color_diff()
+
+    def toggle_pause(self, event):
+        """
+        Toggles the pause variable through true and false
+        """
+        #XOR the bool to flip it
+        self.pause ^= True
+
+    def pause_animation(self):
+        """
+        The user has run a command to pause the animation
+        For example, opening a grid builder
+        """
+        self.pause = True
+
+    def resume_animation(self):
+        """
+        The user has ran a command to resume the animation
+        """
+        self.pause = False
 
     def set_start_color(self, color_tuple):
         """
@@ -88,26 +111,29 @@ class PlotWindow(object):
         """
         Function that returns the lines that will be used to display this graph.
         """
-        if self.grid.changed_flag_unhandled:
-                self.lines = [self.axes.plot([], [],
-                                                lw=self.grid.lines[line].width)[0]
-                                for line in range(len(self.grid.lines))]
-                if not self.grid.lines:
-                    self.lines=[]
-                else:
-                    self.grid.pre_compute()
-                self.grid.changed_flag_unhandled = False
-        if 1 == 0 and self.updating_limits: #not implemented yet
-            self.grid.limits_at_step(step)
-            self.new_limits()
-        #this will actually update the graph (on the fly computation) using list comp
-        [self.lines[index].set_data(line[REAL],
-                                    line[IMAG])
-         for index, line in enumerate(self.grid.pre_computed_steps(step))]
-        self.color_compute(step)
-        for line in self.lines: #apply the color to every line
-            line._color = self.color
-        #saving this data is too memory intensive for the small amount of computational power req'd
+        #ignore the step from the animation call!
+        #compute if the user has not paused the program
+        if not self.pause:
+            if self.grid.changed_flag_unhandled:
+                    self.lines = [self.axes.plot([], [], lw=self.grid.lines[line].width)[0] 
+                                  for line in range(len(self.grid.lines))]
+                    if not self.grid.lines:
+                        self.lines = []
+                    else:
+                        self.grid.pre_compute()
+                    self.grid.changed_flag_unhandled = False
+            #this will actually update the graph (on the fly computation) using list comp
+            [self.lines[index].set_data(line[REAL],
+                                        line[IMAG])
+             for index, line in enumerate(self.grid.pre_computed_steps(self.frame_number))]
+            self.color_compute(self.frame_number)
+            for line in self.lines: #apply the color to every line
+                line._color = self.color
+            #saving this data is too memory intensive for the small amount of computational power req'd
+            #increment the frame number
+            self.frame_number += 1
+            #set the frame number to the number of steps defined in the grid
+            self.frame_number %= self.grid.n_steps
         return self.lines
 
     def color_compute(self, step):
