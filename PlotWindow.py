@@ -89,12 +89,6 @@ class PlotWindow(object):
         for index in range(len(self._end_color)):
             self.color_diff.append(self._end_color[index] - self._start_color[index])
 
-    def start(self):
-        """
-        Go to the intial state of the homotopy, namely z.
-        """
-        return self.animate_compute(0) #Takes what would be the first frame
-
     def save(self, filename, video=False, gif=False):
         """
         Save the homotopy as a video file or animated image file
@@ -166,7 +160,7 @@ class PlotWindow(object):
         """
         Run the animation through the parameters passed, namely the interval between frames
         """
-        self.anim = animation.FuncAnimation(self.fig, self.animate_compute, init_func=self.start,
+        self.anim = animation.FuncAnimation(self.fig, self.animate_compute,
                                             interval=interval_length, blit=True, frames=self.grid.n_steps)
 def show():
     """
