@@ -7,6 +7,10 @@ import PointGrid
 import PlotWindow
 import ComplexFunction as func
 
+#constants for checkboxes
+ON = 1
+OFF = 0
+
 class CircleBuilderPopup(object):
     """
     Class that launches a popup and collects user data to pass data back to the main window
@@ -76,7 +80,7 @@ class GridBuilderPopup(object):
         self.bottom_right = complex(self.bottom_right_entry.get())
         #If these conditions are true then we do not have a grid
         if self.top_left.real > self.bottom_right.real or self.bottom_right.imag > self.top_left.imag or self.lines == 0:
-            self.bottom_right = self.top_left = complex(0,0)
+            self.bottom_right = self.top_left = complex(0, 0)
             self.lines = 0
         self.top.destroy()
 
@@ -122,10 +126,10 @@ class Application(Frame):
         #checkbox to control outlier logic
         self.outlier_remover_checkbox = Checkbutton(ROOT, text="Remove outliers",
                                                      variable=self.outlier_remover,
-                                                     onvalue=1, offvalue=0, height=1, width=12)
+                                                     onvalue=ON, offvalue=OFF, height=1, width=12)
         self.reverse_checkbox = Checkbutton(ROOT, text="Reverse",
                                                      variable=self.reverse_checkbox_var,
-                                                     onvalue=1, offvalue=0, height=1, width=6)
+                                                     onvalue=ON, offvalue=OFF, height=1, width=6)
         self.pop_from_collection = Button(ROOT, text="Remove last", command=self.remove_from_collection)
         self.submit = Button(ROOT, text="Submit", command=self.launch)
         self.function_label = Label(ROOT, text="Enter a f(z)")
@@ -307,7 +311,7 @@ class Application(Frame):
         except Exception:
             steps_from_user = 1 #no animation
         #get tif the user has check the animation box
-        reverse = self.reverse_checkbox_var.get() == 1
+        reverse = self.reverse_checkbox_var.get() == ON
         self.point_grid.provide_function(function_objects, steps_from_user, self.flattend_lines(),
                                          reverse=reverse)
         #code for if this is the initial run of the launch method
@@ -319,7 +323,7 @@ class Application(Frame):
         #set the animation to the beginning
         self.plot_object.frame_number = 0
         #set the boolean that controls the outlier operation in the pointgrid to that of the user
-        self.plot_object.grid.remove_outliers = self.outlier_remover.get() == 1
+        self.plot_object.grid.remove_outliers = self.outlier_remover.get() == ON
         self.plot_object.new_limits()
 
     def fetch_limits(self):
