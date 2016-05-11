@@ -1,4 +1,6 @@
-﻿from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, BOTTOM, BOTH
+﻿import time
+
+from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -79,7 +81,8 @@ class GridBuilderPopup(object):
         self.top_left = complex(self.top_left_entry.get())
         self.bottom_right = complex(self.bottom_right_entry.get())
         #If these conditions are true then we do not have a grid
-        if self.top_left.real > self.bottom_right.real or self.bottom_right.imag > self.top_left.imag or self.lines == 0:
+        if (self.top_left.real > self.bottom_right.real
+                or self.bottom_right.imag > self.top_left.imag or self.lines == 0):
             self.bottom_right = self.top_left = complex(0, 0)
             self.lines = 0
         self.top.destroy()
@@ -96,6 +99,9 @@ class Application(Frame):
         """
         Frame.__init__(self, master)
         ROOT.title("Complex Homotopy")
+        #bind the return key to the launch function
+        #analogous to hitting the submit button
+        ROOT.bind("<Return>", self.launch_return_key)
         #how long between frames in milliseconds
         self.default_interval = 15
         self.id_number_counter = 0
@@ -125,12 +131,13 @@ class Application(Frame):
         common_bd = 5
         #checkbox to control outlier logic
         self.outlier_remover_checkbox = Checkbutton(ROOT, text="Remove outliers",
-                                                     variable=self.outlier_remover,
-                                                     onvalue=ON, offvalue=OFF, height=1, width=12)
+                                                    variable=self.outlier_remover,
+                                                    onvalue=ON, offvalue=OFF, height=1, width=12)
         self.reverse_checkbox = Checkbutton(ROOT, text="Reverse",
-                                                     variable=self.reverse_checkbox_var,
-                                                     onvalue=ON, offvalue=OFF, height=1, width=6)
-        self.pop_from_collection = Button(ROOT, text="Remove last", command=self.remove_from_collection)
+                                            variable=self.reverse_checkbox_var,
+                                            onvalue=ON, offvalue=OFF, height=1, width=6)
+        self.pop_from_collection = Button(ROOT, text="Remove last",
+                                          command=self.remove_from_collection)
         self.submit = Button(ROOT, text="Submit", command=self.launch)
         self.function_label = Label(ROOT, text="Enter a f(z)")
         self.save_video = Button(ROOT, text="Save as Video", command=self.save_video_handler)
@@ -147,7 +154,7 @@ class Application(Frame):
         self.function_entry = Entry(ROOT, bd=common_bd)
         self.n_entry = Entry(ROOT, bd=common_bd)
         self.circle_launcher = Button(ROOT, command=self.circle_popup, text="Circle Builder")
-        self.grid_launcher = Button(ROOT, command=self.grid_popup , text="Grid Builder")
+        self.grid_launcher = Button(ROOT, command=self.grid_popup, text="Grid Builder")
 
     def pack_widgets(self):
         """
@@ -238,9 +245,8 @@ class Application(Frame):
         """
         A sampler method to test adding and removing shapes.
         """
-        id1 = self.add_lines(self.point_grid.circle(1, complex(1, 1)))
-        id2 = self.add_lines(self.point_grid.grid_lines(complex(-1, 1), complex(1, -1), 10, 10))
-        #self.remove_from_collection(id1)
+        self.add_lines(self.point_grid.circle(1, complex(1, 1)))
+        self.add_lines(self.point_grid.grid_lines(complex(-1, 1), complex(1, -1), 10, 10))
 
     def flattend_lines(self):
         """
@@ -273,14 +279,26 @@ class Application(Frame):
         """
         Build a grid from a popup.
         """
-        return self.add_lines(self.point_grid.grid_lines(upper_right, lower_left, lines_num, lines_num))
+        return self.add_lines(self.point_grid.grid_lines(upper_right,
+                                                         lower_left, lines_num, lines_num))
 
     def save_video_handler(self):
         """
         Dispatches the Plot to save the video.
         Should implement a filename prompt.
         """
-        self.plot_object.save(self.current_function, video=True)
+        #need to go to the beginning of the animation
+        self.plot_object.frame_number = 0
+        #now actually save the graph
+        self.plot_object.save(str(time.time()), video=True)
+
+    def launch_return_key(self, entry):
+        """
+        THis is the path if hte user presses the entry key.
+        Since binding sends an entry, this is a way to deal with that and reuse the
+        launch method below
+        """
+        self.launch()
 
     def launch(self):
         """
@@ -317,7 +335,7 @@ class Application(Frame):
         #code for if this is the initial run of the launch method
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
-            self.update_graph()
+        self.update_graph()
         #allows the color computation to deal with if the animation is reversing
         self.plot_object.reverse = reverse
         #set the animation to the beginning

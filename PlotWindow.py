@@ -3,8 +3,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-plt.rcParams['animation.ffmpeg_path'] = 'C:\ffmpeg'
-
 REAL = 0
 IMAG = 1
 INDEX = 2
@@ -32,8 +30,8 @@ class PlotWindow(object):
         self.fig = plt.figure(figsize=(6, 6), dpi=100)
         self.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
-        #Writer = animation.writers['ffmpeg']
-        #self.ffmpeg_writer = Writer(fps=66, metadata=dict(artist='Me'), bitrate=1800)
+        Writer = animation.writers['ffmpeg']
+        self.ffmpeg_writer = Writer(fps=5, bitrate=1800)
         self.updating_limits = updating_limits #
         self.new_limits() #take the inital limits from self.grid and apply to the graph
         self.lines = [self.axes.plot([], [],
@@ -103,7 +101,7 @@ class PlotWindow(object):
         """
         #raise NotImplementedError #need to install FFMPEG
         if video:
-            self.anim.save(filename + '.mp4', fps=30, extra_args=['-vcodec', 'libx264'],
+            self.anim.save(filename + '.mp4', extra_args=['-vcodec', 'libx264'],
                            writer=self.ffmpeg_writer)
         if gif:
             raise NotImplementedError
@@ -116,13 +114,13 @@ class PlotWindow(object):
         #compute if the user has not paused the program
         if not self.pause:
             if self.grid.changed_flag_unhandled:
-                    self.lines = [self.axes.plot([], [], lw=self.grid.lines[line].width)[0] 
-                                  for line in range(len(self.grid.lines))]
-                    if not self.grid.lines:
-                        self.lines = []
-                    else:
-                        self.grid.pre_compute()
-                    self.grid.changed_flag_unhandled = False
+                self.lines = [self.axes.plot([], [], lw=self.grid.lines[line].width)[0] 
+                              for line in range(len(self.grid.lines))]
+                if not self.grid.lines:
+                    self.lines = []
+                else:
+                    self.grid.pre_compute()
+                self.grid.changed_flag_unhandled = False
             #this will actually update the graph (on the fly computation) using list comp
             [self.lines[index].set_data(line[REAL],
                                         line[IMAG])
@@ -130,7 +128,7 @@ class PlotWindow(object):
             self.color_compute(self.frame_number)
             for line in self.lines: #apply the color to every line
                 line._color = self.color
-            #saving this data is too memory intensive for the small amount of computational power req'd
+            #saving this data is too memory intensive for the small computational power req'd
             #increment the frame number
             self.frame_number += 1
             #set the frame number to the number of steps defined in the grid
@@ -169,7 +167,7 @@ class PlotWindow(object):
         Run the animation through the parameters passed, namely the interval between frames
         """
         self.anim = animation.FuncAnimation(self.fig, self.animate_compute, init_func=self.start,
-                                            interval=interval_length, blit=True)
+                                            interval=interval_length, blit=True, frames=self.grid.n_steps)
 def show():
     """
     Show the plot. Not really useful in the MainWindow.
