@@ -130,6 +130,7 @@ class Line(object):
                        ComplexPoint.ComplexPoint(singularity_point - epsilon, True))
                       for epsilon in [complex(10 ** (-1 * power), 10 ** (-1 * power)) for power in
                                       np.linspace(start, end, samples)]]
+        #take every poin and use the inject points method on it
         map(self.inject_points, new_points)
 
     def inject_points(self, tuple_of_pm_epsilon):

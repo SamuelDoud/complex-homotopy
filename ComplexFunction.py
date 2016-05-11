@@ -17,6 +17,7 @@ class ComplexFunction(object):
         Given a function, in either string or expression format, create an object that
         can evaluate any complex number given to it.
         """
+        #TODO regex cleaning of expression
         self.expr = sympify(expression)
         #self.z = symbols('z', complex=True)
         self.f_z = lambdify(z, self.expr, "numpy")

@@ -197,7 +197,8 @@ class PointGrid(object):
                                      self.imag_max, self.imag_min))
         else:
             #tuple unpacking from memory as this limit has already been determined
-            self.real_max, self.real_min, self.imag_max, self.imag_min = self.limit_mem[step % self.n_steps]
+            (self.real_max, self.real_min,
+             self.imag_max, self.imag_min) = self.limit_mem[step % self.n_steps]
 
     def set_limits_agnostic(self, reals, imags):
         """
@@ -248,7 +249,8 @@ class PointGrid(object):
             self.changed_flag_unhandled = True
             self.pre_compute()
 
-    def provide_function(self, functions, number_of_steps_to_compute, collection_of_lines, reverse=False):
+    def provide_function(self, functions, number_of_steps_to_compute,
+                         collection_of_lines, reverse=False):
         """Give a complex function to this function.
         Then, operate on each point by the function
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function
@@ -264,7 +266,8 @@ class PointGrid(object):
         singularity = []
         for line_index in range(len(self.lines)):
             singularity.append(self.lines[line_index].parameterize_points(functions,
-                                                                          number_of_steps_to_compute, reverse=reverse))
+                                                                          number_of_steps_to_compute,
+                                                                          reverse=reverse))
         #set the steps now so the program doesn't have to do this on the fly
         #this is actually taking the number of steps at the first point on the first line only
         #assuming that this is going to be consistent throughout the plane
