@@ -28,10 +28,11 @@ class PlotWindow(object):
         self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
         self.fig = plt.figure(figsize=(6, 6), dpi=100)
+        #clicking the graph fires the launch method
         self.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
-        Writer = animation.writers['ffmpeg']
-        self.ffmpeg_writer = Writer(fps=5, bitrate=1800)
+        ffmpeg_animation_writer = animation.writers['ffmpeg']
+        self.ffmpeg_writer = ffmpeg_animation_writer(fps=5, bitrate=1800)
         self.updating_limits = updating_limits #
         self.new_limits() #take the inital limits from self.grid and apply to the graph
         self.lines = [self.axes.plot([], [],
@@ -96,12 +97,13 @@ class PlotWindow(object):
         #save the frame number the user is currently on
         old_frame_number = self.frame_number
         #jummp to the first frame so this is the first frame of the video
+        #need to do this as frame_number is detached from the animation method
         self.frame_number = 0
         #determine if the animation is paused currently
         paused_state = self.pause
         #if the animation is not paused, pause it
         if not self.pause:
-            pause = True
+            self.pause = True
         if video:
             self.anim.save(self.grid.filename + '.mp4', extra_args=['-vcodec', 'libx264'],
                            writer=self.ffmpeg_writer)
@@ -111,7 +113,7 @@ class PlotWindow(object):
         self.frame_number = old_frame_number
         if not paused_state:
             #the user had the animation running earlier
-            pause = False
+            self.pause = False
 
     def animate_compute(self, step):
         """
@@ -121,20 +123,17 @@ class PlotWindow(object):
         #compute if the user has not paused the program
         if not self.pause:
             if self.grid.changed_flag_unhandled:
-                self.lines = [self.axes.plot([], [], lw=self.grid.lines[line].width)[0] 
+                self.lines = [self.axes.plot([], [], lw=self.grid.lines[line].width)[0]
                               for line in range(len(self.grid.lines))]
                 if not self.grid.lines:
                     self.lines = []
                 else:
                     self.grid.pre_compute()
                 self.grid.changed_flag_unhandled = False
-            #this will actually update the graph (on the fly computation) using list comp
-            [self.lines[index].set_data(line[REAL],
-                                        line[IMAG])
-             for index, line in enumerate(self.grid.pre_computed_steps(self.frame_number))]
             self.color_compute(self.frame_number)
-            for line in self.lines: #apply the color to every line
-                line._color = self.color
+            for index, line in enumerate(self.grid.pre_computed_steps(self.frame_number)):
+                self.lines[index].set_data(line[REAL], line[IMAG])
+                self.lines[index]._color = self.color
             #saving this data is too memory intensive for the small computational power req'd
             #increment the frame number
             self.frame_number += 1
