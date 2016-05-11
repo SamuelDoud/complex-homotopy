@@ -287,10 +287,8 @@ class Application(Frame):
         Dispatches the Plot to save the video.
         Should implement a filename prompt.
         """
-        #need to go to the beginning of the animation
-        self.plot_object.frame_number = 0
         #now actually save the graph
-        self.plot_object.save(str(time.time()), video=True)
+        self.plot_object.save(video=True)
 
     def launch_return_key(self, entry):
         """

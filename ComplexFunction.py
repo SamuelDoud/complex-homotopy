@@ -17,6 +17,7 @@ class ComplexFunction(object):
         Given a function, in either string or expression format, create an object that
         can evaluate any complex number given to it.
         """
+        self.filename = generate_filename(expression)
         #TODO regex cleaning of expression
         self.expr = sympify(expression)
         #self.z = symbols('z', complex=True)
@@ -36,3 +37,20 @@ class ComplexFunction(object):
         except ZeroDivisionError:
             #send the error back to the line class for error handling
             raise ZeroDivisionError
+
+def generate_filename(expression):
+    """
+    Takes the expression and generates a filename from it
+    removes the illegal characters and such
+    """
+    #only do if the expression is a string (passed by user)
+    if isinstance(expression, str):
+        expression = expression.replace("**", "_to_the_")
+        expression = expression.replace("+", "_plus_")
+        expression = expression.replace("-", "_minus_")
+        expression = expression.replace("/", "_divided_by_")
+        expression = expression.replace("*", "_times_")
+        return expression
+    return None
+
+

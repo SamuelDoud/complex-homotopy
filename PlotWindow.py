@@ -89,16 +89,29 @@ class PlotWindow(object):
         for index in range(len(self._end_color)):
             self.color_diff.append(self._end_color[index] - self._start_color[index])
 
-    def save(self, filename, video=False, gif=False):
+    def save(self, video=False, gif=False):
         """
         Save the homotopy as a video file or animated image file
         """
-        #raise NotImplementedError #need to install FFMPEG
+        #save the frame number the user is currently on
+        old_frame_number = self.frame_number
+        #jummp to the first frame so this is the first frame of the video
+        self.frame_number = 0
+        #determine if the animation is paused currently
+        paused_state = self.pause
+        #if the animation is not paused, pause it
+        if not self.pause:
+            pause = True
         if video:
-            self.anim.save(filename + '.mp4', extra_args=['-vcodec', 'libx264'],
+            self.anim.save(self.grid.filename + '.mp4', extra_args=['-vcodec', 'libx264'],
                            writer=self.ffmpeg_writer)
         if gif:
             raise NotImplementedError
+        #return to the frame that the user was on before they saved
+        self.frame_number = old_frame_number
+        if not paused_state:
+            #the user had the animation running earlier
+            pause = False
 
     def animate_compute(self, step):
         """
@@ -161,7 +174,8 @@ class PlotWindow(object):
         Run the animation through the parameters passed, namely the interval between frames
         """
         self.anim = animation.FuncAnimation(self.fig, self.animate_compute,
-                                            interval=interval_length, blit=True, frames=self.grid.n_steps)
+                                            interval=interval_length,
+                                            blit=True, frames=self.grid.n_steps)
 def show():
     """
     Show the plot. Not really useful in the MainWindow.

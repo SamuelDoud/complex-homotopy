@@ -259,6 +259,13 @@ class PointGrid(object):
         for line in collection_of_lines:
             self.add_line(line)
         self.functions = functions
+        #get the total filename of the function
+        #start with the first function
+        self.filename = self.functions[0].filename
+        #then go through the rest
+        if len(self.functions) > 1:
+            for function in self.functions[1:]:
+                self.filename = self.filename + ";" + function.filename
         #delete these lines. Their existence determines actions
         self.computed_steps_to_consider = []
         #wipe the memory of the limits and creates a list of size n_steps
