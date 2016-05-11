@@ -26,14 +26,14 @@ class ComplexFunction(object):
         #Lamdba numby operations greatly speed up operations on
         #large amounts of data with inital overhead
 
-    def evaluate_at_point(self, input):
+    def evaluate_at_point(self, point_in_domain):
         """
         Take a z and apply it to the function. Basically returning f(z).
         Additional logic to hand complex number to the correct evalulation
         function.
         """
         try:
-            return self.f_z(input)
+            return self.f_z(point_in_domain)
         except ZeroDivisionError:
             #send the error back to the line class for error handling
             raise ZeroDivisionError

@@ -1,6 +1,4 @@
-﻿import time
-
-from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar
+﻿from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -23,6 +21,7 @@ class CircleBuilderPopup(object):
         Establish the GUI of this popup
         """
         self.top = Toplevel(master)
+        self.circle_tuple = (0, 0)
         self.radius = Label(self.top, text="Radius")
         self.radius_entry = Entry(self.top, bd=5)
         self.center = Label(self.top, text="Center")
@@ -56,6 +55,9 @@ class GridBuilderPopup(object):
         Establish the GUI of this popup
         """
         self.top = Toplevel(master)
+        self.top_left = complex(0, 0)
+        self.bottom_right = complex(0, 0)
+        self.lines = 0
         self.top_left_label = Label(self.top, text="\"Top Left\"")
         self.top_left_entry = Entry(self.top, bd=5)
         self.bottom_right_label = Label(self.top, text="\"Bottom Right\"")
@@ -75,7 +77,6 @@ class GridBuilderPopup(object):
         """
         Collect the data from the user and package it into object variables, then close.
         """
-        self.lines = 0
         if self.resolution_entry.get().isnumeric():
             self.lines = int(self.resolution_entry.get())
         self.top_left = complex(self.top_left_entry.get())
@@ -120,6 +121,7 @@ class Application(Frame):
         self.pack_widgets()
         self.animating_already = False
         self.already_paused = False
+        self.popup_window = None
         self.build_sample()
         #show the graph
         self.launch()

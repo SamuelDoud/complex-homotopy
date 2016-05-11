@@ -24,7 +24,7 @@ class PointGrid(object):
         self.user_limits = limits
         self.remove_outliers = remove_outliers
         if self.user_limits:
-            self.set_user_limits()
+            self.set_user_limits(self.user_limits)
         else:
             self.real_max = None
             self.real_min = None
@@ -35,6 +35,8 @@ class PointGrid(object):
         self.n_lines = 0
         self.complex_variable_symbol = symbols('z', complex=True)
         self.limit_mem = [None] * (self.n_steps + 2)
+        self.filename = "z"
+        self.functions = ComplexFunction.ComplexFunction(self.filename)
 
     def delete(self, group_number):
         """
