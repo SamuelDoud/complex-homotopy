@@ -104,7 +104,8 @@ class Application(Frame):
         #analogous to hitting the submit button
         ROOT.bind("<Return>", self.launch_return_key)
         #how long between frames in milliseconds
-        self.default_interval = 15
+        self.default_interval = 100
+        self.function_objects = []
         self.id_number_counter = 0
         self.line_collection = []
         self.canvas = None
@@ -197,7 +198,7 @@ class Application(Frame):
         #return the id tag less one (as to refer to this object)
         return self.id_number_counter - 1
 
-    def remove_from_collection(self, id_number=None):
+    def remove_from_collection(self, id_number=None, top=False):
         """
         Removes a line collection from the list. If no index is passed, the collection is
         treated like a stack
@@ -205,43 +206,47 @@ class Application(Frame):
         #search for the line
         #This is an ordered set. Using a binary search
         #did the user pass a value for id_number?
-        if id_number:
-            try:
-                length = len(self.line_collection)
-                index = length // 2
-                last_index = index + 1
-                #how much to move the index by every step
-                delta = index // 2 + 1
-                while self.line_collection[index][1] != id_number:
-                    if self.line_collection[index][1] > id_number:
-                        index -= delta
-                    else:
-                        index += delta
-                    if last_index == index:
-                        return False
-                    last_index = index
-                    delta //= 2
-                self.line_collection.pop(index)
-                #redraw
-                self.point_grid.new_lines(self.flattend_lines())
-                return True
-            except IndexError:
-                return False
+        if top:
+            #user wants the first element removed
+            self.line_collection.pop(0)
         else:
-            if self.line_collection:
-                self.line_collection.pop()
-                self.point_grid.new_lines(self.flattend_lines())
-                return True
+            if id_number:
+                try:
+                    length = len(self.line_collection)
+                    index = length // 2
+                    last_index = index + 1
+                    #how much to move the index by every step
+                    delta = index // 2 + 1
+                    while self.line_collection[index][1] != id_number:
+                        if self.line_collection[index][1] > id_number:
+                            index -= delta
+                        else:
+                            index += delta
+                        if last_index == index:
+                            return False
+                        last_index = index
+                        delta //= 2
+                    self.line_collection.pop(index)
+                except IndexError:
+                    return False
             else:
-                return False
+                #user did not pass an id number. pop from top of stack
+                if self.line_collection:
+                    self.line_collection.pop()
+                else:
+                    return False
+        self.point_grid.provide_function(self.function_objects, self.point_grid.n_steps,
+                                         self.flattened_lines(),
+                                         self.reverse_checkbox_var.get() == ON)
+        #start the animation back up
+        return True
 
     def remove_first(self):
         """
         Take the first item on the collection and remove it.
         Then recalculate the graph.
         """
-        self.line_collection.pop(0)
-        self.point_grid.new_lines(self.flattend_lines())
+        self.remove_from_collection(top=True)
 
     def build_sample(self):
         """
@@ -250,7 +255,7 @@ class Application(Frame):
         self.add_lines(self.point_grid.circle(1, complex(1, 1)))
         self.add_lines(self.point_grid.grid_lines(complex(-1, 1), complex(1, -1), 10, 10))
 
-    def flattend_lines(self):
+    def flattened_lines(self):
         """
         The collection of lines is a list of tuples with
         each tuple containing a list of lines and an id.
@@ -308,7 +313,7 @@ class Application(Frame):
         #take the input from the user.. if its null, set ito the identity function
         self.point_grid.set_user_limits(self.fetch_limits())
         if self.function_entry.get():
-            function_objects = []
+            self.function_objects = []
             function_strings = str(self.function_entry.get()).split(';') #split by the semi-colon
             for function_string in function_strings:
                 #add each passed string to the list of functions
@@ -319,20 +324,21 @@ class Application(Frame):
                     #fallback to the identity function
                     function_object = self.identity_function
                 #add the user or identity function to the function stack
-                function_objects.append(function_object)
+                self.function_objects.append(function_object)
         else:
             #fallback to identity if no string is provided
-            function_objects = [self.identity_function]
+            self.function_objects = [self.identity_function]
         try:
             #see if the user supplied a number of steps.
             steps_from_user = int(self.n_entry.get())
         except Exception:
             steps_from_user = 1 #no animation
-        #get tif the user has check the animation box
+        #get if the user has checked the reverse animation box
         reverse = self.reverse_checkbox_var.get() == ON
-        self.point_grid.provide_function(function_objects, steps_from_user, self.flattend_lines(),
+        self.point_grid.provide_function(self.function_objects, steps_from_user, self.flattened_lines(),
                                          reverse=reverse)
         #code for if this is the initial run of the launch method
+        #prevents the application from launching unneeded windows
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
         self.update_graph()

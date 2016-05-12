@@ -48,6 +48,7 @@ class ComplexPoint(object):
             return self.point_order[index]
         except IndexError:
             return None
+
     def add_reverse_to_point_order(self):
         """
         Take the point order and merge its head to its tail to emulate a loop

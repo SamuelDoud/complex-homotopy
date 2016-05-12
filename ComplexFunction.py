@@ -34,7 +34,7 @@ class ComplexFunction(object):
         """
         try:
             return self.f_z(point_in_domain)
-        except ZeroDivisionError:
+        except:
             #send the error back to the line class for error handling
             raise ZeroDivisionError
 

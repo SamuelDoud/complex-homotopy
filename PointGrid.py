@@ -13,7 +13,7 @@ class PointGrid(object):
     """
     Point Grid holds all the points on the graph and their associations
     """
-    def __init__(self, limits=None, remove_outliers=True):
+    def __init__(self, limits=None, remove_outliers=True, lines=[]):
         """
         Create a point grid.
         """
@@ -30,7 +30,7 @@ class PointGrid(object):
             self.real_min = None
             self.imag_max = None
             self.imag_min = None
-        self.lines = []
+        self.lines = lines
         self.n_steps = 1
         self.n_lines = 0
         self.complex_variable_symbol = symbols('z', complex=True)
@@ -243,23 +243,25 @@ class PointGrid(object):
         """
         Remove lines from the Point Grid
         """
-        self.lines = []
         if lines_to_add:
             self.lines = lines_to_add
             #adding sequentally protects
-            self.n_lines = len(self.lines)
-            self.changed_flag_unhandled = True
-            self.pre_compute()
-
+            #self.pre_compute()
+        else:
+            self.lines = []
+        #self.changed_flag_unhandled = True
+ 
     def provide_function(self, functions, number_of_steps_to_compute,
                          collection_of_lines, reverse=False):
         """Give a complex function to this function.
         Then, operate on each point by the function
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function
         after this function is completed, all the points will have their homotopy computed"""
+        self.lines = collection_of_lines
         self.new_lines()
         for line in collection_of_lines:
             self.add_line(line)
+        self.n_lines = len(self.lines)
         self.functions = functions
         #get the total filename of the function
         #start with the first function
@@ -273,14 +275,17 @@ class PointGrid(object):
         #wipe the memory of the limits and creates a list of size n_steps
         self.limit_mem = [None] * (self.n_steps)
         singularity = []
-        for line_index in range(len(self.lines)):
+        for line_index in range(self.n_lines):
             singularity.append(self.lines[line_index].parameterize_points(functions,
                                                                           number_of_steps_to_compute,
                                                                           reverse=reverse))
         #set the steps now so the program doesn't have to do this on the fly
         #this is actually taking the number of steps at the first point on the first line only
         #assuming that this is going to be consistent throughout the plane
-        self.n_steps = self.lines[0].number_of_steps
+        try:
+            self.n_steps = self.lines[0].number_of_steps
+        except IndexError:
+            self.n_steps = 1
         #if a singularity exists, set the lines to consider limit
         if any(singularity):
             self.lines_to_consider()

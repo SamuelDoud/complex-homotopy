@@ -1,4 +1,5 @@
 ﻿import math
+import time
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -21,9 +22,11 @@ class PlotWindow(object):
         """
         Create the intial state of the plot. This will just be the image of z onto z.
         """
+        self.anim = None
         self.reverse = False
         self.pause = False
         self.frame_number = 0
+        self.interval = None
         self.anim = None
         self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
@@ -98,22 +101,20 @@ class PlotWindow(object):
         old_frame_number = self.frame_number
         #jummp to the first frame so this is the first frame of the video
         #need to do this as frame_number is detached from the animation method
-        self.frame_number = 0
+        self.frame_number = -1
         #determine if the animation is paused currently
         paused_state = self.pause
         #if the animation is not paused, pause it
-        if not self.pause:
-            self.pause = True
+        if self.pause:
+            self.pause = False
         if video:
             self.anim.save(self.grid.filename + '.mp4', extra_args=['-vcodec', 'libx264'],
-                           writer=self.ffmpeg_writer)
+                            writer=self.ffmpeg_writer)
         if gif:
             raise NotImplementedError
         #return to the frame that the user was on before they saved
         self.frame_number = old_frame_number
-        if not paused_state:
-            #the user had the animation running earlier
-            self.pause = False
+        self.pause = paused_state
 
     def animate_compute(self, step):
         """
@@ -122,14 +123,12 @@ class PlotWindow(object):
         #ignore the step from the animation call!
         #compute if the user has not paused the program
         if not self.pause:
-            if self.grid.changed_flag_unhandled:
-                self.lines = [self.axes.plot([], [], lw=self.grid.lines[line].width)[0]
-                              for line in range(len(self.grid.lines))]
-                if not self.grid.lines:
-                    self.lines = []
-                else:
-                    self.grid.pre_compute()
-                self.grid.changed_flag_unhandled = False
+            if len(self.lines) != len(self.grid.lines):
+                #there's a new number of lines in the graph
+                self.lines = [self.axes.plot([], [],
+                                     lw=self.grid.lines[line].width)[0]
+                      for line in range(len(self.grid.lines))]
+                self.animate()
             self.color_compute(self.frame_number)
             for index, line in enumerate(self.grid.pre_computed_steps(self.frame_number)):
                 self.lines[index].set_data(line[REAL], line[IMAG])
@@ -139,6 +138,7 @@ class PlotWindow(object):
             self.frame_number += 1
             #set the frame number to the number of steps defined in the grid
             self.frame_number %= self.grid.n_steps
+        #time.sleep(.01)
         return self.lines
 
     def color_compute(self, step):
@@ -158,7 +158,6 @@ class PlotWindow(object):
         for index in range(len(self._start_color)):
             self.color[index] = self._end_color[index] - (self.color_diff[index] * modifier)
 
-
     def new_limits(self):
         """
         Take the new limits and apply them to the plot.
@@ -168,13 +167,17 @@ class PlotWindow(object):
         self.axes.set_xlim([self.grid.real_min, self.grid.real_max])
         self.axes.set_ylim([self.grid.imag_min, self.grid.imag_max])
 
-    def animate(self, interval_length=20):
+    def animate(self, interval_length=200):
         """
         Run the animation through the parameters passed, namely the interval between frames
         """
+        #will call the animation to start at the beginning
+        self.interval = interval_length
+        del self.anim
         self.anim = animation.FuncAnimation(self.fig, self.animate_compute,
                                             interval=interval_length,
                                             blit=True, frames=self.grid.n_steps)
+
 def show():
     """
     Show the plot. Not really useful in the MainWindow.
