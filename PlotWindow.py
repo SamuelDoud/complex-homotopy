@@ -22,10 +22,11 @@ class PlotWindow(object):
         """
         Create the intial state of the plot. This will just be the image of z onto z.
         """
+        self.observers = []
         self.anim = None
         self.reverse = False
         self.pause = False
-        self.frame_number = 0
+        self._frame_number = 0
         self.interval = None
         self.anim = None
         self.grid = grid #the point grid that this graph is to display. Can be changed!
@@ -98,10 +99,10 @@ class PlotWindow(object):
         Save the homotopy as a video file or animated image file
         """
         #save the frame number the user is currently on
-        old_frame_number = self.frame_number
+        old_frame_number = self._frame_number
         #jummp to the first frame so this is the first frame of the video
         #need to do this as frame_number is detached from the animation method
-        self.frame_number = -1
+        self._frame_number = -1
         #determine if the animation is paused currently
         paused_state = self.pause
         #if the animation is not paused, pause it
@@ -113,7 +114,7 @@ class PlotWindow(object):
         if gif:
             raise NotImplementedError
         #return to the frame that the user was on before they saved
-        self.frame_number = old_frame_number
+        self._frame_number = old_frame_number
         self.pause = paused_state
 
     def animate_compute(self, step):
@@ -123,23 +124,40 @@ class PlotWindow(object):
         #ignore the step from the animation call!
         #compute if the user has not paused the program
         if not self.pause:
-            if len(self.lines) != len(self.grid.lines):
+            if len(self.lines) != self.grid.n_lines:
                 #there's a new number of lines in the graph
-                self.lines = [self.axes.plot([], [],
-                                     lw=self.grid.lines[line].width)[0]
-                      for line in range(len(self.grid.lines))]
-                self.animate()
-            self.color_compute(self.frame_number)
-            for index, line in enumerate(self.grid.pre_computed_steps(self.frame_number)):
+                if len(self.lines) > self.grid.n_lines:
+                    self.lines = self.lines[:self.grid.n_lines]
+                else:
+                    self.lines += [None] * (self.grid.n_lines - len(self.lines))
+                #self.animate()
+            self.color_compute(self._frame_number)
+            for index, line in enumerate(self.grid.pre_computed_steps(self._frame_number)):
                 self.lines[index].set_data(line[REAL], line[IMAG])
                 self.lines[index]._color = self.color
             #saving this data is too memory intensive for the small computational power req'd
             #increment the frame number
-            self.frame_number += 1
+            self._frame_number += 1
             #set the frame number to the number of steps defined in the grid
-            self.frame_number %= self.grid.n_steps
+            self._frame_number %= self.grid.n_steps
+            self.set_frame(self.frame_number)
         #time.sleep(.01)
         return self.lines
+
+    def get_frame(self):
+        return self._frame_number
+
+    def set_frame(self, value):
+        if value > 0 and value < self.grid.n_steps:
+            self._frame_number = value
+            for callback in self.observers:
+                callback(self._frame_number)
+
+    frame_number = property(get_frame, set_frame)
+
+    def bind(self, callback):
+        self.observers.append(callback)
+    
 
     def color_compute(self, step):
         """

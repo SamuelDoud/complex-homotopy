@@ -1,4 +1,4 @@
-﻿from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar
+﻿from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, Scale, HORIZONTAL
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -156,6 +156,7 @@ class Application(Frame):
         self.imag_max_entry = Entry(ROOT, bd=common_bd)
         self.function_entry = Entry(ROOT, bd=common_bd)
         self.n_entry = Entry(ROOT, bd=common_bd)
+        self.frame_slider = Scale(ROOT, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame)
         self.circle_launcher = Button(ROOT, command=self.circle_popup, text="Circle Builder")
         self.grid_launcher = Button(ROOT, command=self.grid_popup, text="Grid Builder")
 
@@ -187,6 +188,23 @@ class Application(Frame):
         self.imag_max_entry.grid(row=3, column=3)
         self.imag_min_label.grid(row=3, column=5)
         self.imag_min_entry.grid(row=3, column=4)
+        self.slider_row = 5
+        self.slider_column = 4
+
+    def redraw_slider(self, steps):
+        self.frame_slider.destroy()
+        self.frame_slider = Scale(to=steps * (self.reverse_checkbox_var.get() + 1),
+                                  from_=0, orient=HORIZONTAL, command=self.go_to_frame)
+        self.frame_slider.grid(row=self.slider_row, column=self.slider_column, columnspan=2)
+
+    def go_to_frame(self, event):
+        """
+        Get the value from the slider if the user changes it and set the frame equal to that.
+        """
+        self.plot_object.frame_number = self.frame_slider.get()
+
+    def set_slider(self, frame_number):
+        self.frame_slider.set(frame_number)
 
     def add_to_collection(self, lines):
         """
@@ -335,12 +353,14 @@ class Application(Frame):
             steps_from_user = 1 #no animation
         #get if the user has checked the reverse animation box
         reverse = self.reverse_checkbox_var.get() == ON
-        self.point_grid.provide_function(self.function_objects, steps_from_user, self.flattened_lines(),
-                                         reverse=reverse)
+        self.redraw_slider(steps_from_user)
+        self.point_grid.provide_function(self.function_objects, steps_from_user,
+                                         self.flattened_lines(), reverse=reverse)
         #code for if this is the initial run of the launch method
         #prevents the application from launching unneeded windows
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
+            self.plot_object.bind(self.set_slider)
         self.update_graph()
         #allows the color computation to deal with if the animation is reversing
         self.plot_object.reverse = reverse
