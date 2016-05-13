@@ -192,6 +192,11 @@ class Application(Frame):
         self.slider_column = 4
 
     def redraw_slider(self, steps):
+        """
+        Need to recreate the frame slider if the number of steps change.
+        All this method does is destroys the old slider, create a new one with the current number
+        of steps, and then reinject it to its old spot
+        """
         self.frame_slider.destroy()
         self.frame_slider = Scale(to=steps * (self.reverse_checkbox_var.get() + 1),
                                   from_=0, orient=HORIZONTAL, command=self.go_to_frame)
@@ -204,6 +209,10 @@ class Application(Frame):
         self.plot_object.frame_number = self.frame_slider.get()
 
     def set_slider(self, frame_number):
+        """
+        Take the frame number passed and set the frame slider to it
+        This method is accessed by the observer in the PlotWindow.
+        """
         self.frame_slider.set(frame_number)
 
     def add_to_collection(self, lines):
@@ -360,6 +369,7 @@ class Application(Frame):
         #prevents the application from launching unneeded windows
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
+            #bind the method set_slider to the plot_object
             self.plot_object.bind(self.set_slider)
         self.update_graph()
         #allows the color computation to deal with if the animation is reversing
@@ -392,6 +402,7 @@ class Application(Frame):
         if all_clear:
             return limits
         else:
+            #this is a bad implementation. Just an empty four-tuple if there are no limits
             return (None, None, None, None)
 
     def get_limit_from_entry(self, limit_entry):
@@ -433,9 +444,11 @@ class Application(Frame):
         """
         self.popup_open()
         self.popup_window = CircleBuilderPopup(self.master)
+        #wait for this window to be closed
         self.master.wait_window(self.popup_window.top)
         try:
             self.build_circle(self.popup_window.circle_tuple[0], self.popup_window.circle_tuple[1])
+            #redraw the homotopy
             self.launch()
         except AttributeError:
             print("no data")

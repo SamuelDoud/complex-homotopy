@@ -145,17 +145,28 @@ class PlotWindow(object):
         return self.lines
 
     def get_frame(self):
+        """
+        Returns the current frame of the homotopy
+        """
         return self._frame_number
 
     def set_frame(self, value):
+        """
+        A more complex setter method. Starts like a normal setter, then calls every object in the
+        observer list with the value.
+        """
         if value > 0 and value < self.grid.n_steps:
             self._frame_number = value
             for callback in self.observers:
                 callback(self._frame_number)
 
+    #property value for frame number
     frame_number = property(get_frame, set_frame)
 
     def bind(self, callback):
+        """
+        take the object in callback and append it to the observer
+        """
         self.observers.append(callback)
     
 
