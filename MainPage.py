@@ -1,4 +1,9 @@
-﻿from tkinter import Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, Scale, HORIZONTAL
+﻿import pickle
+import threading
+
+from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, StringVar, Scale, END, FIRST, LAST,
+                     HORIZONTAL, Menu, Menubutton, filedialog)
+import tkinter
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -6,10 +11,15 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import PointGrid
 import PlotWindow
 import ComplexFunction as func
+import ComplexPoint
+import Line
 
 #constants for checkboxes
 ON = 1
 OFF = 0
+
+DATA = 0
+ID = 1
 
 class CircleBuilderPopup(object):
     """
@@ -100,11 +110,23 @@ class Application(Frame):
         """
         Frame.__init__(self, master)
         ROOT.title("Complex Homotopy")
+        #give the icon file to the GUI
+        ROOT.iconbitmap("icon.ico")
         #bind the return key to the launch function
         #analogous to hitting the submit button
         ROOT.bind("<Return>", self.launch_return_key)
         #how long between frames in milliseconds
-        self.default_interval = 100
+        self.default_interval = 250
+        self.animation_thread = None
+        self.extensions = [("Homotopy data", ".cht"), ("All Files", "*")]
+        self.default_extension = ".cht"
+        self.lines_pickle_str = "lines"
+        self.limits_pickle_str = "limits"
+        self.id_counter_pickle_str = "id_counter"
+        self.n_steps_pickle_str = "n_steps"
+        self.functions_pickle_str = "functions"
+        self.reverse_checkbox_pickle_str = "reverse"
+        self.outlier_remover_pickle_str = "outlier"
         self.function_objects = []
         self.id_number_counter = 0
         self.line_collection = []
@@ -114,8 +136,8 @@ class Application(Frame):
         #self.pack()
         self.master = master
         self.point_grid = PointGrid.PointGrid()
-        self.outlier_remover = IntVar()
-        self.outlier_remover.set(0)
+        self.outlier_remover_var = IntVar()
+        self.outlier_remover_var.set(0)
         self.reverse_checkbox_var = IntVar()
         self.reverse_checkbox_var.set(0)
         self.create_widgets()
@@ -124,8 +146,178 @@ class Application(Frame):
         self.already_paused = False
         self.popup_window = None
         self.build_sample()
+        self.menu_creation()
         #show the graph
         self.launch()
+
+    def menu_creation(self):
+        self.menubar = Menu(ROOT)
+        self.file_menu = Menu(self.menubar, tearoff=0)
+        self.edit_menu = Menu(self.menubar, tearoff=0)
+        self.view_menu = Menu(self.menubar, tearoff=0)
+        self.help_menu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=self.file_menu)
+        self.menubar.add_cascade(label="Edit", menu=self.edit_menu)
+        self.menubar.add_cascade(label="View", menu=self.view_menu)
+        self.menubar.add_cascade(label="Help", menu=self.help_menu)
+        self.file_menu_create()
+        ROOT.config(menu=self.menubar)
+
+    def file_menu_create(self):
+        self.file_menu.add_command(label="Save", command=self.save)
+        self.file_menu.add_command(label="Open", command=self.open)
+        self.file_menu.add_command(label="Exit", command=ROOT.quit)
+
+    def save(self):
+        """
+        Serialize the data of the program into a pickle file defined by the user.
+        """
+        data_dict = self.serialize()
+        #get a file name from the user
+        file_name = self.save_file_dialog()
+        #check if the user actually defined a file
+        #(i.e. didn't exit the prompt w/o selecting a file)
+        if file_name:
+            with open(file_name, "wb+") as save_file:
+                pickle.dump(data_dict,save_file)
+
+    def open(self):
+        """
+        Method to open a file that defines a previous state of the program.
+        """
+        file_name = self.open_file_dialog()
+        if not file_name:
+            #user gave a non-existent name
+            return
+        with open(file_name, mode="rb") as open_file:
+            pickle_data = pickle.load(open_file)
+        #unpack this data in another method
+        self.deserialize(pickle_data)
+        
+    def break_apart_lines(self):
+        """
+        Take the line_collection and get the first point in the point order of every point and
+        store that in a list so it can be pickled and reassembled later.
+        """
+        total = []
+        lines = self.line_collection
+        for shape in lines:
+            temp_shape_list = []
+            for line in shape[DATA]:
+                temp_line_list = []
+                for point in line.points:
+                    temp_line_list.append(point.complex)
+                temp_shape_list.append(temp_line_list)
+            total.append((temp_shape_list, shape[ID]))
+        return total
+
+    def bring_lines_together(self, data):
+        """
+        Given a set of points on a line, change them into ComplexPoint and Line objects.
+        Needed as these classes cannot be pickled.
+        """
+        shapes_in_data = []
+        for shape in data:
+            temp_lines_in_shape = []
+            for line in shape[DATA]:
+                temp_points_on_line = []
+                for points in line:
+                    temp_point = ComplexPoint.ComplexPoint(points)
+                    temp_points_on_line.append(temp_point)
+                temp_line = Line.Line("z", temp_points_on_line[0].complex, temp_points_on_line[-1].complex,
+                                      len(temp_points_on_line), temp_points_on_line)
+                temp_lines_in_shape.append(temp_line)
+            shapes_in_data.append((temp_lines_in_shape, shape[ID]))
+        return shapes_in_data
+
+    def serialize(self):
+        """
+        Method that handles packing and saving the data from the current homotopy.
+        """
+        #get the first function from the user. If it does not exist, defaults to "z"
+        current_functions = self.point_grid.functions[0].function_str
+        #if the user declared multiple functions, handle that below
+        if len(self.point_grid.functions) > 1:
+            functions_in_loop = ""
+            for function in self.point_grid.functions[1:]:
+                functions_in_loop += functions_in_loop + ";" + function.function_str
+            current_functions += functions_in_loop
+        n_steps = self.point_grid.n_steps
+        id_counter = self.id_number_counter
+        lines = self.break_apart_lines()
+        reverse = self.reverse_checkbox_var.get()
+        outlier = self.outlier_remover_var.get()
+        #get the limits from the user if defined
+        if all(self.fetch_limits()):
+            limits = (self.point_grid.real_max, self.point_grid.real_min,
+                  self.point_grid.imag_max, self.point_grid.imag_min)
+        else:
+            #the limits were not defininded by the user
+            limits = (None, None, None, None)
+        #pack the data 
+        return {self.functions_pickle_str:current_functions, self.n_steps_pickle_str:n_steps,
+                     self.id_counter_pickle_str:id_counter, self.lines_pickle_str:lines,
+                     self.outlier_remover_pickle_str:outlier,
+                     self.reverse_checkbox_pickle_str:reverse, self.limits_pickle_str:limits}
+
+    def save_file_dialog(self):
+        """
+        Prompts the user to choose a file name and directory to save their data to.
+        """
+        title = "Save homotopy as"
+        file_name = filedialog.asksaveasfilename(filetypes=self.extensions,
+                                             defaultextension=self.default_extension, title=title)
+        return file_name
+
+    def deserialize(self, pickle_data):
+        """
+        Take the data from the pickle and load it into the program.
+        """
+        self.set_checkbox(self.reverse_checkbox, self.reverse_checkbox_var,
+                          pickle_data[self.reverse_checkbox_pickle_str])
+        self.set_checkbox(self.outlier_remover_checkbox, self.outlier_remover_var,
+                          pickle_data[self.reverse_checkbox_pickle_str])
+        self.id_number_counter = pickle_data[self.id_counter_pickle_str]
+        n_functions = pickle_data[self.functions_pickle_str].count(";") + 1
+        self.set_text(self.n_entry, str(int((pickle_data[self.n_steps_pickle_str] + n_functions + 1) / (n_functions + 1 +pickle_data[self.reverse_checkbox_pickle_str]))))
+        self.set_text(self.function_entry, pickle_data[self.functions_pickle_str])
+        self.line_collection = self.bring_lines_together(pickle_data[self.lines_pickle_str])
+        limits = pickle_data[self.limits_pickle_str]
+        #the user had defined limits
+        if any(limits):
+            self.set_text(self.real_max_entry, limits[0])
+            self.set_text(self.real_min_entry, limits[1])
+            self.set_text(self.imag_max_entry, limits[2])
+            self.set_text(self.imag_min_entry, limits[3])
+        for line in self.line_collection:
+            self.point_grid.add_line(line[0])
+        self.point_grid.changed_flag_unhandled = True
+        self.launch()
+
+    def set_checkbox(self, check_box, check_box_var, value):
+        """
+        General method to set the value of a checkbox based on a value
+        """
+        if check_box_var.get() == ON:
+            check_box.select()
+        else:
+            check_box.deselect()
+
+    def set_text(self, entry_box, text):
+        """
+        General method to set a text entry based on a entry object and text.
+        """
+        entry_box.delete(0, END)
+        entry_box.insert(0, text)
+
+    def open_file_dialog(self):
+        """
+        Launches a file browser that prompts the user to select a file to load.
+        """
+        title = "Open homotopy data"
+        file_name = filedialog.askopenfilename(filetypes=self.extensions,
+                                             defaultextension=self.default_extension, title=title)
+        return file_name
 
     def create_widgets(self):
         """
@@ -134,7 +326,7 @@ class Application(Frame):
         common_bd = 5
         #checkbox to control outlier logic
         self.outlier_remover_checkbox = Checkbutton(ROOT, text="Remove outliers",
-                                                    variable=self.outlier_remover,
+                                                    variable=self.outlier_remover_var,
                                                     onvalue=ON, offvalue=OFF, height=1, width=12)
         self.reverse_checkbox = Checkbutton(ROOT, text="Reverse",
                                             variable=self.reverse_checkbox_var,
@@ -198,7 +390,7 @@ class Application(Frame):
         of steps, and then reinject it to its old spot
         """
         self.frame_slider.destroy()
-        self.frame_slider = Scale(to=steps * (self.reverse_checkbox_var.get() + 1),
+        self.frame_slider = Scale(to=self.point_grid.n_steps,
                                   from_=0, orient=HORIZONTAL, command=self.go_to_frame)
         self.frame_slider.grid(row=self.slider_row, column=self.slider_column, columnspan=2)
 
@@ -362,22 +554,25 @@ class Application(Frame):
             steps_from_user = 1 #no animation
         #get if the user has checked the reverse animation box
         reverse = self.reverse_checkbox_var.get() == ON
-        self.redraw_slider(steps_from_user)
+        #give the point grid its function
         self.point_grid.provide_function(self.function_objects, steps_from_user,
                                          self.flattened_lines(), reverse=reverse)
+        self.redraw_slider(steps_from_user)
         #code for if this is the initial run of the launch method
         #prevents the application from launching unneeded windows
+        #bind the method set_slider to the plot_object
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
-            #bind the method set_slider to the plot_object
             self.plot_object.bind(self.set_slider)
-        self.update_graph()
+            self.update_graph()
+        else:
+            self.plot_object.grid = self.point_grid
         #allows the color computation to deal with if the animation is reversing
         self.plot_object.reverse = reverse
         #set the animation to the beginning
         self.plot_object.frame_number = 0
         #set the boolean that controls the outlier operation in the pointgrid to that of the user
-        self.plot_object.grid.remove_outliers = self.outlier_remover.get() == ON
+        self.plot_object.grid.remove_outliers = self.outlier_remover_var.get() == ON
         self.plot_object.new_limits()
 
     def fetch_limits(self):
@@ -409,20 +604,13 @@ class Application(Frame):
         """
         Given a limit entry, determine its value if it is a number.
         """
-        #this variable acts as the sign of the user data
-        multiplier = 1
-        limit_entry_string = str(limit_entry.get())
-        #replace the FIRST negative sign seen
-        is_there_a_negative_sign = limit_entry_string.replace("-", "", 1)
-        if is_there_a_negative_sign is not limit_entry_string:
-            #the user gave a negative sign, but we had to remove it
-            multiplier = -1
         #check if the use passed something legal
-        if not is_there_a_negative_sign.isnumeric():
+        #remove any complex notation
+        num = limit_entry.get().replace("j", "")
+        try:
+            return float(num)
+        except:
             return None
-        else:
-            #return the numeric value of the user data multiplied by its sign
-            return float(is_there_a_negative_sign)*multiplier
 
     def update_graph(self):
         """
@@ -435,7 +623,11 @@ class Application(Frame):
         self.canvas.get_tk_widget().grid(row=0, column=0, columnspan=6)
         #self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
         self.animating_already = True
-        self.plot_object.animate(interval_length=self.default_interval)
+        del self.animation_thread
+        self.animation_thread = threading.Thread(target=self.plot_object.animate, args=(self.default_interval,))
+        self.animation_thread.start()
+
+        #self.plot_object.animate(interval_length=self.default_interval)
 
     def circle_popup(self):
         """

@@ -39,6 +39,7 @@ class PlotWindow(object):
         self.ffmpeg_writer = ffmpeg_animation_writer(fps=5, bitrate=1800)
         self.updating_limits = updating_limits #
         self.new_limits() #take the inital limits from self.grid and apply to the graph
+        self.all_lines = []
         self.lines = [self.axes.plot([], [],
                                      lw=self.grid.lines[line].width)[0]
                       for line in range(len(self.grid.lines))]
@@ -129,12 +130,13 @@ class PlotWindow(object):
                 if len(self.lines) > self.grid.n_lines:
                     self.lines = self.lines[:self.grid.n_lines]
                 else:
-                    self.lines += [None] * (self.grid.n_lines - len(self.lines))
-                #self.animate()
+                    self.lines += [self.axes.plot([], [],
+                                     lw=self.grid.lines[line].width)[0]] * (self.grid.n_lines - len(self.lines))    
             self.color_compute(self._frame_number)
             for index, line in enumerate(self.grid.pre_computed_steps(self._frame_number)):
                 self.lines[index].set_data(line[REAL], line[IMAG])
                 self.lines[index]._color = self.color
+                #self.lines[index].set_visible(True)
             #saving this data is too memory intensive for the small computational power req'd
             #increment the frame number
             self._frame_number += 1
@@ -143,6 +145,12 @@ class PlotWindow(object):
             self.set_frame(self.frame_number)
         #time.sleep(.01)
         return self.lines
+
+    def blit_func(self):
+        self.frame_number = 0
+        #for line in self.lines:
+        #    line.set_visible(False)
+        return self.animate_compute(0)
 
     def get_frame(self):
         """
@@ -168,7 +176,6 @@ class PlotWindow(object):
         take the object in callback and append it to the observer
         """
         self.observers.append(callback)
-    
 
     def color_compute(self, step):
         """
@@ -202,9 +209,9 @@ class PlotWindow(object):
         """
         #will call the animation to start at the beginning
         self.interval = interval_length
-        del self.anim
-        self.anim = animation.FuncAnimation(self.fig, self.animate_compute,
+        self.anim = animation.FuncAnimation(self.fig, func=self.animate_compute,
                                             interval=interval_length,
+                                            #init_func=self.blit_func,
                                             blit=True, frames=self.grid.n_steps)
 
 def show():

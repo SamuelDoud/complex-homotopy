@@ -17,6 +17,7 @@ class ComplexFunction(object):
         Given a function, in either string or expression format, create an object that
         can evaluate any complex number given to it.
         """
+        self.function_str = expression
         self.filename = generate_filename(expression)
         #TODO regex cleaning of expression
         self.expr = sympify(expression)
