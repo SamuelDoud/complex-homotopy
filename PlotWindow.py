@@ -213,9 +213,3 @@ class PlotWindow(object):
                                             interval=interval_length,
                                             #init_func=self.blit_func,
                                             blit=True, frames=self.grid.n_steps)
-
-def show():
-    """
-    Show the plot. Not really useful in the MainWindow.
-    """
-    plt.show() #actually display the graph

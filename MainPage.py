@@ -1,7 +1,8 @@
 ﻿import pickle
 import threading
+from itertools import cycle
 
-from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, StringVar, Scale, END, FIRST, LAST,
+from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, StringVar, Scale, END, FIRST, LAST, RIGHT, LEFT, CENTER,
                      HORIZONTAL, Menu, Menubutton, filedialog)
 import tkinter
 import matplotlib
@@ -33,9 +34,9 @@ class CircleBuilderPopup(object):
         self.top = Toplevel(master)
         self.circle_tuple = (0, 0)
         self.radius = Label(self.top, text="Radius")
-        self.radius_entry = Entry(self.top, bd=5)
+        self.radius_entry = Entry(self.top, width=5)
         self.center = Label(self.top, text="Center")
-        self.center_entry = Entry(self.top, bd=5)
+        self.center_entry = Entry(self.top, width=5)
         self.build_circle_submit = Button(self.top, text="Build!", command=self.cleanup)
         self.radius.grid(row=0, column=0)
         self.radius_entry.grid(row=0, column=1)
@@ -69,11 +70,11 @@ class GridBuilderPopup(object):
         self.bottom_right = complex(0, 0)
         self.lines = 0
         self.top_left_label = Label(self.top, text="\"Top Left\"")
-        self.top_left_entry = Entry(self.top, bd=5)
+        self.top_left_entry = Entry(self.top, width=5)
         self.bottom_right_label = Label(self.top, text="\"Bottom Right\"")
-        self.bottom_right_entry = Entry(self.top, bd=5)
+        self.bottom_right_entry = Entry(self.top, width=5)
         self.resolution_label = Label(self.top, text="Lines")
-        self.resolution_entry = Entry(self.top, bd=5)
+        self.resolution_entry = Entry(self.top, width=5)
         self.build_grid_submit = Button(self.top, text="Build!", command=self.cleanup)
         self.top_left_label.grid(row=0, column=0)
         self.top_left_entry.grid(row=0, column=1)
@@ -116,7 +117,7 @@ class Application(Frame):
         #analogous to hitting the submit button
         ROOT.bind("<Return>", self.launch_return_key)
         #how long between frames in milliseconds
-        self.default_interval = 250
+        self.default_interval = 200
         self.animation_thread = None
         self.extensions = [("Homotopy data", ".cht"), ("All Files", "*")]
         self.default_extension = ".cht"
@@ -339,15 +340,15 @@ class Application(Frame):
         self.remove_front = Button(ROOT, text="Remove first", command=self.remove_first)
         self.n_label = Label(ROOT, text="Number of steps")
         self.real_max_label = Label(ROOT, text="Real max")
-        self.real_min_label = Label(ROOT, text="Real min")
+        self.real_min_label = Label(ROOT, text="Real min", justify=RIGHT)
         self.imag_max_label = Label(ROOT, text="Imag max")
         self.imag_min_label = Label(ROOT, text="Imag min")
-        self.real_max_entry = Entry(ROOT, bd=common_bd)
-        self.real_min_entry = Entry(ROOT, bd=common_bd)
-        self.imag_min_entry = Entry(ROOT, bd=common_bd)
-        self.imag_max_entry = Entry(ROOT, bd=common_bd)
-        self.function_entry = Entry(ROOT, bd=common_bd)
-        self.n_entry = Entry(ROOT, bd=common_bd)
+        self.real_max_entry = Entry(ROOT, width=common_bd)
+        self.real_min_entry = Entry(ROOT, width=common_bd)
+        self.imag_min_entry = Entry(ROOT, width=common_bd)
+        self.imag_max_entry = Entry(ROOT, width=common_bd)
+        self.function_entry = Entry(ROOT, width=30)
+        self.n_entry = Entry(ROOT, width=common_bd)
         self.frame_slider = Scale(ROOT, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame)
         self.circle_launcher = Button(ROOT, command=self.circle_popup, text="Circle Builder")
         self.grid_launcher = Button(ROOT, command=self.grid_popup, text="Grid Builder")
@@ -372,16 +373,16 @@ class Application(Frame):
         self.remove_front.grid(row=6, column=0)
         self.pop_from_collection.grid(row=6, column=1)
         self.save_video.grid(row=6, column=2)
-        self.real_max_label.grid(row=2, column=2)
-        self.real_max_entry.grid(row=2, column=3)
-        self.real_min_label.grid(row=2, column=5)
-        self.real_min_entry.grid(row=2, column=4)
-        self.imag_max_label.grid(row=3, column=2)
-        self.imag_max_entry.grid(row=3, column=3)
-        self.imag_min_label.grid(row=3, column=5)
-        self.imag_min_entry.grid(row=3, column=4)
-        self.slider_row = 5
-        self.slider_column = 4
+        self.real_max_label.grid(row=3, column=6)
+        self.real_max_entry.grid(row=3, column=5)
+        self.real_min_label.grid(row=3, column=2)
+        self.real_min_entry.grid(row=3, column=3)
+        self.imag_max_label.grid(row=2, column=3)
+        self.imag_max_entry.grid(row=2, column=4)
+        self.imag_min_label.grid(row=4, column=3)
+        self.imag_min_entry.grid(row=4, column=4)
+        self.slider_row = 1
+        self.slider_column = 0
 
     def redraw_slider(self, steps):
         """
@@ -390,9 +391,9 @@ class Application(Frame):
         of steps, and then reinject it to its old spot
         """
         self.frame_slider.destroy()
-        self.frame_slider = Scale(to=self.point_grid.n_steps,
+        self.frame_slider = Scale(to=self.point_grid.n_steps, length=600,
                                   from_=0, orient=HORIZONTAL, command=self.go_to_frame)
-        self.frame_slider.grid(row=self.slider_row, column=self.slider_column, columnspan=2)
+        self.frame_slider.grid(row=self.slider_row, column=self.slider_column, columnspan=6)
 
     def go_to_frame(self, event):
         """
@@ -567,6 +568,8 @@ class Application(Frame):
             self.update_graph()
         else:
             self.plot_object.grid = self.point_grid
+            #pass an iterable to reorder the frames
+            self.plot_object.anim.frame_seq = cycle(range(self.point_grid.n_steps))
         #allows the color computation to deal with if the animation is reversing
         self.plot_object.reverse = reverse
         #set the animation to the beginning
