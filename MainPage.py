@@ -565,6 +565,8 @@ class Application(Frame):
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
             self.plot_object.bind(self.set_slider)
+            #space bar press controls pause/play
+            ROOT.bind("<space>", self.plot_object.toggle_pause)
             self.update_graph()
         else:
             self.plot_object.grid = self.point_grid
