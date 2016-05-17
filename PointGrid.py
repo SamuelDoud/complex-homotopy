@@ -1,4 +1,4 @@
-﻿import statistics
+import statistics
 
 from sympy import re, im, arg, Abs, Symbol, symbols, I
 import numpy as np

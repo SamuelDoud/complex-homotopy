@@ -1,4 +1,4 @@
-﻿import math
+import math
 import time
 
 import matplotlib.pyplot as plt
@@ -146,11 +146,11 @@ class PlotWindow(object):
         #time.sleep(.01)
         return self.lines
 
-    def blit_func(self):
-        self.frame_number = 0
-        #for line in self.lines:
-        #    line.set_visible(False)
-        return self.animate_compute(0)
+    #def blit_func(self):
+    #    self.frame_number = 0
+    #    for line in self.lines:
+    #        line.set_visible(False)
+    #    return self.animate_compute(0)
 
     def get_frame(self):
         """
