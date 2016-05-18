@@ -1,13 +1,16 @@
-﻿import pickle
+import pickle
 import threading
+import os
 from itertools import cycle
 
-from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, StringVar, Scale, END, FIRST, LAST, RIGHT, LEFT, CENTER,
+from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, StringVar,
+                     Scale, END, FIRST, LAST, RIGHT, LEFT, CENTER,
                      HORIZONTAL, Menu, Menubutton, filedialog)
 import tkinter
 import matplotlib
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backend_bases import key_press_handler
 
 import PointGrid
 import PlotWindow
@@ -112,12 +115,12 @@ class Application(Frame):
         Frame.__init__(self, master)
         ROOT.title("Complex Homotopy")
         #give the icon file to the GUI
-        ROOT.iconbitmap("icon.ico")
+        ROOT.iconbitmap(resource_path("icon.ico"))
         #bind the return key to the launch function
         #analogous to hitting the submit button
         ROOT.bind("<Return>", self.launch_return_key)
         #how long between frames in milliseconds
-        self.default_interval = 200
+        self.default_interval = 40
         self.animation_thread = None
         self.extensions = [("Homotopy data", ".cht"), ("All Files", "*")]
         self.default_extension = ".cht"
@@ -132,6 +135,7 @@ class Application(Frame):
         self.id_number_counter = 0
         self.line_collection = []
         self.canvas = None
+        self.toolbar = None
         self.identity = "z"
         self.identity_function = func.ComplexFunction(self.identity)
         #self.pack()
@@ -324,7 +328,8 @@ class Application(Frame):
         """
         Creates and arranges the GUI.
         """
-        common_bd = 5
+        common_width = 5
+        common_bd = 3
         #checkbox to control outlier logic
         self.outlier_remover_checkbox = Checkbutton(ROOT, text="Remove outliers",
                                                     variable=self.outlier_remover_var,
@@ -340,15 +345,15 @@ class Application(Frame):
         self.remove_front = Button(ROOT, text="Remove first", command=self.remove_first)
         self.n_label = Label(ROOT, text="Number of steps")
         self.real_max_label = Label(ROOT, text="Real max")
-        self.real_min_label = Label(ROOT, text="Real min", justify=RIGHT)
+        self.real_min_label = Label(ROOT, text="Real min")
         self.imag_max_label = Label(ROOT, text="Imag max")
         self.imag_min_label = Label(ROOT, text="Imag min")
-        self.real_max_entry = Entry(ROOT, width=common_bd)
-        self.real_min_entry = Entry(ROOT, width=common_bd)
-        self.imag_min_entry = Entry(ROOT, width=common_bd)
-        self.imag_max_entry = Entry(ROOT, width=common_bd)
-        self.function_entry = Entry(ROOT, width=30)
-        self.n_entry = Entry(ROOT, width=common_bd)
+        self.real_max_entry = Entry(ROOT, width=common_width, bd=common_bd)
+        self.real_min_entry = Entry(ROOT, width=common_width, bd=common_bd)
+        self.imag_min_entry = Entry(ROOT, width=common_width, bd=common_bd)
+        self.imag_max_entry = Entry(ROOT, width=common_width, bd=common_bd)
+        self.function_entry = Entry(ROOT, width=30, bd=common_bd)
+        self.n_entry = Entry(ROOT, width=common_width, bd=common_bd)
         self.frame_slider = Scale(ROOT, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame)
         self.circle_launcher = Button(ROOT, command=self.circle_popup, text="Circle Builder")
         self.grid_launcher = Button(ROOT, command=self.grid_popup, text="Grid Builder")
@@ -391,7 +396,7 @@ class Application(Frame):
         of steps, and then reinject it to its old spot
         """
         self.frame_slider.destroy()
-        self.frame_slider = Scale(to=self.point_grid.n_steps, length=600,
+        self.frame_slider = Scale(to=self.point_grid.n_steps + 0.001, length=600,
                                   from_=0, orient=HORIZONTAL, command=self.go_to_frame)
         self.frame_slider.grid(row=self.slider_row, column=self.slider_column, columnspan=6)
 
@@ -530,6 +535,8 @@ class Application(Frame):
         Create a new animation based on the data given by the user.
         This method will be called on the press of the submit button.
         """
+        #take the focus off of any entry
+        self.master.focus()
         #take the input from the user.. if its null, set ito the identity function
         self.point_grid.set_user_limits(self.fetch_limits())
         if self.function_entry.get():
@@ -570,12 +577,12 @@ class Application(Frame):
             self.update_graph()
         else:
             self.plot_object.grid = self.point_grid
+            #call on the animator to start at the beginning of the graph
+            self.plot_object.set_frame(0)
             #pass an iterable to reorder the frames
             self.plot_object.anim.frame_seq = cycle(range(self.point_grid.n_steps))
         #allows the color computation to deal with if the animation is reversing
         self.plot_object.reverse = reverse
-        #set the animation to the beginning
-        self.plot_object.frame_number = 0
         #set the boolean that controls the outlier operation in the pointgrid to that of the user
         self.plot_object.grid.remove_outliers = self.outlier_remover_var.get() == ON
         self.plot_object.new_limits()
@@ -623,6 +630,8 @@ class Application(Frame):
         Also, kick off the animation.
         """
         self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=ROOT)
+        #self.toolbar = NavigationToolbar2TkAgg(self.plot_object.fig, master=ROOT)
+        #self.toolbar.update()
         self.plot_object.fig.canvas.mpl_connect('button_press_event', self.plot_object.toggle_pause)
         #self.canvas.show()
         self.canvas.get_tk_widget().grid(row=0, column=0, columnspan=6)
@@ -683,6 +692,16 @@ class Application(Frame):
         """
         if not self.already_paused:
             self.plot_object.resume_animation()
+
+def resource_path(relative):
+    return os.path.join(
+        os.environ.get(
+            "_MEIPASS2",
+            os.path.abspath(".")
+        ),
+        relative
+    )
+
 
 ROOT = Tk()
 WINDOW = Application(master=ROOT)

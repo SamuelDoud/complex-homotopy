@@ -32,11 +32,9 @@ class PlotWindow(object):
         self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
         self.fig = plt.figure(figsize=(6, 6), dpi=100)
-        #clicking the graph fires the launch method
-        self.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
         ffmpeg_animation_writer = animation.writers['ffmpeg']
-        self.ffmpeg_writer = ffmpeg_animation_writer(fps=5, bitrate=1800)
+        self.ffmpeg_writer = ffmpeg_animation_writer(fps=25, bitrate=1800)
         self.updating_limits = updating_limits #
         self.new_limits() #take the inital limits from self.grid and apply to the graph
         self.all_lines = []
@@ -110,6 +108,8 @@ class PlotWindow(object):
         if self.pause:
             self.pause = False
         if video:
+            del self.anim
+            self.animate(self.interval)
             self.anim.save(self.grid.filename + '.mp4', extra_args=['-vcodec', 'libx264'],
                             writer=self.ffmpeg_writer)
         if gif:
@@ -117,6 +117,19 @@ class PlotWindow(object):
         #return to the frame that the user was on before they saved
         self._frame_number = old_frame_number
         self.pause = paused_state
+
+    #def define_all(self):
+    #    self.all_lines = list(map(self.define_step, range(self.grid.n_steps)))
+
+    #def define_step(self, step):
+    #    lines = [self.axes.plot([], [],
+    #                                 lw=self.grid.lines[line].width)[0]
+    #                  for line in range(len(self.grid.lines))]
+    #    color = self.color_compute(step)
+    #    for index, line in enumerate(self.grid.pre_computed_steps(step)):
+    #        lines[index].set_data(line[REAL], line[IMAG])
+    #        lines[index]._color = color
+    #    return lines
 
     def animate_compute(self, step):
         """
@@ -129,10 +142,13 @@ class PlotWindow(object):
                 #there's a new number of lines in the graph
                 if len(self.lines) > self.grid.n_lines:
                     self.lines = self.lines[:self.grid.n_lines]
+                    while self.grid.n_lines < len(self.axes.lines):
+                        self.axes.lines[-1].remove()
                 else:
-                    self.lines += [self.axes.plot([], [],
-                                     lw=self.grid.lines[line].width)[0]] * (self.grid.n_lines - len(self.lines))    
-            self.color_compute(self._frame_number)
+                    self.lines = [self.axes.plot([], [],
+                                                 lw=self.grid.lines[line].width)[0]
+                                  for line in range(len(self.grid.lines))]
+            self.color = self.color_compute(self._frame_number)
             for index, line in enumerate(self.grid.pre_computed_steps(self._frame_number)):
                 self.lines[index].set_data(line[REAL], line[IMAG])
                 self.lines[index]._color = self.color
@@ -143,14 +159,7 @@ class PlotWindow(object):
             #set the frame number to the number of steps defined in the grid
             self._frame_number %= self.grid.n_steps
             self.set_frame(self.frame_number)
-        #time.sleep(.01)
         return self.lines
-
-    #def blit_func(self):
-    #    self.frame_number = 0
-    #    for line in self.lines:
-    #        line.set_visible(False)
-    #    return self.animate_compute(0)
 
     def get_frame(self):
         """
@@ -181,18 +190,19 @@ class PlotWindow(object):
         """
         Determine a color based on how far along the animation is.
         """
+        color = list(self._start_color)
         #workaround for a if the animation is not reversing
         if not self.reverse:
             step /= 2
         if self.grid.n_steps <= 1:
             #the graph is not moving. Therefore, its start color is the self_color
-            self.color = list(self._start_color)
-            return
+            return color
         step = step % self.grid.n_steps
         #using a sinsodual curve to change the color
         modifier = (math.cos((2*step/(self.grid.n_steps +1)) * math.pi) + 1) / 2.0
         for index in range(len(self._start_color)):
-            self.color[index] = self._end_color[index] - (self.color_diff[index] * modifier)
+            color[index] = self._end_color[index] - (self.color_diff[index] * modifier)
+        return color
 
     def new_limits(self):
         """
@@ -211,5 +221,4 @@ class PlotWindow(object):
         self.interval = interval_length
         self.anim = animation.FuncAnimation(self.fig, func=self.animate_compute,
                                             interval=interval_length,
-                                            #init_func=self.blit_func,
                                             blit=True, frames=self.grid.n_steps)
