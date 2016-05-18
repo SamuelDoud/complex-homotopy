@@ -1,5 +1,4 @@
 import math
-import time
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -11,6 +10,9 @@ INDEX = 2
 RED = 0
 GREEN = 1
 BLUE = 2
+
+PAUSE = True
+PLAY = False
 
 class PlotWindow(object):
     """
@@ -56,18 +58,14 @@ class PlotWindow(object):
         #XOR the bool to flip it
         self.pause ^= True
 
-    def pause_animation(self):
+    def set_animation(self, pause_state):
         """
-        The user has run a command to pause the animation
-        For example, opening a grid builder
+        Set the animation's pause variable to the state passed.
+        Return the prior state of the pause variable before the call.
         """
-        self.pause = True
-
-    def resume_animation(self):
-        """
-        The user has ran a command to resume the animation
-        """
-        self.pause = False
+        prior_state = self.pause
+        self.pause = pause_state
+        return prior_state
 
     def set_start_color(self, color_tuple):
         """
@@ -112,25 +110,12 @@ class PlotWindow(object):
             del self.anim
             self.animate(self.interval)
             self.anim.save(self.grid.filename + '.mp4', extra_args=['-vcodec', 'libx264'],
-                            writer=self.ffmpeg_writer)
+                           writer=self.ffmpeg_writer)
         if gif:
             raise NotImplementedError
         #return to the frame that the user was on before they saved
         self._frame_number = old_frame_number
         self.pause = paused_state
-
-    #def define_all(self):
-    #    self.all_lines = list(map(self.define_step, range(self.grid.n_steps)))
-
-    #def define_step(self, step):
-    #    lines = [self.axes.plot([], [],
-    #                                 lw=self.grid.lines[line].width)[0]
-    #                  for line in range(len(self.grid.lines))]
-    #    color = self.color_compute(step)
-    #    for index, line in enumerate(self.grid.pre_computed_steps(step)):
-    #        lines[index].set_data(line[REAL], line[IMAG])
-    #        lines[index]._color = color
-    #    return lines
 
     def animate_compute(self, step):
         """
@@ -141,14 +126,10 @@ class PlotWindow(object):
         if not self.pause or self.pause_override:
             if len(self.lines) != self.grid.n_lines:
                 #there's a new number of lines in the graph
-                if len(self.lines) > self.grid.n_lines:
-                    self.lines = self.lines[:self.grid.n_lines]
-                    while self.grid.n_lines < len(self.axes.lines):
-                        self.axes.lines[-1].remove()
-                else:
-                    self.lines = [self.axes.plot([], [],
-                                                 lw=self.grid.lines[line].width)[0]
-                                  for line in range(len(self.grid.lines))]
+                self.lines = [self.axes.plot([], [],
+                                                lw=self.grid.lines[line].width)[0]
+                                for line in range(len(self.grid.lines))]
+                self.axes.lines = self.lines
             self.color = self.color_compute(self._frame_number)
             for index, line in enumerate(self.grid.pre_computed_steps(self._frame_number)):
                 self.lines[index].set_data(line[REAL], line[IMAG])
@@ -164,7 +145,10 @@ class PlotWindow(object):
             self.pause_override = False
         return self.lines
 
-    def reset_interval(self,delta):
+    def reset_interval(self, delta):
+        """
+        Change the interval by the passed delta
+        """
         if self.interval > - 1 * delta:
             self.interval += delta
         self.anim._interval = self.interval
