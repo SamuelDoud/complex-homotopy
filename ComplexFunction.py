@@ -1,6 +1,6 @@
-from sympy import (Function, Symbol, symbols, lambdify, re, im, arg, Abs, E, sympify, sin, sinc,
+﻿from sympy import (Function, Symbol, symbols, lambdify, re, im, arg, Abs, E, sympify, sin, sinc,
                    cos, cosh, acos, acosh, acot, acoth, acsc, asec, asech, asin, asinh,
-                   atan, atan2, atanh, conjugate, tan, tanh)
+                   atan, atan2, atanh, conjugate, tan, tanh, pi)
 from sympy.abc import z
 
 class ComplexFunction(object):
@@ -20,7 +20,7 @@ class ComplexFunction(object):
         self.function_str = expression
         self.filename = generate_filename(expression)
         #TODO regex cleaning of expression
-        self.expr = sympify(expression)
+        self.expr = sympify(self.function_str)
         #self.z = symbols('z', complex=True)
         self.f_z = lambdify(z, self.expr, "numpy")
         #taking advantage of the reuse of the function object.
@@ -38,6 +38,17 @@ class ComplexFunction(object):
         except:
             #send the error back to the line class for error handling
             raise ZeroDivisionError
+
+def compliant_expression(expression):
+    """
+    Take the passed expression and change it so that it can be understood by sympify.
+    """
+    #this may not be a string
+    expression = str(expression)
+    expression = expression.upper()
+    expression = expression.replace("PI", "pi")
+    expression = expression.replace("EXP", "exp")
+    return expression
 
 def generate_filename(expression):
     """
