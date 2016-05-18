@@ -107,18 +107,16 @@ class Application(Frame):
     This is the window that displays the homotopy. Also it provides an interface for the user to
     manipulate the homotopy as they see fit.
     """
-    def __init__(self, master=None):
+    def __init__(self, master):
         """
         A generic init function. Creates some class variables for later use.
         Calls on the function to create widgets and eventually, launches the window.
         """
         Frame.__init__(self, master)
-        ROOT.title("Complex Homotopy")
+        self.master = master
+        self.master.title("Complex Homotopy")
         #give the icon file to the GUI
-        ROOT.iconbitmap(resource_path("icon.ico"))
-        #bind the return key to the launch function
-        #analogous to hitting the submit button
-        ROOT.bind("<Return>", self.launch_return_key)
+        self.master.iconbitmap(resource_path("icon.ico"))
         #how long between frames in milliseconds
         self.default_interval = 40
         self.animation_thread = None
@@ -138,8 +136,6 @@ class Application(Frame):
         self.toolbar = None
         self.identity = "z"
         self.identity_function = func.ComplexFunction(self.identity)
-        #self.pack()
-        self.master = master
         self.point_grid = PointGrid.PointGrid()
         self.outlier_remover_var = IntVar()
         self.outlier_remover_var.set(0)
@@ -149,14 +145,70 @@ class Application(Frame):
         self.pack_widgets()
         self.animating_already = False
         self.already_paused = False
+        self.lock_frame = False
         self.popup_window = None
         self.build_sample()
         self.menu_creation()
         #show the graph
         self.launch()
+    
+    def key_bindings(self):
+        """
+        Bind the keys.
+        """
+        self.master.bind("<Return>", self.launch)
+        self.master.bind("<Right>", self.increment_frame)
+        self.master.bind("<Left>", self.decrement_frame)
+        self.master.bind("<Up>", self.interval_decrease)
+        self.master.bind("<Down>", self.interval_increase)
+        self.master.bind("<space>", self.plot_object.toggle_pause)
+
+    def increment_frame(self, event):
+        """
+        go forward one frame
+        """
+        self.move_frame(1)
+
+    def decrement_frame(self, event):
+        """
+        Move back one frame
+        """
+        self.move_frame(-1)
+
+    def move_frame(self, delta_frames):
+        """
+        move the animation by delta frames
+        """
+        if not self.lock_frame:
+            self.lock_frame = True
+            was_paused_flag = True
+            if not self.plot_object.pause:
+                self.plot_object.pause = True
+                was_paused_flag = False
+            self.plot_object.frame_number += delta_frames
+            if was_paused_flag:
+                #this will allow one frame to draw
+                self.plot_object.pause_override = True
+            self.plot_object.pause = was_paused_flag
+            self.lock_frame = False
+
+    def interval_increase(self, event):
+        """
+        Increase the interval between frames.
+        """
+        self.plot_object.reset_interval(10)
+
+    def interval_decrease(self, event):
+        """
+        Decrease the interval between frames
+        """
+        self.plot_object.reset_interval(-10)
 
     def menu_creation(self):
-        self.menubar = Menu(ROOT)
+        """
+        Helper method to define the menu bar
+        """
+        self.menubar = Menu(self.master)
         self.file_menu = Menu(self.menubar, tearoff=0)
         self.edit_menu = Menu(self.menubar, tearoff=0)
         self.view_menu = Menu(self.menubar, tearoff=0)
@@ -166,12 +218,12 @@ class Application(Frame):
         self.menubar.add_cascade(label="View", menu=self.view_menu)
         self.menubar.add_cascade(label="Help", menu=self.help_menu)
         self.file_menu_create()
-        ROOT.config(menu=self.menubar)
+        self.master.config(menu=self.menubar)
 
     def file_menu_create(self):
         self.file_menu.add_command(label="Save", command=self.save)
         self.file_menu.add_command(label="Open", command=self.open)
-        self.file_menu.add_command(label="Exit", command=ROOT.quit)
+        self.file_menu.add_command(label="Exit", command=self.master.quit)
 
     def save(self):
         """
@@ -331,32 +383,32 @@ class Application(Frame):
         common_width = 5
         common_bd = 3
         #checkbox to control outlier logic
-        self.outlier_remover_checkbox = Checkbutton(ROOT, text="Remove outliers",
+        self.outlier_remover_checkbox = Checkbutton(self.master, text="Remove outliers",
                                                     variable=self.outlier_remover_var,
                                                     onvalue=ON, offvalue=OFF, height=1, width=12)
-        self.reverse_checkbox = Checkbutton(ROOT, text="Reverse",
+        self.reverse_checkbox = Checkbutton(self.master, text="Reverse",
                                             variable=self.reverse_checkbox_var,
                                             onvalue=ON, offvalue=OFF, height=1, width=6)
-        self.pop_from_collection = Button(ROOT, text="Remove last",
+        self.pop_from_collection = Button(self.master, text="Remove last",
                                           command=self.remove_from_collection)
-        self.submit = Button(ROOT, text="Submit", command=self.launch)
-        self.function_label = Label(ROOT, text="Enter a f(z)")
-        self.save_video = Button(ROOT, text="Save as Video", command=self.save_video_handler)
-        self.remove_front = Button(ROOT, text="Remove first", command=self.remove_first)
-        self.n_label = Label(ROOT, text="Number of steps")
-        self.real_max_label = Label(ROOT, text="Real max")
-        self.real_min_label = Label(ROOT, text="Real min")
-        self.imag_max_label = Label(ROOT, text="Imag max")
-        self.imag_min_label = Label(ROOT, text="Imag min")
-        self.real_max_entry = Entry(ROOT, width=common_width, bd=common_bd)
-        self.real_min_entry = Entry(ROOT, width=common_width, bd=common_bd)
-        self.imag_min_entry = Entry(ROOT, width=common_width, bd=common_bd)
-        self.imag_max_entry = Entry(ROOT, width=common_width, bd=common_bd)
-        self.function_entry = Entry(ROOT, width=30, bd=common_bd)
-        self.n_entry = Entry(ROOT, width=common_width, bd=common_bd)
-        self.frame_slider = Scale(ROOT, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame)
-        self.circle_launcher = Button(ROOT, command=self.circle_popup, text="Circle Builder")
-        self.grid_launcher = Button(ROOT, command=self.grid_popup, text="Grid Builder")
+        self.submit = Button(self.master, text="Submit", command=self.launch)
+        self.function_label = Label(self.master, text="Enter a f(z)")
+        self.save_video = Button(self.master, text="Save as Video", command=self.save_video_handler)
+        self.remove_front = Button(self.master, text="Remove first", command=self.remove_first)
+        self.n_label = Label(self.master, text="Number of steps")
+        self.real_max_label = Label(self.master, text="Real max")
+        self.real_min_label = Label(self.master, text="Real min")
+        self.imag_max_label = Label(self.master, text="Imag max")
+        self.imag_min_label = Label(self.master, text="Imag min")
+        self.real_max_entry = Entry(self.master, width=common_width, bd=common_bd)
+        self.real_min_entry = Entry(self.master, width=common_width, bd=common_bd)
+        self.imag_min_entry = Entry(self.master, width=common_width, bd=common_bd)
+        self.imag_max_entry = Entry(self.master, width=common_width, bd=common_bd)
+        self.function_entry = Entry(self.master, width=30, bd=common_bd)
+        self.n_entry = Entry(self.master, width=common_width, bd=common_bd)
+        self.frame_slider = Scale(self.master, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame)
+        self.circle_launcher = Button(self.master, command=self.circle_popup, text="Circle Builder")
+        self.grid_launcher = Button(self.master, command=self.grid_popup, text="Grid Builder")
 
     def pack_widgets(self):
         """
@@ -396,7 +448,7 @@ class Application(Frame):
         of steps, and then reinject it to its old spot
         """
         self.frame_slider.destroy()
-        self.frame_slider = Scale(to=self.point_grid.n_steps + 0.001, length=600,
+        self.frame_slider = Scale(to=self.point_grid.n_steps, length=600,
                                   from_=0, orient=HORIZONTAL, command=self.go_to_frame)
         self.frame_slider.grid(row=self.slider_row, column=self.slider_column, columnspan=6)
 
@@ -522,15 +574,7 @@ class Application(Frame):
         #now actually save the graph
         self.plot_object.save(video=True)
 
-    def launch_return_key(self, entry):
-        """
-        THis is the path if hte user presses the entry key.
-        Since binding sends an entry, this is a way to deal with that and reuse the
-        launch method below
-        """
-        self.launch()
-
-    def launch(self):
+    def launch(self, entry=None):
         """
         Create a new animation based on the data given by the user.
         This method will be called on the press of the submit button.
@@ -557,7 +601,7 @@ class Application(Frame):
             self.function_objects = [self.identity_function]
         try:
             #see if the user supplied a number of steps.
-            steps_from_user = int(self.n_entry.get())
+            steps_from_user = int(self.n_entry.get()) + 1
         except Exception:
             steps_from_user = 1 #no animation
         #get if the user has checked the reverse animation box
@@ -573,7 +617,8 @@ class Application(Frame):
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
             self.plot_object.bind(self.set_slider)
             #space bar press controls pause/play
-            ROOT.bind("<space>", self.plot_object.toggle_pause)
+            #now we can bind the keys
+            self.key_bindings()
             self.update_graph()
         else:
             self.plot_object.grid = self.point_grid
@@ -629,8 +674,8 @@ class Application(Frame):
         Create the frame on which the matplotlib figure will be displayed.
         Also, kick off the animation.
         """
-        self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=ROOT)
-        #self.toolbar = NavigationToolbar2TkAgg(self.plot_object.fig, master=ROOT)
+        self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=self.master)
+        #self.toolbar = NavigationToolbar2TkAgg(self.plot_object.fig, master=self.master)
         #self.toolbar.update()
         self.plot_object.fig.canvas.mpl_connect('button_press_event', self.plot_object.toggle_pause)
         #self.canvas.show()
@@ -640,8 +685,6 @@ class Application(Frame):
         del self.animation_thread
         self.animation_thread = threading.Thread(target=self.plot_object.animate, args=(self.default_interval,))
         self.animation_thread.start()
-
-        #self.plot_object.animate(interval_length=self.default_interval)
 
     def circle_popup(self):
         """

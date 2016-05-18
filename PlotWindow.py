@@ -47,6 +47,7 @@ class PlotWindow(object):
         self._end_color = end_color #rgb tuple that specify the color endpoints
         self.color = list(self._start_color) #the color that will actually be displayed
         self.reset_color_diff()
+        self.pause_override = False
 
     def toggle_pause(self, event):
         """
@@ -137,7 +138,7 @@ class PlotWindow(object):
         """
         #ignore the step from the animation call!
         #compute if the user has not paused the program
-        if not self.pause:
+        if not self.pause or self.pause_override:
             if len(self.lines) != self.grid.n_lines:
                 #there's a new number of lines in the graph
                 if len(self.lines) > self.grid.n_lines:
@@ -155,11 +156,18 @@ class PlotWindow(object):
                 #self.lines[index].set_visible(True)
             #saving this data is too memory intensive for the small computational power req'd
             #increment the frame number
-            self._frame_number += 1
+            if not self.pause_override:
+                self._frame_number += 1
             #set the frame number to the number of steps defined in the grid
-            self._frame_number %= self.grid.n_steps
-            self.set_frame(self.frame_number)
+                self._frame_number %= self.grid.n_steps
+                self.set_frame(self.frame_number)
+            self.pause_override = False
         return self.lines
+
+    def reset_interval(self,delta):
+        if self.interval > - 1 * delta:
+            self.interval += delta
+        self.anim._interval = self.interval
 
     def get_frame(self):
         """
@@ -172,7 +180,7 @@ class PlotWindow(object):
         A more complex setter method. Starts like a normal setter, then calls every object in the
         observer list with the value.
         """
-        if value > 0 and value < self.grid.n_steps:
+        if value >= 0 and value < self.grid.n_steps:
             self._frame_number = value
             for callback in self.observers:
                 callback(self._frame_number)
