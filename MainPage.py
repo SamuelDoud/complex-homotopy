@@ -2,10 +2,10 @@ import pickle
 import threading
 import os
 from itertools import cycle
+import math
 
-from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar, StringVar,
-                     Scale, END, FIRST, LAST, RIGHT, LEFT, CENTER,
-                     HORIZONTAL, Menu, Menubutton, filedialog)
+from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar,
+                     Scale, END, HORIZONTAL, Menu, filedialog, messagebox, colorchooser)
 import tkinter
 import matplotlib
 matplotlib.use("TkAgg")
@@ -25,6 +25,29 @@ OFF = 0
 DATA = 0
 ID = 1
 
+def allow_constants(string_to_strip_of_constants):
+    string_to_strip_of_constants = str(string_to_strip_of_constants).upper()
+    pi_const_str = str(math.pi)
+    e_const_str = str(math.e)
+    string_to_strip_of_constants = string_to_strip_of_constants.replace("PI", pi_const_str)
+    string_to_strip_of_constants = string_to_strip_of_constants.replace("E", e_const_str)
+    string_to_strip_of_constants = string_to_strip_of_constants.replace("I", "j")
+    string_to_strip_of_constants = string_to_strip_of_constants.replace("J", "j")
+    string_to_strip_of_constants = string_to_strip_of_constants.replace("*", "")
+    return string_to_strip_of_constants
+
+def convert_to_byte_color(tuple_colors_zero_to_one):
+    list_colors_zero_to_one = list(tuple_colors_zero_to_one)
+    for index, color in enumerate(list_colors_zero_to_one):
+        list_colors_zero_to_one[index] = int(color * 255)
+    return tuple(list_colors_zero_to_one)
+
+def convert_to_zero_to_one(tuple_three_byte_color):
+    list_three_byte_color = list(tuple_three_byte_color)
+    for index, color in enumerate(list_three_byte_color):
+        list_three_byte_color[index] = color / 255
+    return tuple(list_three_byte_color)
+
 class CircleBuilderPopup(object):
     """
     Class that launches a popup and collects user data to pass data back to the main window
@@ -35,12 +58,15 @@ class CircleBuilderPopup(object):
         Establish the GUI of this popup
         """
         self.top = Toplevel(master)
+        self.width = 15
+        self.bd = 3
         self.circle_tuple = (0, 0)
         self.radius = Label(self.top, text="Radius")
-        self.radius_entry = Entry(self.top, width=5)
+        self.radius_entry = Entry(self.top, width=self.width, bd=self.bd)
         self.center = Label(self.top, text="Center")
-        self.center_entry = Entry(self.top, width=5)
+        self.center_entry = Entry(self.top, width=self.width, bd=self.bd)
         self.build_circle_submit = Button(self.top, text="Build!", command=self.cleanup)
+        self.top.bind("<Return>", self.cleanup)
         self.radius.grid(row=0, column=0)
         self.radius_entry.grid(row=0, column=1)
         self.center.grid(row=1, column=0)
@@ -48,15 +74,16 @@ class CircleBuilderPopup(object):
         self.build_circle_submit.grid(row=2, column=0, columnspan=2)
         self.top_left = 0
         self.bottom_right = 0
+        self.radius_entry.focus()
 
-    def cleanup(self):
+    def cleanup(self, entry=None):
         """
         Collect the data from the user and package it into object variables, then close.
         """
         center = complex(0, 0)
         if self.center_entry.get():
-            center = complex(self.center_entry.get())
-        self.circle_tuple = (float(self.radius_entry.get()), center)
+            center = complex(allow_constants(self.center_entry.get()))
+        self.circle_tuple = (float(allow_constants(self.radius_entry.get())), center)
         self.top.destroy()
 
 class GridBuilderPopup(object):
@@ -69,16 +96,19 @@ class GridBuilderPopup(object):
         Establish the GUI of this popup
         """
         self.top = Toplevel(master)
+        self.width = 15
+        self.bd =3
         self.top_left = complex(0, 0)
         self.bottom_right = complex(0, 0)
         self.lines = 0
         self.top_left_label = Label(self.top, text="\"Top Left\"")
-        self.top_left_entry = Entry(self.top, width=5)
+        self.top_left_entry = Entry(self.top, width=self.width, bd=self.bd)
         self.bottom_right_label = Label(self.top, text="\"Bottom Right\"")
-        self.bottom_right_entry = Entry(self.top, width=5)
+        self.bottom_right_entry = Entry(self.top, width=self.width, bd=self.bd)
         self.resolution_label = Label(self.top, text="Lines")
         self.resolution_entry = Entry(self.top, width=5)
         self.build_grid_submit = Button(self.top, text="Build!", command=self.cleanup)
+        self.top.bind("<Return>", self.cleanup)
         self.top_left_label.grid(row=0, column=0)
         self.top_left_entry.grid(row=0, column=1)
         self.bottom_right_label.grid(row=1, column=0)
@@ -86,15 +116,16 @@ class GridBuilderPopup(object):
         self.resolution_label.grid(row=2, column=0)
         self.resolution_entry.grid(row=2, column=1)
         self.build_grid_submit.grid(row=3, column=0, columnspan=2)
+        self.top_left_entry.focus()
 
-    def cleanup(self):
+    def cleanup(self, entry=None):
         """
         Collect the data from the user and package it into object variables, then close.
         """
         if self.resolution_entry.get().isnumeric():
             self.lines = int(self.resolution_entry.get())
-        self.top_left = complex(self.top_left_entry.get())
-        self.bottom_right = complex(self.bottom_right_entry.get())
+        self.top_left = complex(allow_constants(self.top_left_entry.get()))
+        self.bottom_right = complex(allow_constants(self.bottom_right_entry.get()))
         #If these conditions are true then we do not have a grid
         if (self.top_left.real > self.bottom_right.real
                 or self.bottom_right.imag > self.top_left.imag or self.lines == 0):
@@ -116,7 +147,8 @@ class Application(Frame):
         self.master = master
         self.master.title("Complex Homotopy")
         #give the icon file to the GUI
-        self.master.iconbitmap(resource_path("icon.ico"))
+        #uncoment this when I figure out pyInstaller
+        #self.master.iconbitmap(resource_path("icon.ico"))
         #how long between frames in milliseconds
         self.default_interval = 40
         self.animation_thread = None
@@ -134,6 +166,7 @@ class Application(Frame):
         self.line_collection = []
         self.canvas = None
         self.toolbar = None
+        self.frame_slider = None
         self.identity = "z"
         self.identity_function = func.ComplexFunction(self.identity)
         self.point_grid = PointGrid.PointGrid()
@@ -149,9 +182,10 @@ class Application(Frame):
         self.popup_window = None
         self.build_sample()
         self.menu_creation()
+        self.function_entry.focus()
         #show the graph
         self.launch()
-    
+
     def key_bindings(self):
         """
         Bind the keys.
@@ -213,17 +247,69 @@ class Application(Frame):
         self.edit_menu = Menu(self.menubar, tearoff=0)
         self.view_menu = Menu(self.menubar, tearoff=0)
         self.help_menu = Menu(self.menubar, tearoff=0)
+        self.object_menu = Menu(self.menubar, tearoff=0)
+        self.color_menu = Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="File", menu=self.file_menu)
         self.menubar.add_cascade(label="Edit", menu=self.edit_menu)
         self.menubar.add_cascade(label="View", menu=self.view_menu)
         self.menubar.add_cascade(label="Help", menu=self.help_menu)
+        self.edit_menu_create()
+        self.object_menu_create()
+        self.color_menu_create()
         self.file_menu_create()
+        self.help_menu_create()
         self.master.config(menu=self.menubar)
+
+    def edit_menu_create(self):
+        self.edit_menu.add_cascade(label="Objects", menu=self.object_menu)
+        self.edit_menu.add_cascade(label="Colors", menu=self.color_menu)
+        self.edit_menu.add_command(label="Preferences")
+
+    def color_menu_create(self):
+        self.color_menu.add_command(label="New start color", command=self.new_start_color)
+        self.color_menu.add_command(label="New end color", command=self.new_end_color)
+
+    def object_menu_create(self):
+        self.object_menu.add_command(label="Grid", command=self.grid_popup)
+        self.object_menu.add_command(label="Circle", command=self.circle_popup)
+        self.object_menu.add_separator()
+        self.object_menu.add_command(label="Remove First", command=self.remove_first)
+        self.object_menu.add_command(label="Remove Last", command=self.remove_from_collection)
+        self.object_menu.add_command(label="Remove All", command=self.master_blaster)
+
+
+    def help_menu_create(self):
+        self.help_menu.add_command(label="View Help", command=self.help_message_box)
 
     def file_menu_create(self):
         self.file_menu.add_command(label="Save", command=self.save)
         self.file_menu.add_command(label="Open", command=self.open)
         self.file_menu.add_command(label="Exit", command=self.master.quit)
+
+    def new_end_color(self):
+        new_end_color = self.new_color_selector_box(self.plot_object._end_color)
+        self.plot_object.set_end_color(new_end_color)
+
+    def new_start_color(self):
+        new_start_color = self.new_color_selector_box(self.plot_object._start_color)
+        self.plot_object.set_start_color(new_start_color)
+
+    def new_color_selector_box(self, init_color=(0,0,0)):
+        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
+        init_color = convert_to_byte_color(init_color)
+        new_color = convert_to_zero_to_one(colorchooser.askcolor(color=init_color,
+                                                            title="Pick a new color")[0])
+        self.plot_object.set_animation(was_paused)
+        return new_color
+
+    def help_message_box(self):
+        #pause the animation
+        self.help_message_str = "Sam Doud needs to write this up"
+        was_paused_state = self.plot_object.set_animation(PlotWindow.PAUSE)
+        #launch the message box
+        tkinter.messagebox.showinfo("Help", self.help_message_str)
+        #resume the animation if it was playing
+        self.plot_object.set_animation(was_paused_state)
 
     def save(self):
         """
@@ -236,7 +322,7 @@ class Application(Frame):
         #(i.e. didn't exit the prompt w/o selecting a file)
         if file_name:
             with open(file_name, "wb+") as save_file:
-                pickle.dump(data_dict,save_file)
+                pickle.dump(data_dict, save_file)
 
     def open(self):
         """
@@ -250,7 +336,7 @@ class Application(Frame):
             pickle_data = pickle.load(open_file)
         #unpack this data in another method
         self.deserialize(pickle_data)
-        
+
     def break_apart_lines(self):
         """
         Take the line_collection and get the first point in the point order of every point and
@@ -268,6 +354,13 @@ class Application(Frame):
             total.append((temp_shape_list, shape[ID]))
         return total
 
+
+    def master_blaster(self):
+        """
+        Deletes all objects on the graph
+        """
+        self.line_collection = []
+
     def bring_lines_together(self, data):
         """
         Given a set of points on a line, change them into ComplexPoint and Line objects.
@@ -281,7 +374,8 @@ class Application(Frame):
                 for points in line:
                     temp_point = ComplexPoint.ComplexPoint(points)
                     temp_points_on_line.append(temp_point)
-                temp_line = Line.Line("z", temp_points_on_line[0].complex, temp_points_on_line[-1].complex,
+                temp_line = Line.Line("z", temp_points_on_line[0].complex,
+                                      temp_points_on_line[-1].complex,
                                       len(temp_points_on_line), temp_points_on_line)
                 temp_lines_in_shape.append(temp_line)
             shapes_in_data.append((temp_lines_in_shape, shape[ID]))
@@ -307,15 +401,15 @@ class Application(Frame):
         #get the limits from the user if defined
         if all(self.fetch_limits()):
             limits = (self.point_grid.real_max, self.point_grid.real_min,
-                  self.point_grid.imag_max, self.point_grid.imag_min)
+                      self.point_grid.imag_max, self.point_grid.imag_min)
         else:
             #the limits were not defininded by the user
             limits = (None, None, None, None)
         #pack the data 
         return {self.functions_pickle_str:current_functions, self.n_steps_pickle_str:n_steps,
-                     self.id_counter_pickle_str:id_counter, self.lines_pickle_str:lines,
-                     self.outlier_remover_pickle_str:outlier,
-                     self.reverse_checkbox_pickle_str:reverse, self.limits_pickle_str:limits}
+                self.id_counter_pickle_str:id_counter, self.lines_pickle_str:lines,
+                self.outlier_remover_pickle_str:outlier,
+                self.reverse_checkbox_pickle_str:reverse, self.limits_pickle_str:limits}
 
     def save_file_dialog(self):
         """
@@ -336,7 +430,9 @@ class Application(Frame):
                           pickle_data[self.reverse_checkbox_pickle_str])
         self.id_number_counter = pickle_data[self.id_counter_pickle_str]
         n_functions = pickle_data[self.functions_pickle_str].count(";") + 1
-        self.set_text(self.n_entry, str(int((pickle_data[self.n_steps_pickle_str] + n_functions + 1) / (n_functions + 1 +pickle_data[self.reverse_checkbox_pickle_str]))))
+        self.set_text(self.n_entry,
+                      str(int((pickle_data[self.n_steps_pickle_str] + n_functions + 1) /
+                              (n_functions + 1 + pickle_data[self.reverse_checkbox_pickle_str]))))
         self.set_text(self.function_entry, pickle_data[self.functions_pickle_str])
         self.line_collection = self.bring_lines_together(pickle_data[self.lines_pickle_str])
         limits = pickle_data[self.limits_pickle_str]
@@ -473,6 +569,14 @@ class Application(Frame):
         #increment the id tag
         self.id_number_counter += 1
         #return the id tag less one (as to refer to this object)
+        try:
+            if self.plot_object.anim:
+                pass
+        except AttributeError:
+            try:
+                self.plot_object.animate()
+            except AttributeError:
+                pass
         return self.id_number_counter - 1
 
     def remove_from_collection(self, id_number=None, top=False):
@@ -512,9 +616,12 @@ class Application(Frame):
                     self.line_collection.pop()
                 else:
                     return False
-        self.point_grid.provide_function(self.function_objects, self.point_grid.n_steps,
+        if self.line_collection:
+            self.point_grid.provide_function(self.function_objects, self.point_grid.n_steps,
                                          self.flattened_lines(),
                                          self.reverse_checkbox_var.get() == ON)
+        else:
+            self.plot_object.anim = None
         #start the animation back up
         return True
 
@@ -691,7 +798,7 @@ class Application(Frame):
         Launch the circle popup window
         then buil the circle
         """
-        self.popup_open()
+        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
         self.popup_window = CircleBuilderPopup(self.master)
         #wait for this window to be closed
         self.master.wait_window(self.popup_window.top)
@@ -701,14 +808,14 @@ class Application(Frame):
             self.launch()
         except AttributeError:
             print("no data")
-        self.popup_close()
+        self.plot_object.set_animation(was_paused)
 
     def grid_popup(self):
         """
         launch a pop-up window to build a user-defined grid
         then build the grid
         """
-        self.popup_open()
+        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
         self.popup_window = GridBuilderPopup(self.master)
         self.master.wait_window(self.popup_window.top)
         try:
@@ -717,33 +824,15 @@ class Application(Frame):
             self.launch()
         except AttributeError:
             print("no data")
-        self.popup_close()
+        self.plot_object.set_animation(was_paused)
 
-    def popup_open(self):
-        """
-        Checks and stores if the animation is paused, then pauses the animation
-        """
-        self.already_paused = False
-        if not self.plot_object.pause:
-            self.plot_object.pause_animation()
-        else:
-            self.already_paused = True
-
-    def popup_close(self):
-        """
-        Resumes the animation if the user had the animation running before launching the popup
-        """
-        if not self.already_paused:
-            self.plot_object.resume_animation()
 
 def resource_path(relative):
-    return os.path.join(
-        os.environ.get(
-            "_MEIPASS2",
-            os.path.abspath(".")
-        ),
-        relative
-    )
+    """
+    A function that gets the absolute path from relative. Needed for redist.
+    Found from StackOverflow.
+    """
+    return os.path.join(os.environ.get("_MEIPASS2",os.path.abspath(".")), relative)
 
 
 ROOT = Tk()
