@@ -1,4 +1,4 @@
-import statistics
+﻿import statistics
 
 from sympy import re, im, arg, Abs, Symbol, symbols, I
 import numpy as np
@@ -249,8 +249,9 @@ class PointGrid(object):
             #self.pre_compute()
         else:
             self.lines = []
+            self.n_lines = 0
         #self.changed_flag_unhandled = True
- 
+
     def provide_function(self, functions, number_of_steps_to_compute,
                          collection_of_lines, reverse=False):
         """Give a complex function to this function.
