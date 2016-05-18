@@ -1,6 +1,6 @@
 ﻿from sympy import (Function, Symbol, symbols, lambdify, re, im, arg, Abs, E, sympify, sin, sinc,
                    cos, cosh, acos, acosh, acot, acoth, acsc, asec, asech, asin, asinh,
-                   atan, atan2, atanh, conjugate, tan, tanh, pi)
+                   atan, atan2, atanh, conjugate, tan, tanh, pi, log, ln)
 from sympy.abc import z
 
 class ComplexFunction(object):
@@ -17,7 +17,7 @@ class ComplexFunction(object):
         Given a function, in either string or expression format, create an object that
         can evaluate any complex number given to it.
         """
-        self.function_str = expression
+        self.function_str = compliant_expression(expression)
         self.filename = generate_filename(expression)
         #TODO regex cleaning of expression
         self.expr = sympify(self.function_str)
@@ -48,6 +48,8 @@ def compliant_expression(expression):
     expression = expression.upper()
     expression = expression.replace("PI", "pi")
     expression = expression.replace("EXP", "exp")
+    expression = expression.lower()
+    expression = expression.replace("e", "E")
     return expression
 
 def generate_filename(expression):
