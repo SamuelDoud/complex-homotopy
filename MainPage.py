@@ -431,8 +431,7 @@ class Application(Frame):
         self.id_number_counter = pickle_data[self.id_counter_pickle_str]
         n_functions = pickle_data[self.functions_pickle_str].count(";") + 1
         self.set_text(self.n_entry,
-                      str(int((pickle_data[self.n_steps_pickle_str] + n_functions + 1) /
-                              (n_functions + 1 + pickle_data[self.reverse_checkbox_pickle_str]))))
+                      str(int(((pickle_data[self.n_steps_pickle_str] - 1) / n_functions))))
         self.set_text(self.function_entry, pickle_data[self.functions_pickle_str])
         self.line_collection = self.bring_lines_together(pickle_data[self.lines_pickle_str])
         limits = pickle_data[self.limits_pickle_str]
@@ -446,6 +445,8 @@ class Application(Frame):
             self.point_grid.add_line(line[0])
         self.point_grid.changed_flag_unhandled = True
         self.launch()
+        self.plot_object.set_frame(0)
+        self.plot_object.set_animation(PlotWindow.PLAY)
 
     def set_checkbox(self, check_box, check_box_var, value):
         """
