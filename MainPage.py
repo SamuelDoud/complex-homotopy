@@ -148,7 +148,7 @@ class Application(Frame):
         self.master.title("Complex Homotopy")
         #give the icon file to the GUI
         #uncoment this when I figure out pyInstaller
-        #self.master.iconbitmap(resource_path("icon.ico"))
+        self.master.iconbitmap(resource_path("icon.ico"))
         #how long between frames in milliseconds
         self.default_interval = 40
         self.animation_thread = None
@@ -828,12 +828,19 @@ class Application(Frame):
         self.plot_object.set_animation(was_paused)
 
 
-def resource_path(relative):
+def resource_path(relative_path):
     """
     A function that gets the absolute path from relative. Needed for redist.
     Found from StackOverflow.
+    http://stackoverflow.com/questions/7674790/bundling-data-files-with-pyinstaller-onefile
+    user: Max
     """
-    return os.path.join(os.environ.get("_MEIPASS2",os.path.abspath(".")), relative)
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 
 ROOT = Tk()
