@@ -1,4 +1,4 @@
-import math
+﻿import math
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -33,7 +33,7 @@ class PlotWindow(object):
         self.anim = None
         self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
-        self.fig = plt.figure(figsize=(6, 6), dpi=100)
+        self.fig = plt.figure(figsize=(7, 7), dpi=100)
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
         ffmpeg_animation_writer = animation.writers['ffmpeg']
         self.ffmpeg_writer = ffmpeg_animation_writer(fps=25, bitrate=1800)

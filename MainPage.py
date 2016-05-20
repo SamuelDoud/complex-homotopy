@@ -1,4 +1,4 @@
-import pickle
+﻿import pickle
 import threading
 import os
 import sys
@@ -169,6 +169,10 @@ class Application(Frame):
         self.canvas = None
         self.toolbar = None
         self.frame_slider = None
+        self.toolbar_frame_span = 4
+        self.slider_row = 1
+        self.slider_column = self.toolbar_frame_span + 1
+        self.size = 7
         self.identity = "z"
         self.identity_function = func.ComplexFunction(self.identity)
         self.point_grid = PointGrid.PointGrid()
@@ -515,6 +519,7 @@ class Application(Frame):
         self.frame_slider = Scale(self.master, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame)
         self.circle_launcher = Button(self.master, command=self.circle_popup, text="Circle Builder")
         self.grid_launcher = Button(self.master, command=self.grid_popup, text="Grid Builder")
+        self.toolbar_frame = Frame(self.master)
 
     def pack_widgets(self):
         """
@@ -524,28 +529,28 @@ class Application(Frame):
         outside of this method but not in the __init__ method.
         """
         #WTF tab ordering
-        self.function_label.grid(row=2, column=0)
-        self.function_entry.grid(row=2, column=1)
-        self.n_label.grid(row=3, column=0)
-        self.n_entry.grid(row=3, column=1)
-        self.circle_launcher.grid(row=5, column=0)
-        self.grid_launcher.grid(row=5, column=1)
-        self.submit.grid(row=5, column=2)
-        self.outlier_remover_checkbox.grid(row=5, column=3)
-        self.reverse_checkbox.grid(row=6, column=3)
-        self.remove_front.grid(row=6, column=0)
-        self.pop_from_collection.grid(row=6, column=1)
-        self.save_video.grid(row=6, column=2)
-        self.real_max_label.grid(row=3, column=6)
-        self.real_max_entry.grid(row=3, column=5)
-        self.real_min_label.grid(row=3, column=2)
-        self.real_min_entry.grid(row=3, column=3)
-        self.imag_max_label.grid(row=2, column=3)
-        self.imag_max_entry.grid(row=2, column=4)
-        self.imag_min_label.grid(row=4, column=3)
-        self.imag_min_entry.grid(row=4, column=4)
-        self.slider_row = 1
-        self.slider_column = 0
+
+        self.toolbar_frame.grid(row=1, column=0, columnspan=self.toolbar_frame_span)
+        self.function_label.grid(row=3, column=0)
+        self.function_entry.grid(row=4, column=1)
+        self.n_label.grid(row=5, column=0)
+        self.n_entry.grid(row=6, column=1)
+        self.circle_launcher.grid(row=6, column=0)
+        self.grid_launcher.grid(row=6, column=1)
+        self.submit.grid(row=6, column=2)
+        self.outlier_remover_checkbox.grid(row=6, column=3)
+        self.reverse_checkbox.grid(row=7, column=3)
+        self.remove_front.grid(row=7, column=0)
+        self.pop_from_collection.grid(row=7, column=1)
+        self.save_video.grid(row=7, column=2)
+        self.real_max_label.grid(row=4, column=6)
+        self.real_max_entry.grid(row=4, column=5)
+        self.real_min_label.grid(row=4, column=2)
+        self.real_min_entry.grid(row=4, column=3)
+        self.imag_max_label.grid(row=3, column=3)
+        self.imag_max_entry.grid(row=3, column=4)
+        self.imag_min_label.grid(row=5, column=3)
+        self.imag_min_entry.grid(row=5, column=4)
 
     def redraw_slider(self, steps):
         """
@@ -554,9 +559,9 @@ class Application(Frame):
         of steps, and then reinject it to its old spot
         """
         self.frame_slider.destroy()
-        self.frame_slider = Scale(to=self.point_grid.n_steps, length=600,
-                                  from_=0, orient=HORIZONTAL, command=self.go_to_frame)
-        self.frame_slider.grid(row=self.slider_row, column=self.slider_column, columnspan=6)
+        self.frame_slider = Scale(to=self.point_grid.n_steps, length=(self.size-self.toolbar_frame_span - 1) * 100,
+                                  from_=0, orient=HORIZONTAL, command=self.go_to_frame,)
+        self.frame_slider.grid(row=self.slider_row, column=self.slider_column, columnspan=self.size - self.toolbar_frame_span)
 
     def go_to_frame(self, event):
         """
@@ -792,11 +797,11 @@ class Application(Frame):
         Also, kick off the animation.
         """
         self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=self.master)
-        #self.toolbar = NavigationToolbar2TkAgg(self.plot_object.fig, master=self.master)
-        #self.toolbar.update()
+        self.canvas.get_tk_widget().grid(row=0, column=0, columnspan=self.size)
+        self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.toolbar_frame)
+        self.toolbar.update()
         self.plot_object.fig.canvas.mpl_connect('button_press_event', self.plot_object.toggle_pause)
         #self.canvas.show()
-        self.canvas.get_tk_widget().grid(row=0, column=0, columnspan=6)
         #self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
         self.animating_already = True
         del self.animation_thread
