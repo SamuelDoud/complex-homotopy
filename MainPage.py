@@ -146,6 +146,7 @@ class Application(Frame):
         Frame.__init__(self, master)
         self.master = master
         self.master.title("Complex Homotopy")
+        self.master.protocol("WM_DELETE_WINDOW", self.shutdown)
         #give the icon file to the GUI
         #uncoment this when I figure out pyInstaller
         self.master.iconbitmap(resource_path("icon.ico"))
@@ -185,6 +186,12 @@ class Application(Frame):
         self.function_entry.focus()
         #show the graph
         self.launch()
+
+    def shutdown(self):
+        """
+        Closes the application
+        """
+        self.master.destroy()
 
     def key_bindings(self):
         """
