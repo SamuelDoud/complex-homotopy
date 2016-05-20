@@ -1,6 +1,7 @@
 import pickle
 import threading
 import os
+import sys
 from itertools import cycle
 import math
 
@@ -192,6 +193,7 @@ class Application(Frame):
         Closes the application
         """
         self.master.destroy()
+        sys.exit()
 
     def key_bindings(self):
         """
