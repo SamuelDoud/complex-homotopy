@@ -169,10 +169,9 @@ class Application(Frame):
         self.canvas = None
         self.toolbar = None
         self.frame_slider = None
-        self.toolbar_frame_span = 4
-        self.slider_row = 1
-        self.slider_column = self.toolbar_frame_span + 1
         self.size = 7
+        self.slider_row = 1
+        self.slider_column = 0
         self.identity = "z"
         self.identity_function = func.ComplexFunction(self.identity)
         self.point_grid = PointGrid.PointGrid()
@@ -180,8 +179,10 @@ class Application(Frame):
         self.outlier_remover_var.set(0)
         self.reverse_checkbox_var = IntVar()
         self.reverse_checkbox_var.set(0)
+        self.create_frames()
         self.create_widgets()
-        self.pack_widgets()
+        self.grid_widgets_in_frames()
+        self.grid_frames()
         self.animating_already = False
         self.already_paused = False
         self.lock_frame = False
@@ -196,8 +197,8 @@ class Application(Frame):
         """
         Closes the application
         """
+        self.master.quit()
         self.master.destroy()
-        sys.exit()
 
     def key_bindings(self):
         """
@@ -290,7 +291,6 @@ class Application(Frame):
         self.object_menu.add_command(label="Remove Last", command=self.remove_from_collection)
         self.object_menu.add_command(label="Remove All", command=self.master_blaster)
 
-
     def help_menu_create(self):
         self.help_menu.add_command(label="View Help", command=self.help_message_box)
 
@@ -366,7 +366,6 @@ class Application(Frame):
                 temp_shape_list.append(temp_line_list)
             total.append((temp_shape_list, shape[ID]))
         return total
-
 
     def master_blaster(self):
         """
@@ -486,6 +485,18 @@ class Application(Frame):
                                              defaultextension=self.default_extension, title=title)
         return file_name
 
+    def create_frames(self):
+        common_bd = 3
+        self.plotting_frame = Frame(self.master, bd=common_bd)
+        self.utility_frame = Frame(self.master, bd=common_bd)
+        self.toolbar_frame = Frame(self.plotting_frame)
+        
+
+    def grid_frames(self):
+        self.plotting_frame.grid(row=0, column=0, columnspan=self.size)
+        self.toolbar_frame.grid(row=1, column=0)#, columnspan=4)
+        self.utility_frame.grid(row=2, column=0, columnspan=self.size)
+
     def create_widgets(self):
         """
         Creates and arranges the GUI.
@@ -493,35 +504,36 @@ class Application(Frame):
         common_width = 5
         common_bd = 3
         #checkbox to control outlier logic
-        self.outlier_remover_checkbox = Checkbutton(self.master, text="Remove outliers",
+        self.outlier_remover_checkbox = Checkbutton(self.utility_frame, text="Remove outliers",
                                                     variable=self.outlier_remover_var,
                                                     onvalue=ON, offvalue=OFF, height=1, width=12)
-        self.reverse_checkbox = Checkbutton(self.master, text="Reverse",
+        self.reverse_checkbox = Checkbutton(self.utility_frame, text="Reverse",
                                             variable=self.reverse_checkbox_var,
                                             onvalue=ON, offvalue=OFF, height=1, width=6)
-        self.pop_from_collection = Button(self.master, text="Remove last",
+        self.pop_from_collection = Button(self.utility_frame, text="Remove last",
                                           command=self.remove_from_collection)
-        self.submit = Button(self.master, text="Submit", command=self.launch)
-        self.function_label = Label(self.master, text="Enter a f(z)")
-        self.save_video = Button(self.master, text="Save as Video", command=self.save_video_handler)
-        self.remove_front = Button(self.master, text="Remove first", command=self.remove_first)
-        self.n_label = Label(self.master, text="Number of steps")
-        self.real_max_label = Label(self.master, text="Real max")
-        self.real_min_label = Label(self.master, text="Real min")
-        self.imag_max_label = Label(self.master, text="Imag max")
-        self.imag_min_label = Label(self.master, text="Imag min")
-        self.real_max_entry = Entry(self.master, width=common_width, bd=common_bd)
-        self.real_min_entry = Entry(self.master, width=common_width, bd=common_bd)
-        self.imag_min_entry = Entry(self.master, width=common_width, bd=common_bd)
-        self.imag_max_entry = Entry(self.master, width=common_width, bd=common_bd)
-        self.function_entry = Entry(self.master, width=30, bd=common_bd)
-        self.n_entry = Entry(self.master, width=common_width, bd=common_bd)
+        self.submit = Button(self.utility_frame, text="Submit", command=self.launch)
+        self.function_label = Label(self.utility_frame, text="Enter a f(z)")
+        self.save_video = Button(self.utility_frame, text="Save as Video", command=self.save_video_handler)
+        self.remove_front = Button(self.utility_frame, text="Remove first", command=self.remove_first)
+        self.n_label = Label(self.utility_frame, text="Number of steps")
+        self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
+        self.circle_launcher = Button(self.utility_frame, command=self.circle_popup, text="Circle Builder")
+        self.grid_launcher = Button(self.utility_frame, command=self.grid_popup, text="Grid Builder")
+        self.real_max_label = Label(self.utility_frame, text="Real max")
+        self.real_min_label = Label(self.utility_frame, text="Real min")
+        self.imag_max_label = Label(self.utility_frame, text="Imag max")
+        self.imag_min_label = Label(self.utility_frame, text="Imag min")
+        self.real_max_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
+        self.real_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
+        self.imag_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
+        self.imag_max_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
+        self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
         self.frame_slider = Scale(self.master, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame)
-        self.circle_launcher = Button(self.master, command=self.circle_popup, text="Circle Builder")
-        self.grid_launcher = Button(self.master, command=self.grid_popup, text="Grid Builder")
-        self.toolbar_frame = Frame(self.master)
+        
+        
 
-    def pack_widgets(self):
+    def grid_widgets_in_frames(self):
         """
         Method to pack widgets created in above method onto the window.
         This method only exists for organization purposes.
@@ -529,28 +541,28 @@ class Application(Frame):
         outside of this method but not in the __init__ method.
         """
         #WTF tab ordering
-
-        self.toolbar_frame.grid(row=1, column=0, columnspan=self.toolbar_frame_span)
-        self.function_label.grid(row=3, column=0)
-        self.function_entry.grid(row=4, column=1)
-        self.n_label.grid(row=5, column=0)
-        self.n_entry.grid(row=6, column=1)
-        self.circle_launcher.grid(row=6, column=0)
-        self.grid_launcher.grid(row=6, column=1)
-        self.submit.grid(row=6, column=2)
-        self.outlier_remover_checkbox.grid(row=6, column=3)
-        self.reverse_checkbox.grid(row=7, column=3)
-        self.remove_front.grid(row=7, column=0)
-        self.pop_from_collection.grid(row=7, column=1)
-        self.save_video.grid(row=7, column=2)
-        self.real_max_label.grid(row=4, column=6)
-        self.real_max_entry.grid(row=4, column=5)
-        self.real_min_label.grid(row=4, column=2)
-        self.real_min_entry.grid(row=4, column=3)
-        self.imag_max_label.grid(row=3, column=3)
-        self.imag_max_entry.grid(row=3, column=4)
-        self.imag_min_label.grid(row=5, column=3)
-        self.imag_min_entry.grid(row=5, column=4)
+        self.function_label.grid(row=0, column=0)
+        self.function_entry.grid(row=0, column=1)
+        self.outlier_remover_checkbox.grid(row=0, column=2)
+        self.n_label.grid(row=1, column=0)
+        self.n_entry.grid(row=1, column=1)
+        self.reverse_checkbox.grid(row=1, column=2)
+        self.circle_launcher.grid(row=2, column=0)
+        self.grid_launcher.grid(row=2, column=1)
+        self.submit.grid(row=2, column=2)
+        self.remove_front.grid(row=3, column=0)
+        self.pop_from_collection.grid(row=3, column=1)
+        self.save_video.grid(row=3, column=2)
+        offset = 3
+        self.real_max_label.grid(row=1, column=(offset + 4))
+        self.real_max_entry.grid(row=1, column=(offset + 3))
+        self.real_min_label.grid(row=1, column=(offset + 0))
+        self.real_min_entry.grid(row=1, column=(offset + 1))
+        self.imag_max_label.grid(row=0, column=(offset + 1))
+        self.imag_max_entry.grid(row=0, column=(offset + 2))
+        self.imag_min_label.grid(row=2, column=(offset + 1))
+        self.imag_min_entry.grid(row=2, column=(offset + 2))
+        self.redraw_slider(1)
 
     def redraw_slider(self, steps):
         """
@@ -559,9 +571,9 @@ class Application(Frame):
         of steps, and then reinject it to its old spot
         """
         self.frame_slider.destroy()
-        self.frame_slider = Scale(to=self.point_grid.n_steps, length=(self.size-self.toolbar_frame_span - 1) * 100,
+        self.frame_slider = Scale(to=self.point_grid.n_steps, length=(self.size * 100),
                                   from_=0, orient=HORIZONTAL, command=self.go_to_frame,)
-        self.frame_slider.grid(row=self.slider_row, column=self.slider_column, columnspan=self.size - self.toolbar_frame_span)
+        self.frame_slider.grid(row=self.slider_row, column=self.slider_column)
 
     def go_to_frame(self, event):
         """
@@ -796,8 +808,8 @@ class Application(Frame):
         Create the frame on which the matplotlib figure will be displayed.
         Also, kick off the animation.
         """
-        self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=self.master)
-        self.canvas.get_tk_widget().grid(row=0, column=0, columnspan=self.size)
+        self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=self.plotting_frame)
+        self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=self.size)
         self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.toolbar_frame)
         self.toolbar.update()
         self.plot_object.fig.canvas.mpl_connect('button_press_event', self.plot_object.toggle_pause)
