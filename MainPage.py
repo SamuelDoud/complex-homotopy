@@ -153,6 +153,7 @@ class Application(Frame):
         self.master.iconbitmap(resource_path("icon.ico"))
         #how long between frames in milliseconds
         self.default_interval = 40
+        self.default_points_on_line = 250
         self.animation_thread = None
         self.extensions = [("Homotopy data", ".cht"), ("All Files", "*")]
         self.default_extension = ".cht"
@@ -698,7 +699,7 @@ class Application(Frame):
         Build a grid from a popup.
         """
         return self.add_lines(self.point_grid.grid_lines(upper_right,
-                                                         lower_left, lines_num, lines_num))
+                                                         lower_left, lines_num, self.default_points_on_line))
 
     def save_video_handler(self):
         """
