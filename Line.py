@@ -1,4 +1,4 @@
-import cmath
+﻿import cmath
 
 import numpy as np
 
@@ -19,6 +19,7 @@ class Line(object):
         self.singularity_index = -1
         self.number_of_steps = 0
         self.width = 1
+        self.dash_seq = None
         self.function = function
         #must be non-negative number of steps
         self.number_of_points = number_of_points
@@ -147,3 +148,6 @@ class Line(object):
                                    self.number_of_steps)
         self.points.insert(self.singularity_index, tuple_of_pm_epsilon[PLUS])
         self.points.insert(self.singularity_index, tuple_of_pm_epsilon[MINUS])
+
+    def set_dash_seq(dashes):
+        self.dash_seq = dashes
