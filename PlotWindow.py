@@ -31,12 +31,14 @@ class PlotWindow(object):
         self._frame_number = 0
         self.interval = None
         self.anim = None
+        self.dpi = 100
         self.grid = grid #the point grid that this graph is to display. Can be changed!
+        grid.dpi = self.dpi
         #the dimmensions of the figure. Could be more intelligent
-        self.fig = plt.figure(figsize=(7, 7), dpi=100)
+        self.fig = plt.figure(figsize=(7, 7), dpi=self.dpi)
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
         ffmpeg_animation_writer = animation.writers['ffmpeg']
-        self.ffmpeg_writer = ffmpeg_animation_writer(fps=25, bitrate=1800)
+        self.ffmpeg_writer = None
         self.updating_limits = updating_limits #
         self.new_limits() #take the inital limits from self.grid and apply to the graph
         self.all_lines = []
@@ -92,12 +94,13 @@ class PlotWindow(object):
         for index in range(len(self._end_color)):
             self.color_diff.append(self._end_color[index] - self._start_color[index])
 
-    def save(self, video=False, gif=False):
+    def save(self, video=False, gif=False, frames=25):
         """
         Save the homotopy as a video file or animated image file
         """
         #save the frame number the user is currently on
         old_frame_number = self._frame_number
+        self.ffmpeg_writer = ffmpeg_animation_writer(fps=frames, bitrate=1800)
         #jummp to the first frame so this is the first frame of the video
         #need to do this as frame_number is detached from the animation method
         self._frame_number = -1
@@ -134,6 +137,8 @@ class PlotWindow(object):
             for index, line in enumerate(self.grid.pre_computed_steps(self._frame_number)):
                 self.lines[index].set_data(line[REAL], line[IMAG])
                 self.lines[index]._color = self.color
+                if self.grid.lines[index].dash_seq:
+                    self.lines[index].set_dashes(self.grid.lines[index].dash_seq)
                 #self.lines[index].set_visible(True)
             #saving this data is too memory intensive for the small computational power req'd
             #increment the frame number

@@ -18,6 +18,7 @@ import PlotWindow
 import ComplexFunction as func
 import ComplexPoint
 import Line
+import PreferencesWindow
 
 #constants for checkboxes
 ON = 1
@@ -49,7 +50,11 @@ def convert_to_zero_to_one(tuple_three_byte_color):
         list_three_byte_color[index] = color / 255
     return tuple(list_three_byte_color)
 
-class CircleBuilderPopup(object):
+class BuilderPopup(object):
+    def __init__(self):
+        self.data = []
+
+class CircleBuilderPopup(BuilderPopup):
     """
     Class that launches a popup and collects user data to pass data back to the main window
     to build a circle.
@@ -58,10 +63,11 @@ class CircleBuilderPopup(object):
         """
         Establish the GUI of this popup
         """
+        BuilderPopup.__init__(self)
         self.top = Toplevel(master)
         self.width = 15
         self.bd = 3
-        self.circle_tuple = (0, 0)
+        self.data = (0, 0)
         self.radius = Label(self.top, text="Radius")
         self.radius_entry = Entry(self.top, width=self.width, bd=self.bd)
         self.center = Label(self.top, text="Center")
@@ -84,10 +90,57 @@ class CircleBuilderPopup(object):
         center = complex(0, 0)
         if self.center_entry.get():
             center = complex(allow_constants(self.center_entry.get()))
-        self.circle_tuple = (float(allow_constants(self.radius_entry.get())), center)
+        self.data = (float(allow_constants(self.radius_entry.get())), center)
         self.top.destroy()
 
-class GridBuilderPopup(object):
+class DiskBuilderPopup(BuilderPopup):
+    """
+    Class that launches a popup and collects user data to pass data back to the main window
+    to build a circle.
+    """
+    def __init__(self, master):
+        """
+        Establish the GUI of this popup
+        """
+        BuilderPopup.__init__(self)
+        self.top = Toplevel(master)
+        self.width = 15
+        self.bd = 3
+        self.data = (0, 0, 0)
+        self.radius = Label(self.top, text="Radius")
+        self.radius_entry = Entry(self.top, width=self.width, bd=self.bd)
+        self.n_circles_entry = Entry(self.top, width=self.width, bd=self.bd)
+        self.n_circles_label = Label(self.top, text="Number of circles")
+        self.center = Label(self.top, text="Center")
+        self.center_entry = Entry(self.top, width=self.width, bd=self.bd)
+        self.build_circle_submit = Button(self.top, text="Build!", command=self.cleanup)
+        self.top.bind("<Return>", self.cleanup)
+        self.radius.grid(row=0, column=0)
+        self.radius_entry.grid(row=0, column=1)
+        self.n_circles_label.grid(row=1, column=0)
+        self.n_circles_entry.grid(row=1, column=1)
+        self.center.grid(row=2, column=0)
+        self.center_entry.grid(row=2, column=1)
+        self.build_circle_submit.grid(row=3, column=0, columnspan=2)
+        self.top_left = 0
+        self.bottom_right = 0
+        self.radius_entry.focus()
+
+    def cleanup(self, entry=None):
+        """
+        Collect the data from the user and package it into object variables, then close.
+        """
+        center = complex(0, 0)
+        try:
+            if self.center_entry.get():
+                center = complex(allow_constants(self.center_entry.get()))
+            n_circles = int(self.n_circles_entry.get())
+            self.data = (float(allow_constants(self.radius_entry.get())), n_circles, center)
+        except:
+            pass
+        self.top.destroy()
+
+class GridBuilderPopup(BuilderPopup):
     """
     Class that launches a popup and collects user data to pass data back to the main window
     to build a grid.
@@ -96,6 +149,7 @@ class GridBuilderPopup(object):
         """
         Establish the GUI of this popup
         """
+        BuilderPopup.__init__(self)
         self.top = Toplevel(master)
         self.width = 15
         self.bd =3
@@ -118,6 +172,7 @@ class GridBuilderPopup(object):
         self.resolution_entry.grid(row=2, column=1)
         self.build_grid_submit.grid(row=3, column=0, columnspan=2)
         self.top_left_entry.focus()
+        self.data = (0, 0, 0)
 
     def cleanup(self, entry=None):
         """
@@ -132,6 +187,7 @@ class GridBuilderPopup(object):
                 or self.bottom_right.imag > self.top_left.imag or self.lines == 0):
             self.bottom_right = self.top_left = complex(0, 0)
             self.lines = 0
+        self.data = (self.top_left, self.bottom_right, self.lines)
         self.top.destroy()
 
 class Application(Frame):
@@ -153,7 +209,12 @@ class Application(Frame):
         self.master.iconbitmap(resource_path("icon.ico"))
         #how long between frames in milliseconds
         self.default_interval = 40
-        self.default_points_on_line = 250
+        self.default_points_on_line = 150
+        self.attributes = {}
+        self.fps_str = "Frames per second"
+        self.n_points_str = "Default points per line"
+        self.attributes[self.fps_str] = 1000 / self.default_interval
+        self.attributes[self.n_points_str] = self.default_points_on_line
         self.animation_thread = None
         self.extensions = [("Homotopy data", ".cht"), ("All Files", "*")]
         self.default_extension = ".cht"
@@ -278,7 +339,32 @@ class Application(Frame):
     def edit_menu_create(self):
         self.edit_menu.add_cascade(label="Objects", menu=self.object_menu)
         self.edit_menu.add_cascade(label="Colors", menu=self.color_menu)
-        self.edit_menu.add_command(label="Preferences")
+        self.edit_menu.add_command(label="Preferences", command=self.launch_preferences)
+
+    def launch_preferences(self):
+        #pause the window and see if the user already paused the animation
+        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
+        self._get_attributes()
+        self.pref_popup = PreferencesWindow.PreferencesWindow(self.master, self.attributes)
+        self.master.wait_window(self.pref_popup.top)
+        if list(self.attributes.values()) != self.pref_popup.attributes:
+            #an attribute was changed, so reassign the attributtes and relaunch
+            self.attributes = dict(zip(self.attributes.keys(), self.pref_popup.attribute_values))
+            self._set_attributes()
+            self.launch()
+        #wipe this from memory
+        del self.pref_popup
+        #unpause if the user was playing before the launch
+        self.plot_object.set_animation(was_paused)
+        
+    def _get_attributes(self):
+        self.attributes[self.fps_str] = (1000 / self.default_interval)
+        self.attributes[self.n_points_str] = self.default_points_on_line
+
+    def _set_attributes(self):
+        self.default_interval = 1000 / float(self.attributes[self.fps_str])
+        self.default_points_on_line = self.attributes[self.n_points_str]
+
 
     def color_menu_create(self):
         self.color_menu.add_command(label="New start color", command=self.new_start_color)
@@ -287,6 +373,7 @@ class Application(Frame):
     def object_menu_create(self):
         self.object_menu.add_command(label="Grid", command=self.grid_popup)
         self.object_menu.add_command(label="Circle", command=self.circle_popup)
+        self.object_menu.add_command(label="Disk", command=self.disk_popup)
         self.object_menu.add_separator()
         self.object_menu.add_command(label="Remove First", command=self.remove_first)
         self.object_menu.add_command(label="Remove Last", command=self.remove_from_collection)
@@ -487,7 +574,7 @@ class Application(Frame):
         return file_name
 
     def create_frames(self):
-        common_bd = 3
+        common_bd = 0
         self.plotting_frame = Frame(self.master, bd=common_bd)
         self.utility_frame = Frame(self.master, bd=common_bd)
         self.toolbar_frame = Frame(self.plotting_frame)
@@ -572,7 +659,7 @@ class Application(Frame):
         of steps, and then reinject it to its old spot
         """
         self.frame_slider.destroy()
-        self.frame_slider = Scale(to=self.point_grid.n_steps, length=(self.size * 100),
+        self.frame_slider = Scale(to=self.point_grid.n_steps - 1, length=(self.size * 100),
                                   from_=0, orient=HORIZONTAL, command=self.go_to_frame,)
         self.frame_slider.grid(row=self.slider_row, column=self.slider_column)
 
@@ -664,8 +751,8 @@ class Application(Frame):
         """
         A sampler method to test adding and removing shapes.
         """
-        self.add_lines(self.point_grid.circle(1, complex(1, 1)))
-        self.add_lines(self.point_grid.grid_lines(complex(-1, 1), complex(1, -1), 10, 10))
+        self.add_lines(self.point_grid.circle(1, complex(1, 1), self.default_points_on_line))
+        self.add_lines(self.point_grid.grid_lines(complex(-1, 1), complex(1, -1), 10, self.default_points_on_line))
 
     def flattened_lines(self):
         """
@@ -692,14 +779,18 @@ class Application(Frame):
         """
         Build a circle from a popup
         """
-        return self.add_lines(self.point_grid.circle(radius, center))
+        return self.add_lines(self.point_grid.circle(radius, center, self.default_points_on_line))
 
     def build_grid(self, upper_right, lower_left, lines_num):
         """
         Build a grid from a popup.
         """
         return self.add_lines(self.point_grid.grid_lines(upper_right,
-                                                         lower_left, lines_num, self.default_points_on_line))
+                                                         lower_left, lines_num,
+                                                         self.default_points_on_line))
+
+    def build_disk(self, radius, n_circles, center):
+        return self.add_lines(self.point_grid.disk(radius, n_circles, center))
 
     def save_video_handler(self):
         """
@@ -707,7 +798,7 @@ class Application(Frame):
         Should implement a filename prompt.
         """
         #now actually save the graph
-        self.plot_object.save(video=True)
+        self.plot_object.save(video=True, frames = (1000 / self.default_interval))
 
     def launch(self, entry=None):
         """
@@ -821,37 +912,34 @@ class Application(Frame):
         self.animation_thread = threading.Thread(target=self.plot_object.animate, args=(self.default_interval,))
         self.animation_thread.start()
 
+    def disk_popup(self):
+        self.general_popup(DiskBuilderPopup, self.build_disk)
+
     def circle_popup(self):
         """
-        Launch the circle popup window
-        then buil the circle
+        Launch the circle popup window, then build the circle from the prompt.
         """
-        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
-        self.popup_window = CircleBuilderPopup(self.master)
-        #wait for this window to be closed
-        self.master.wait_window(self.popup_window.top)
-        try:
-            self.build_circle(self.popup_window.circle_tuple[0], self.popup_window.circle_tuple[1])
-            #redraw the homotopy
-            self.launch()
-        except AttributeError:
-            print("no data")
-        self.plot_object.set_animation(was_paused)
+        self.general_popup(CircleBuilderPopup, self.build_circle)
 
     def grid_popup(self):
         """
-        launch a pop-up window to build a user-defined grid
-        then build the grid
+        Launch a pop-up window to build a user-defined grid, then build that grid from the prompt.
         """
+        self.general_popup(GridBuilderPopup, self.build_grid)
+
+    def general_popup(self, popup_class, popup_function):
         was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
-        self.popup_window = GridBuilderPopup(self.master)
+        self.popup_window = popup_class(self.master)
         self.master.wait_window(self.popup_window.top)
+        data = self.popup_window.data
         try:
-            self.build_grid(self.popup_window.top_left, self.popup_window.bottom_right,
-                            self.popup_window.lines)
-            self.launch()
-        except AttributeError:
-            print("no data")
+            #go to the popup function with the unpacked tuple arg
+            popup_function(*data)
+            self.plot_object.animate(self.default_interval)
+        except:
+            print("invalid data")
+        #remove from memory
+        del self.popup_window
         self.plot_object.set_animation(was_paused)
 
 
