@@ -23,6 +23,9 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="BuilderWindows.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ComplexFunction.py" />
     <Compile Include="Line.py" />
     <Compile Include="MainPage.py" />
@@ -30,6 +33,9 @@
     <Compile Include="ComplexPoint.py" />
     <Compile Include="PointGrid.py" />
     <Compile Include="PreferencesWindow.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ShapesMenu.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

@@ -38,7 +38,7 @@ class PointGrid(object):
         self.complex_variable_symbol = symbols('z', complex=True)
         self.limit_mem = [None] * (self.n_steps + 2)
         self.filename = "z"
-        self.functions = ComplexFunction.ComplexFunction(self.filename)
+        self.functions = [ComplexFunction.ComplexFunction(self.filename)]
 
     def delete(self, group_number):
         """
@@ -201,9 +201,11 @@ class PointGrid(object):
         complex_flattened_steps = list(zip(*flattened_steps))
         reals = []
         imags = []
-        [reals.extend(line) for line in complex_flattened_steps[REAL]]
-        [imags.extend(line) for line in complex_flattened_steps[IMAG]]
-        self.set_limits_agnostic(reals, imags)
+        if flattened_steps:
+            #check that we don't have an empty list
+            [reals.extend(line) for line in complex_flattened_steps[REAL]]
+            [imags.extend(line) for line in complex_flattened_steps[IMAG]]
+            self.set_limits_agnostic(reals, imags)
 
     def limits_at_step(self, step):
         """

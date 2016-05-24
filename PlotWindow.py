@@ -51,6 +51,7 @@ class PlotWindow(object):
         self._end_color = end_color #rgb tuple that specify the color endpoints
         self.color = list(self._start_color) #the color that will actually be displayed
         self.reset_color_diff()
+        self.recently_blitted = False
         self.pause_override = False
 
     def toggle_pause(self, event):
@@ -126,6 +127,8 @@ class PlotWindow(object):
         """
         #ignore the step from the animation call!
         #compute if the user has not paused the program
+        if self.recently_blitted:
+            self.un_blit()
         if not self.pause or self.pause_override:
             if len(self.lines) != self.grid.n_lines:
                 #there's a new number of lines in the graph
@@ -149,6 +152,16 @@ class PlotWindow(object):
                 self.set_frame(self.frame_number)
             self.pause_override = False
         return self.lines
+
+    def blit(self):
+        for line in self.lines:
+            line.set_visible(False)
+        self.recently_blitted = True
+
+    def un_blit(self):
+        for line in self.lines:
+            line.set_visible(True)
+        self.recently_blitted = False
 
     def reset_interval(self, delta):
         """
@@ -217,5 +230,6 @@ class PlotWindow(object):
         #will call the animation to start at the beginning
         self.interval = interval_length
         self.anim = animation.FuncAnimation(self.fig, func=self.animate_compute,
+                                            #init_func=self.blit,
                                             interval=interval_length,
                                             blit=True, frames=self.grid.n_steps)

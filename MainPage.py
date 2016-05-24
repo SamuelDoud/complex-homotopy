@@ -19,6 +19,8 @@ import ComplexFunction as func
 import ComplexPoint
 import Line
 import PreferencesWindow
+import BuilderWindows
+import ShapesMenu
 
 #constants for checkboxes
 ON = 1
@@ -49,146 +51,6 @@ def convert_to_zero_to_one(tuple_three_byte_color):
     for index, color in enumerate(list_three_byte_color):
         list_three_byte_color[index] = color / 255
     return tuple(list_three_byte_color)
-
-class BuilderPopup(object):
-    def __init__(self):
-        self.data = []
-
-class CircleBuilderPopup(BuilderPopup):
-    """
-    Class that launches a popup and collects user data to pass data back to the main window
-    to build a circle.
-    """
-    def __init__(self, master):
-        """
-        Establish the GUI of this popup
-        """
-        BuilderPopup.__init__(self)
-        self.top = Toplevel(master)
-        self.width = 15
-        self.bd = 3
-        self.data = (0, 0)
-        self.radius = Label(self.top, text="Radius")
-        self.radius_entry = Entry(self.top, width=self.width, bd=self.bd)
-        self.center = Label(self.top, text="Center")
-        self.center_entry = Entry(self.top, width=self.width, bd=self.bd)
-        self.build_circle_submit = Button(self.top, text="Build!", command=self.cleanup)
-        self.top.bind("<Return>", self.cleanup)
-        self.radius.grid(row=0, column=0)
-        self.radius_entry.grid(row=0, column=1)
-        self.center.grid(row=1, column=0)
-        self.center_entry.grid(row=1, column=1)
-        self.build_circle_submit.grid(row=2, column=0, columnspan=2)
-        self.top_left = 0
-        self.bottom_right = 0
-        self.radius_entry.focus()
-
-    def cleanup(self, entry=None):
-        """
-        Collect the data from the user and package it into object variables, then close.
-        """
-        center = complex(0, 0)
-        if self.center_entry.get():
-            center = complex(allow_constants(self.center_entry.get()))
-        self.data = (float(allow_constants(self.radius_entry.get())), center)
-        self.top.destroy()
-
-class DiskBuilderPopup(BuilderPopup):
-    """
-    Class that launches a popup and collects user data to pass data back to the main window
-    to build a circle.
-    """
-    def __init__(self, master):
-        """
-        Establish the GUI of this popup
-        """
-        BuilderPopup.__init__(self)
-        self.top = Toplevel(master)
-        self.width = 15
-        self.bd = 3
-        self.data = (0, 0, 0)
-        self.radius = Label(self.top, text="Radius")
-        self.radius_entry = Entry(self.top, width=self.width, bd=self.bd)
-        self.n_circles_entry = Entry(self.top, width=self.width, bd=self.bd)
-        self.n_circles_label = Label(self.top, text="Number of circles")
-        self.center = Label(self.top, text="Center")
-        self.center_entry = Entry(self.top, width=self.width, bd=self.bd)
-        self.build_circle_submit = Button(self.top, text="Build!", command=self.cleanup)
-        self.top.bind("<Return>", self.cleanup)
-        self.radius.grid(row=0, column=0)
-        self.radius_entry.grid(row=0, column=1)
-        self.n_circles_label.grid(row=1, column=0)
-        self.n_circles_entry.grid(row=1, column=1)
-        self.center.grid(row=2, column=0)
-        self.center_entry.grid(row=2, column=1)
-        self.build_circle_submit.grid(row=3, column=0, columnspan=2)
-        self.top_left = 0
-        self.bottom_right = 0
-        self.radius_entry.focus()
-
-    def cleanup(self, entry=None):
-        """
-        Collect the data from the user and package it into object variables, then close.
-        """
-        center = complex(0, 0)
-        try:
-            if self.center_entry.get():
-                center = complex(allow_constants(self.center_entry.get()))
-            n_circles = int(self.n_circles_entry.get())
-            self.data = (float(allow_constants(self.radius_entry.get())), n_circles, center)
-        except:
-            pass
-        self.top.destroy()
-
-class GridBuilderPopup(BuilderPopup):
-    """
-    Class that launches a popup and collects user data to pass data back to the main window
-    to build a grid.
-    """
-    def __init__(self, master):
-        """
-        Establish the GUI of this popup
-        """
-        BuilderPopup.__init__(self)
-        self.top = Toplevel(master)
-        self.width = 15
-        self.bd =3
-        self.top_left = complex(0, 0)
-        self.bottom_right = complex(0, 0)
-        self.lines = 0
-        self.top_left_label = Label(self.top, text="\"Top Left\"")
-        self.top_left_entry = Entry(self.top, width=self.width, bd=self.bd)
-        self.bottom_right_label = Label(self.top, text="\"Bottom Right\"")
-        self.bottom_right_entry = Entry(self.top, width=self.width, bd=self.bd)
-        self.resolution_label = Label(self.top, text="Lines")
-        self.resolution_entry = Entry(self.top, width=5)
-        self.build_grid_submit = Button(self.top, text="Build!", command=self.cleanup)
-        self.top.bind("<Return>", self.cleanup)
-        self.top_left_label.grid(row=0, column=0)
-        self.top_left_entry.grid(row=0, column=1)
-        self.bottom_right_label.grid(row=1, column=0)
-        self.bottom_right_entry.grid(row=1, column=1)
-        self.resolution_label.grid(row=2, column=0)
-        self.resolution_entry.grid(row=2, column=1)
-        self.build_grid_submit.grid(row=3, column=0, columnspan=2)
-        self.top_left_entry.focus()
-        self.data = (0, 0, 0)
-
-    def cleanup(self, entry=None):
-        """
-        Collect the data from the user and package it into object variables, then close.
-        """
-        if self.resolution_entry.get().isnumeric():
-            self.lines = int(self.resolution_entry.get())
-        self.top_left = complex(allow_constants(self.top_left_entry.get()))
-        self.bottom_right = complex(allow_constants(self.bottom_right_entry.get()))
-        #If these conditions are true then we do not have a grid
-        if (self.top_left.real > self.bottom_right.real
-                or self.bottom_right.imag > self.top_left.imag or self.lines == 0):
-            self.bottom_right = self.top_left = complex(0, 0)
-            self.lines = 0
-        self.data = (self.top_left, self.bottom_right, self.lines)
-        self.top.destroy()
 
 class Application(Frame):
     """
@@ -225,12 +87,19 @@ class Application(Frame):
         self.functions_pickle_str = "functions"
         self.reverse_checkbox_pickle_str = "reverse"
         self.outlier_remover_pickle_str = "outlier"
+        self.type_strs = {}
+        self.type_strs["disk"] = "disk"
+        self.type_strs["circle"] = "circle"
+        self.type_strs["grid"] = "grid"
+        self.type_strs["ellipse"] = "ellipse"
+        self.type_strs["line"] = "line"
         self.function_objects = []
         self.id_number_counter = 0
         self.line_collection = []
         self.canvas = None
         self.toolbar = None
         self.frame_slider = None
+        self.plot_object = None
         self.size = 7
         self.slider_row = 1
         self.slider_column = 0
@@ -374,6 +243,7 @@ class Application(Frame):
         self.object_menu.add_command(label="Grid", command=self.grid_popup)
         self.object_menu.add_command(label="Circle", command=self.circle_popup)
         self.object_menu.add_command(label="Disk", command=self.disk_popup)
+        self.object_menu.add_command(label="List", command=self.shape_window)
         self.object_menu.add_separator()
         self.object_menu.add_command(label="Remove First", command=self.remove_first)
         self.object_menu.add_command(label="Remove Last", command=self.remove_from_collection)
@@ -676,22 +546,22 @@ class Application(Frame):
         """
         self.frame_slider.set(frame_number)
 
-    def add_to_collection(self, lines):
+    def add_to_collection(self, lines, center=None, type_str=None):
         """
         Adds a set of lines to the collection and appends a id tag
         """
-        self.line_collection.append((lines, self.id_number_counter))
+        self.line_collection.append((lines, self.id_number_counter, center, type_str))
         #increment the id tag
         self.id_number_counter += 1
         #return the id tag less one (as to refer to this object)
-        try:
-            if self.plot_object.anim:
-                pass
-        except AttributeError:
-            try:
-                self.plot_object.animate()
-            except AttributeError:
-                pass
+        #try:
+        #    if self.plot_object.anim:
+        #        pass
+        #except AttributeError:
+        #    try:
+        #        self.plot_object.animate()
+        #    except AttributeError:
+        #        pass
         return self.id_number_counter - 1
 
     def remove_from_collection(self, id_number=None, top=False):
@@ -732,9 +602,7 @@ class Application(Frame):
                 else:
                     return False
         if self.line_collection:
-            self.point_grid.provide_function(self.function_objects, self.point_grid.n_steps,
-                                         self.flattened_lines(),
-                                         self.reverse_checkbox_var.get() == ON)
+            self.relaunch()
         else:
             self.plot_object.anim = None
         #start the animation back up
@@ -751,8 +619,8 @@ class Application(Frame):
         """
         A sampler method to test adding and removing shapes.
         """
-        self.add_lines(self.point_grid.circle(1, complex(1, 1), self.default_points_on_line))
-        self.add_lines(self.point_grid.grid_lines(complex(-1, 1), complex(1, -1), 10, self.default_points_on_line))
+        self.build_circle(1, complex(1, 1))
+        self.build_grid(complex(-1, 1), complex(1, -1), 10)
 
     def flattened_lines(self):
         """
@@ -764,7 +632,7 @@ class Application(Frame):
         stripped_of_id = [line[0] for line in self.line_collection]
         return [item for sublist in stripped_of_id for item in sublist]
 
-    def add_lines(self, list_of_lines):
+    def add_lines(self, list_of_lines, center=None, type_str=None):
         """
         Given a list of lines, add them to the Plot.
         """
@@ -772,25 +640,32 @@ class Application(Frame):
             list_of_lines = [list_of_lines]
         for line in list_of_lines:
             self.point_grid.add_line(line)
-        self.point_grid.changed_flag_unhandled = True
-        return self.add_to_collection(list_of_lines)
+        id = self.add_to_collection(list_of_lines, center, type_str)
+        if self.animating_already:
+            self.relaunch()
+        return id
 
     def build_circle(self, radius, center=complex(0, 0)):
         """
         Build a circle from a popup
         """
-        return self.add_lines(self.point_grid.circle(radius, center, self.default_points_on_line))
+        return self.add_lines(self.point_grid.circle(radius, center, self.default_points_on_line),
+                              center, self.type_strs["circle"])
 
     def build_grid(self, upper_right, lower_left, lines_num):
         """
         Build a grid from a popup.
         """
+        center = complex((upper_right.real + lower_left.real / 2),
+                         (upper_right.imag + lower_left.imag / 2))
         return self.add_lines(self.point_grid.grid_lines(upper_right,
                                                          lower_left, lines_num,
-                                                         self.default_points_on_line))
+                                                         self.default_points_on_line), center,
+                              self.type_strs["disk"])
 
     def build_disk(self, radius, n_circles, center):
-        return self.add_lines(self.point_grid.disk(radius, n_circles, center))
+        return self.add_lines(self.point_grid.disk(radius, n_circles, center),
+                              center, self.type_strs["disk"])       
 
     def save_video_handler(self):
         """
@@ -911,21 +786,22 @@ class Application(Frame):
         del self.animation_thread
         self.animation_thread = threading.Thread(target=self.plot_object.animate, args=(self.default_interval,))
         self.animation_thread.start()
+        
 
     def disk_popup(self):
-        self.general_popup(DiskBuilderPopup, self.build_disk)
+        self.general_popup(BuilderWindows.DiskBuilderPopup, self.build_disk)
 
     def circle_popup(self):
         """
         Launch the circle popup window, then build the circle from the prompt.
         """
-        self.general_popup(CircleBuilderPopup, self.build_circle)
+        self.general_popup(BuilderWindows.CircleBuilderPopup, self.build_circle)
 
     def grid_popup(self):
         """
         Launch a pop-up window to build a user-defined grid, then build that grid from the prompt.
         """
-        self.general_popup(GridBuilderPopup, self.build_grid)
+        self.general_popup(BuilderWindows.GridBuilderPopup, self.build_grid)
 
     def general_popup(self, popup_class, popup_function):
         was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
@@ -935,11 +811,33 @@ class Application(Frame):
         try:
             #go to the popup function with the unpacked tuple arg
             popup_function(*data)
-            self.plot_object.animate(self.default_interval)
         except:
             print("invalid data")
         #remove from memory
-        del self.popup_window
+        self.popup_window = None
+        self.plot_object.set_animation(was_paused)
+
+    def relaunch(self):
+        """Something has changed in the data, realunch the plot to reflect that."""
+        self.point_grid.provide_function(self.point_grid.functions, self.point_grid.n_steps,
+                                         self.flattened_lines(),
+                                         self.plot_object.reverse)
+        self.plot_object.new_limits()
+
+    def shape_window(self):
+        """Launch a window that shows a list of the current shapes.
+           User can remove lines if desired."""
+        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
+        self.popup_window = ShapesMenu.ShapesMenu(self.master, self.line_collection)
+        #wait for the window to close
+        self.master.wait_window(self.popup_window.top)
+        temp_line_collection = [line for line in self.line_collection if line[1] in self.popup_window.ids]
+        if self.line_collection != temp_line_collection:
+            #checking if the lists are different
+            self.line_collection = temp_line_collection
+            #since a change was made, we need to relauch the graph  
+            self.relaunch()
+        self.popup_window = None
         self.plot_object.set_animation(was_paused)
 
 
