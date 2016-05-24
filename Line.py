@@ -149,5 +149,11 @@ class Line(object):
         self.points.insert(self.singularity_index, tuple_of_pm_epsilon[PLUS])
         self.points.insert(self.singularity_index, tuple_of_pm_epsilon[MINUS])
 
-    def set_dash_seq(dashes):
-        self.dash_seq = dashes
+def compare(master, child_lines):
+    """Check if master and child have the same points"""
+    master_start_points = [complex_point.complex for complex_point in master.points]
+    child_start_points = [[complex_point.complex for complex_point in child.points] for child in child_lines]
+    return master_start_points in child_start_points
+
+def set_dash_seq(dashes):
+    self.dash_seq = dashes
