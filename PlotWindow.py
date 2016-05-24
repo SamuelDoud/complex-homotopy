@@ -37,7 +37,7 @@ class PlotWindow(object):
         #the dimmensions of the figure. Could be more intelligent
         self.fig = plt.figure(figsize=(7, 7), dpi=self.dpi)
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
-        ffmpeg_animation_writer = animation.writers['ffmpeg']
+        self.ffmpeg_animation_writer = animation.writers['ffmpeg']
         self.ffmpeg_writer = None
         self.updating_limits = updating_limits #
         self.new_limits() #take the inital limits from self.grid and apply to the graph
@@ -100,16 +100,16 @@ class PlotWindow(object):
         """
         #save the frame number the user is currently on
         old_frame_number = self._frame_number
-        self.ffmpeg_writer = ffmpeg_animation_writer(fps=frames, bitrate=1800)
         #jummp to the first frame so this is the first frame of the video
         #need to do this as frame_number is detached from the animation method
         self._frame_number = -1
         #determine if the animation is paused currently
-        paused_state = self.pause
+        was_paused = self.set_animation(PAUSE)
         #if the animation is not paused, pause it
         if self.pause:
             self.pause = False
         if video:
+            self.ffmpeg_writer = self.ffmpeg_animation_writer(fps=frames, bitrate=1800)
             del self.anim
             self.animate(self.interval)
             self.anim.save(self.grid.filename + '.mp4', extra_args=['-vcodec', 'libx264'],
@@ -118,7 +118,7 @@ class PlotWindow(object):
             raise NotImplementedError
         #return to the frame that the user was on before they saved
         self._frame_number = old_frame_number
-        self.pause = paused_state
+        self.set_animation(was_paused)
 
     def animate_compute(self, step):
         """
