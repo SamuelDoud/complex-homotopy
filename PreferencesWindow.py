@@ -21,9 +21,10 @@ class PreferencesWindow(object):
         self.cancel_button = Button(self.top, text="Cancel", command=self.top.destroy)
         self.submit_button.grid(row=len(self.attribute_values), column=0)
         self.cancel_button.grid(row=len(self.attribute_values), column=1)
+        self.top.bind("<Return>", self.determine_values)
         self.entries[0].focus()
 
-    def determine_values(self):
+    def determine_values(self, entry=None):
         for index, attribute in enumerate(self.attribute_values):
             if self.entries[index].get():
                 self.attribute_values[index] = self.entries[index].get()
