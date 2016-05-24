@@ -131,12 +131,16 @@ class PointGrid(object):
             circles_as_lines.append(temp_line)
         return circles_as_lines
 
-    def add_line(self, line):
+    def add_line(self, line=None):
         """
         Add a line to the grid. This function tracks stats on this as well.
         """
         #could implement a sorting method here...
         #self.lines.sort(key=lambda key_value: key_value.name)
+        if not line:
+            self.lines = []
+            self.n_lines = 0
+            return
         self.lines.append(line)#add the new Line object to the list
         self.n_lines += 1 #a line has been added so the count is obviously greate
 
@@ -281,16 +285,36 @@ class PointGrid(object):
         after this function is completed, all the points will have their homotopy computed"""
         self.lines = collection_of_lines
         self.new_lines()
+
+        #cull the lines to remove duplicates
+        index = 0
+        while index < len(collection_of_lines) - 1:
+                is_similar = Line.compare(collection_of_lines[index], collection_of_lines[index + 1:])
+                #check if this point is in the list
+                if is_similar:
+                    #remove from the list
+                    collection_of_lines.pop(index)
+                else:
+                    index += 1
+        if self.functions != functions:
+            #we have a new set of functions, no tricks can be used to avoid computation
+            self.functions = functions
+            #get the total filename of the function
+            #start with the first function
+            self.filename = self.functions[0].filename
+            #then go through the rest
+            if len(self.functions) > 1:
+                for function in self.functions[1:]:
+                    self.filename = self.filename + ";" + function.filename
+        if self.functions == functions or self.n_steps == number_of_steps_to_compute:
+            #the function is the same as the last run. Truncate the list of lines so that only unique lines are included
+            for line in collection_of_lines:
+                if Line.compare(line, self.lines):
+                    collection_of_lines.remove(line)
+        self.add_line()
         for line in collection_of_lines:
             self.add_line(line)
-        self.functions = functions
-        #get the total filename of the function
-        #start with the first function
-        self.filename = self.functions[0].filename
-        #then go through the rest
-        if len(self.functions) > 1:
-            for function in self.functions[1:]:
-                self.filename = self.filename + ";" + function.filename
+
         #delete these lines. Their existence determines actions
         self.computed_steps_to_consider = []
         #wipe the memory of the limits and creates a list of size n_steps
@@ -298,8 +322,8 @@ class PointGrid(object):
         singularity = []
         for line_index in range(self.n_lines):
             singularity.append(self.lines[line_index].parameterize_points(functions,
-                                                                          number_of_steps_to_compute,
-                                                                          reverse=reverse))
+                                                                        number_of_steps_to_compute,
+                                                                        reverse=reverse))
         #set the steps now so the program doesn't have to do this on the fly
         #this is actually taking the number of steps at the first point on the first line only
         #assuming that this is going to be consistent throughout the plane
