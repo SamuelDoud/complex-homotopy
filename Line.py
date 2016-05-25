@@ -63,8 +63,8 @@ class Line(object):
         else:
             list_of_tuples = [point.get_location_at_step(this_step)
                               for point in self.points if not point.ignore_in_outliers]
-        #take the list's transpose
-        return np.asarray(list_of_tuples).T.tolist()
+        #break into real and imag lists
+        return list(zip(*list_of_tuples))
 
     def parameterize_points(self, functions, steps=None, reverse=False):
         """

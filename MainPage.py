@@ -574,7 +574,7 @@ class Application(Frame):
         #did the user pass a value for id_number?
         if top:
             #user wants the first element removed
-            self.line_collection.pop(0)
+            self.point_grid.delete(self.line_collection.pop(0)[0])
         else:
             if id_number:
                 try:
@@ -592,13 +592,13 @@ class Application(Frame):
                             return False
                         last_index = index
                         delta //= 2
-                    self.line_collection.pop(index)
+                    self.point_grid.delete(self.line_collection.pop(index)[0])
                 except IndexError:
                     return False
             else:
                 #user did not pass an id number. pop from top of stack
                 if self.line_collection:
-                    self.line_collection.pop()
+                    self.point_grid.delete(self.line_collection.pop()[0])
                 else:
                     return False
         if self.line_collection:
@@ -712,8 +712,7 @@ class Application(Frame):
         #get if the user has checked the reverse animation box
         reverse = self.reverse_checkbox_var.get() == ON
         #give the point grid its function
-        self.point_grid.provide_function(self.function_objects, steps_from_user,
-                                         self.line_collection, reverse=reverse)
+        self.point_grid.provide_function(self.function_objects, steps_from_user, reverse=reverse)
         self.redraw_slider(steps_from_user)
         #code for if this is the initial run of the launch method
         #prevents the application from launching unneeded windows
@@ -824,7 +823,6 @@ class Application(Frame):
     def relaunch(self):
         """Something has changed in the data, realunch the plot to reflect that."""
         self.point_grid.provide_function(self.point_grid.functions, self.point_grid.n_steps,
-                                         self.line_collection,
                                          self.plot_object.reverse)
         self.plot_object.new_limits()
 

@@ -134,7 +134,7 @@ class PlotWindow(object):
                 #there's a new number of lines in the graph
                 self.lines = [self.axes.plot([], [],
                                                 lw=self.grid.lines[line].width)[0]
-                                for line in range(len(self.grid.lines))]
+                                for line in range(self.grid.n_lines)]
                 self.axes.lines = self.lines
             self.color = self.color_compute(self._frame_number)
             for index, line in enumerate(self.grid.pre_computed_steps(self._frame_number)):
