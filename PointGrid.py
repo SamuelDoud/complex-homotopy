@@ -284,18 +284,17 @@ class PointGrid(object):
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function
         after this function is completed, all the points will have their homotopy computed"""
         self.lines = collection_of_lines
+        lines_to_readd = []
         self.new_lines()
 
         #cull the lines to remove duplicates
-        index = 0
-        while index < len(collection_of_lines) - 1:
-                is_similar = Line.compare(collection_of_lines[index], collection_of_lines[index + 1:])
-                #check if this point is in the list
-                if is_similar:
-                    #remove from the list
-                    collection_of_lines.pop(index)
-                else:
-                    index += 1
+        culled_and_flattened_lines = flattened_lines(collection_of_lines)
+        if self.functions == functions or self.n_steps == number_of_steps_to_compute:
+            #the function is the same as the last run. Truncate the list of lines so that only unique lines are included
+            for line in culled_and_flattened_lines:
+                if Line.compare(line, self.lines):
+                    #this line was already computed, don't recompute it
+                    culled_and_flattened_lines.remove(line)
         if self.functions != functions:
             #we have a new set of functions, no tricks can be used to avoid computation
             self.functions = functions
@@ -306,13 +305,11 @@ class PointGrid(object):
             if len(self.functions) > 1:
                 for function in self.functions[1:]:
                     self.filename = self.filename + ";" + function.filename
-        if self.functions == functions or self.n_steps == number_of_steps_to_compute:
-            #the function is the same as the last run. Truncate the list of lines so that only unique lines are included
-            for line in collection_of_lines:
-                if Line.compare(line, self.lines):
-                    collection_of_lines.remove(line)
+
+        #remove all lines
         self.add_line()
-        for line in collection_of_lines:
+        #readd the lines to compute
+        for line in culled_and_flattened_lines:
             self.add_line(line)
 
         #delete these lines. Their existence determines actions
@@ -334,6 +331,9 @@ class PointGrid(object):
         #if a singularity exists, set the lines to consider limit
         if any(singularity):
             self.lines_to_consider()
+        #readd the lines that we determined didn't need to be computed
+        for line in lines_to_readd:
+            self.add_line(line)
         self.pre_compute()
 
 def remove_outliers_operation(points, z_limit=3):
@@ -355,3 +355,14 @@ def remove_outliers_operation(points, z_limit=3):
 
 def distance(start, end):
     return ((start.real - end.real)**2 + (start.imag - end.imag)**2)**0.5
+
+def flattened_lines(line_collection):
+    """
+    The collection of lines is a list of tuples with
+    each tuple containing a list of lines and an id.
+    This method takes all the lines in the collection
+    and returns them as one list.
+    """
+
+    stripped_of_id = [line[0] for line in line_collection]
+    return [item for sublist in stripped_of_id for item in sublist]

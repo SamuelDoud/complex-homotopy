@@ -652,10 +652,14 @@ class Application(Frame):
         return self.add_lines(self.point_grid.circle(radius, center, self.default_points_on_line),
                               center, self.type_strs["circle"])
 
-    def build_grid(self, upper_right, lower_left, lines_num):
+    def build_grid(self, upper_right, lower_left, lines_num, color=None):
         """
         Build a grid from a popup.
         """
+        #if not start_color:
+        #    start_color = self.start_color
+        #    end_color = self.end_color
+        #    color_diff = self.color_diff
         center = complex((upper_right.real + lower_left.real / 2),
                          (upper_right.imag + lower_left.imag / 2))
         return self.add_lines(self.point_grid.grid_lines(upper_right,
@@ -709,7 +713,7 @@ class Application(Frame):
         reverse = self.reverse_checkbox_var.get() == ON
         #give the point grid its function
         self.point_grid.provide_function(self.function_objects, steps_from_user,
-                                         self.flattened_lines(), reverse=reverse)
+                                         self.line_collection, reverse=reverse)
         self.redraw_slider(steps_from_user)
         #code for if this is the initial run of the launch method
         #prevents the application from launching unneeded windows
@@ -820,7 +824,7 @@ class Application(Frame):
     def relaunch(self):
         """Something has changed in the data, realunch the plot to reflect that."""
         self.point_grid.provide_function(self.point_grid.functions, self.point_grid.n_steps,
-                                         self.flattened_lines(),
+                                         self.line_collection,
                                          self.plot_object.reverse)
         self.plot_object.new_limits()
 
