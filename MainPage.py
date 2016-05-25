@@ -734,7 +734,7 @@ class Application(Frame):
         #allows the color computation to deal with if the animation is reversing
         self.plot_object.reverse = reverse
         #set the boolean that controls the outlier operation in the pointgrid to that of the user
-        self.plot_object.grid.remove_outliers = self.outlier_remover_var.get() == ON
+        self.plot_object.grid.remove_outliers = reverse
         self.plot_object.new_limits()
 
     def fetch_limits(self):

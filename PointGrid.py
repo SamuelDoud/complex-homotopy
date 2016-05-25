@@ -38,7 +38,7 @@ class PointGrid(object):
         self.complex_variable_symbol = symbols('z', complex=True)
         self.limit_mem = [None] * (self.n_steps + 2)
         self.filename = "z"
-        self.functions = [ComplexFunction.ComplexFunction(self.filename)]
+        self.functions = None
 
     def delete(self, group_number):
         """
@@ -131,18 +131,16 @@ class PointGrid(object):
             circles_as_lines.append(temp_line)
         return circles_as_lines
 
-    def add_line(self, line=None):
+    def add_line(self, line):
         """
         Add a line to the grid. This function tracks stats on this as well.
         """
         #could implement a sorting method here...
         #self.lines.sort(key=lambda key_value: key_value.name)
-        if not line:
-            self.lines = []
-            self.n_lines = 0
-            return
-        self.lines.append(line)#add the new Line object to the list
-        self.n_lines += 1 #a line has been added so the count is obviously greate
+        #delete all lines if no lines are passed
+        #add the line and increase teh n_lines counter
+        self.lines.append(line)
+        self.n_lines += 1
 
     def lines_at_step(self, this_step):
         """
@@ -269,13 +267,10 @@ class PointGrid(object):
         """
         if lines_to_add:
             self.lines = lines_to_add
-            self.lines += 1
-            #adding sequentally protects
-            #self.pre_compute()
+            self.n_lines = len(lines_to_add)
         else:
             self.lines = []
             self.n_lines = 0
-        #self.changed_flag_unhandled = True
 
     def provide_function(self, functions, number_of_steps_to_compute,
                          collection_of_lines, reverse=False):
@@ -283,20 +278,22 @@ class PointGrid(object):
         Then, operate on each point by the function
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function
         after this function is completed, all the points will have their homotopy computed"""
-        self.lines = collection_of_lines
         lines_to_readd = []
-        self.new_lines()
-
         #cull the lines to remove duplicates
         culled_and_flattened_lines = flattened_lines(collection_of_lines)
-        if self.functions == functions or self.n_steps == number_of_steps_to_compute:
+        if self.functions == functions and self.n_steps == number_of_steps_to_compute:
             #the function is the same as the last run. Truncate the list of lines so that only unique lines are included
             for line in culled_and_flattened_lines:
-                if Line.compare(line, self.lines):
+                if line.points[0].point_order:
                     #this line was already computed, don't recompute it
-                    culled_and_flattened_lines.remove(line)
-        if self.functions != functions:
+                    #save this line
+                    lines_to_readd.append(line)
+                    #remove it from the list of lines that we will recompute
+            #remove elements not in this list
+            culled_and_flattened_lines = list_set_minus(culled_and_flattened_lines, lines_to_readd)
+        elif self.functions != functions:
             #we have a new set of functions, no tricks can be used to avoid computation
+            #need to redetermine the functions and filename
             self.functions = functions
             #get the total filename of the function
             #start with the first function
@@ -305,13 +302,9 @@ class PointGrid(object):
             if len(self.functions) > 1:
                 for function in self.functions[1:]:
                     self.filename = self.filename + ";" + function.filename
-
         #remove all lines
-        self.add_line()
+        self.new_lines(culled_and_flattened_lines)
         #readd the lines to compute
-        for line in culled_and_flattened_lines:
-            self.add_line(line)
-
         #delete these lines. Their existence determines actions
         self.computed_steps_to_consider = []
         #wipe the memory of the limits and creates a list of size n_steps
@@ -366,3 +359,7 @@ def flattened_lines(line_collection):
 
     stripped_of_id = [line[0] for line in line_collection]
     return [item for sublist in stripped_of_id for item in sublist]
+
+def list_set_minus(big_list, little_list):
+	""" Return the elements of big_list not in small list"""
+	return list(set(big_list) - set(little_list))
