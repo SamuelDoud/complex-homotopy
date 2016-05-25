@@ -286,6 +286,7 @@ class Application(Frame):
         """
         Serialize the data of the program into a pickle file defined by the user.
         """
+        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
         data_dict = self.serialize()
         #get a file name from the user
         file_name = self.save_file_dialog()
@@ -294,11 +295,13 @@ class Application(Frame):
         if file_name:
             with open(file_name, "wb+") as save_file:
                 pickle.dump(data_dict, save_file)
+        self.plot_object.set_animation(was_paused)
 
     def open(self):
         """
         Method to open a file that defines a previous state of the program.
         """
+        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
         file_name = self.open_file_dialog()
         if not file_name:
             #user gave a non-existent name
@@ -307,23 +310,25 @@ class Application(Frame):
             pickle_data = pickle.load(open_file)
         #unpack this data in another method
         self.deserialize(pickle_data)
+        self.launch()
+        self.plot_object.set_animation(was_paused)
 
     def break_apart_lines(self):
         """
         Take the line_collection and get the first point in the point order of every point and
         store that in a list so it can be pickled and reassembled later.
         """
-        total = []
         lines = self.line_collection
-        for shape in lines:
+        lines_to_save = [list(line) for line in self.line_collection]
+        for index, shape in enumerate(lines):
             temp_shape_list = []
             for line in shape[DATA]:
                 temp_line_list = []
                 for point in line.points:
                     temp_line_list.append(point.complex)
                 temp_shape_list.append(temp_line_list)
-            total.append((temp_shape_list, shape[ID]))
-        return total
+            lines_to_save[index][DATA] = temp_shape_list
+        return lines_to_save
 
     def master_blaster(self):
         """
@@ -336,8 +341,8 @@ class Application(Frame):
         Given a set of points on a line, change them into ComplexPoint and Line objects.
         Needed as these classes cannot be pickled.
         """
-        shapes_in_data = []
-        for shape in data:
+        shapes_in_data = list(data)
+        for index, shape in enumerate(data):
             temp_lines_in_shape = []
             for line in shape[DATA]:
                 temp_points_on_line = []
@@ -347,9 +352,8 @@ class Application(Frame):
                 temp_line = Line.Line("z", temp_points_on_line[0].complex,
                                       temp_points_on_line[-1].complex,
                                       len(temp_points_on_line), temp_points_on_line)
-                temp_lines_in_shape.append(temp_line)
-            shapes_in_data.append((temp_lines_in_shape, shape[ID]))
-        return shapes_in_data
+            shapes_in_data[index][DATA] = temp_line
+        return [tuple(line) for line in shapes_in_data]
 
     def serialize(self):
         """
@@ -413,10 +417,7 @@ class Application(Frame):
             self.set_text(self.imag_min_entry, limits[3])
         for line in self.line_collection:
             self.point_grid.add_line(line[0])
-        self.point_grid.changed_flag_unhandled = True
-        self.launch()
         self.plot_object.set_frame(0)
-        self.plot_object.set_animation(PlotWindow.PLAY)
 
     def set_checkbox(self, check_box, check_box_var, value):
         """
@@ -488,8 +489,6 @@ class Application(Frame):
         self.imag_max_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
         self.frame_slider = Scale(self.master, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame)
-        
-        
 
     def grid_widgets_in_frames(self):
         """
