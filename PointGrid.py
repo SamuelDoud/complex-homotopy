@@ -17,7 +17,7 @@ class PointGrid(object):
     """
     Point Grid holds all the points on the graph and their associations
     """
-    def __init__(self, limits=None, remove_outliers=True, lines=[]):
+    def __init__(self, limits=None, remove_outliers=True, lines=None):
         """
         Create a point grid.
         """
@@ -36,7 +36,10 @@ class PointGrid(object):
             self.real_min = None
             self.imag_max = None
             self.imag_min = None
-        self.lines = lines
+        if lines:
+            self.lines = lines
+        else:
+            self.lines = []
         self.flattened_lines_cache = None
         self.n_steps = 1
         self.n_lines = 0
@@ -82,17 +85,17 @@ class PointGrid(object):
         real_diff = complex_low_imag_high_real.real - complex_high_imag_low_real.real
         #generate all the points on the edges.
         right_edge = np.linspace(complex(complex_low_imag_high_real.real,
-                                    complex_high_imag_low_real.imag),
-                            complex_low_imag_high_real, n_lines)
-        left_edge =  np.linspace(complex_high_imag_low_real, complex(complex_high_imag_low_real.real,
-                                                                complex_low_imag_high_real.imag),
-                            n_lines)
+                                         complex_high_imag_low_real.imag),
+                                 complex_low_imag_high_real, n_lines)
+        left_edge = np.linspace(complex_high_imag_low_real,
+                                complex(complex_high_imag_low_real.real,
+                                        complex_low_imag_high_real.imag), n_lines)
         upper_edge = np.linspace(complex_high_imag_low_real,
-                            complex(complex_low_imag_high_real.real,
-                                    complex_high_imag_low_real.imag), n_lines)
+                                 complex(complex_low_imag_high_real.real,
+                                         complex_high_imag_low_real.imag), n_lines)
         lower_edge = np.linspace(complex(complex_high_imag_low_real.real,
-                                    complex_low_imag_high_real.imag),
-                            complex_low_imag_high_real, n_lines)
+                                         complex_low_imag_high_real.imag),
+                                 complex_low_imag_high_real, n_lines)
         #the arrays that are used to draw to and from
         start = left_edge
         end = right_edge
@@ -134,7 +137,7 @@ class PointGrid(object):
         circles_as_lines = []
         radii_diff = radius / num_circles
         circles_as_points = [self.circle(radii_diff * (step + 1),
-                               center, n_points_per_circle) for step in range(num_circles)]
+                                         center, n_points_per_circle) for step in range(num_circles)]
         for circle_points in circles_as_points:
             temp_line = Line.Line('z', circle_points.points[0].complex,
                                   circle_points.points[-1].complex,
@@ -185,7 +188,6 @@ class PointGrid(object):
         #Get every step in this homotopy and map it to this list.
         self.computed_steps = list(map(self.lines_at_step, range(self.n_steps)))
         #set the limits of the graph based upon the computation
-        
 
     def set_user_limits(self, limits_tuple):
         """
@@ -207,7 +209,6 @@ class PointGrid(object):
         #the user has specified their own limits. These limits take prrecedence
         if self.user_limits:
             return
-
         reals = []
         imaginaries = []
         for line_tuple in self.lines:
@@ -255,10 +256,13 @@ class PointGrid(object):
         """
         Force the min-maxes to form a square.
         """
+        #how much space will the objects be from the edge of the graph
         pad = 1.05
         real_diff = (self.real_max - self.real_min)
         imag_diff = (self.imag_max - self.imag_min)
-        big_change = math.fabs((real_diff - imag_diff) / 2) * pad
+        #big change is how much the axis w/ the smaller difference will need to change by
+        big_change = math.fabs((real_diff - imag_diff) / 2) * (pad / 2)
+        #this is the distance the smaller axis will change by
         little_change = (pad - 1) / 2
         if real_diff > imag_diff:
             little_change *= real_diff
@@ -266,15 +270,12 @@ class PointGrid(object):
             self.real_min -= little_change
             self.imag_max += big_change + little_change
             self.imag_min -= big_change + little_change
-            
         else:
             little_change *= imag_diff
             self.imag_max += little_change
             self.imag_min -= little_change
-            self.real_max += big_change + little_change 
+            self.real_max += big_change + little_change
             self.real_min -= big_change + little_change
-
-
 
     def pre_computed_steps(self, this_step):
         """
@@ -294,14 +295,16 @@ class PointGrid(object):
             self.n_lines = 0
 
 
-    def provide_function(self, functions, number_of_steps_to_compute, reverse=False, limits=None, remove_outliers=False):
+    def provide_function(self, functions, number_of_steps_to_compute, reverse=False, limits=None,
+                         remove_outliers=False):
         """Give a complex function to this function.
         Then, operate on each point by the function
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function
         after this function is completed, all the points will have their homotopy computed"""
         self.remove_outliers = remove_outliers
         sigularities = []
-        if functions == self.functions and number_of_steps_to_compute == self.n_steps and reverse == self.reverse:
+        if (functions == self.functions and number_of_steps_to_compute == self.n_steps and
+        reverse == self.reverse):
             lines_to_compute = []
             #find the lines without computations
             for line_tuple in self.lines:
@@ -320,86 +323,18 @@ class PointGrid(object):
             self.n_steps *= 2
         for line_tuple in lines_to_compute:
             line = line_in_tuple(line_tuple)
-            sigularities.append(line.parameterize_points(self.functions, number_of_steps_to_compute, reverse))
+            sigularities.append(line.parameterize_points(self.functions,
+                                                         number_of_steps_to_compute, reverse))
         self.pre_compute()
         if limits:
+            #the user has defined their own limits
             self.user_limits = limits
             self.set_user_limits(self.user_limits)
         else:
             self.set_limits()
 
-
-        #lines_to_readd = []
-        #lines_to_readd_indexes = []
-        #line_removed = False
-        ##cull the lines to remove duplicates
-        #culled_and_flattened_lines = list(self.lines)
-        #new_function = True
-        #if self.functions == functions and self.n_steps == number_of_steps_to_compute and self.flattened_lines_cache:
-        #    new_function = False
-        #    in_both_lists = list_set_intersection(culled_and_flattened_lines, self.flattened_lines_cache)
-        #    #the function is the same as the last run. Truncate the list of lines so that only
-        #    #unique lines are included
-        #    for index, line in enumerate(culled_and_flattened_lines):
-        #        if line.points[0].point_order:
-        #            #this line was already computed, don't recompute it
-        #            #save this line
-        #            if line in in_both_lists:
-        #                lines_to_readd.append(line)
-        #                lines_to_readd_indexes.append(index)
-        #            else:
-        #                #this line was already computed but is not in the new list!
-        #                line_removed = False
-        #                culled_and_flattened_lines.remove(line)
-        #            #remove it from the list of lines that we will recompute
-        #    #remove elements not in this list
-        #    culled_and_flattened_lines = list_set_minus(culled_and_flattened_lines, lines_to_readd)
-        #else:
-        #    self.computed_steps = []
-        #    if self.functions != functions:
-        #        #we have a new set of functions, no tricks can be used to avoid computation
-        #        #need to redetermine the functions and filename
-        #        self.functions = functions
-        #        #get the total filename of the function
-        #        #start with the first function
-        #        self.filename = self.functions[0].filename
-        #        #then go through the rest
-        #        if len(self.functions) > 1:
-        #            for function in self.functions[1:]:
-        #                self.filename = self.filename + ";" + function.filename
-        ##remove all lines and add in the different lines
-        #self.new_lines(culled_and_flattened_lines)
-        ##wipe the memory of the limits and creates a list of size n_steps
-        #self.limit_mem = [None] * (self.n_steps)
-        #singularity = []
-        #for line_index in range(len(culled_and_flattened_lines)):
-        #    singularity.append(culled_and_flattened_lines[line_index].parameterize_points(functions,
-        #                                                                number_of_steps_to_compute,
-        #                                                                reverse=reverse))
-        ##set the steps now so the program doesn't have to do this on the fly
-        ##this is actually taking the number of steps at the first point on the first line only
-        ##assuming that this is going to be consistent throughout the plane
-        #self.n_steps = number_of_steps_to_compute
-        ##if a singularity exists, set the lines to consider limit
-        #if any(singularity):
-        #    self.lines_to_consider()
-        ##readd the lines that we determined didn't need to be computed
-        #if not line_removed and not new_function:
-        #    if self.computed_steps:
-        #        new_steps = self.pre_compute()
-        #        for step_index, lines in enumerate(new_steps):
-        #            self.computed_steps[step_index] += lines
-        #    else:
-        #        self.computed_steps = self.pre_compute()
-        #for index, line in enumerate(lines_to_readd):
-        #    self.add_line(line, lines_to_readd_indexes[index])
-        #if line_removed or new_function:
-        #    self.computed_steps = self.pre_compute()
-        ##COPY the list to the cache
-        #self.flattened_lines_cache = list(self.lines)
-        #self.set_limits()
-
     def set_filename(self, functions):
+        """Set the filename given a set of functions"""
         #get the first functions filename
         self.filename = functions[0].filename
         #then go through the rest
@@ -423,17 +358,9 @@ def remove_outliers_operation(points, z_limit=3):
     limits = (median - st_dev*z_limit, median + st_dev*z_limit)
     return [pt for pt in points if pt >= limits[low] and pt <= limits[high]]
 
-
 def distance(start, end):
+    """Get the distance between two complex points"""
     return ((start.real - end.real)**2 + (start.imag - end.imag)**2)**0.5
-
-def list_set_minus(big_list, little_list):
-	""" Return the elements of big_list not in small list"""
-	return list(set(big_list) - set(little_list))
-
-def list_set_intersection(big_list, little_list):
-	""" Return the elements of big_list not in small list"""
-	return list(set(big_list).intersection(set(little_list)))
 
 def flatten_lines(line_collection):
     """
@@ -447,3 +374,11 @@ def flatten_lines(line_collection):
 
 def line_in_tuple(line_tuple):
     return line_tuple[0]
+
+def list_set_minus(big_list, little_list):
+    """Return the elements of big_list not in small list"""
+    return list(set(big_list) - set(little_list))
+
+def list_set_intersection(big_list, little_list):
+    """Return the elements of big_list in small list"""
+    return list(set(big_list).intersection(set(little_list)))
