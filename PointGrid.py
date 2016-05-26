@@ -1,4 +1,4 @@
-﻿import statistics
+import statistics
 
 from sympy import re, im, arg, Abs, Symbol, symbols, I
 import numpy as np
@@ -9,6 +9,8 @@ import ComplexPoint
 
 REAL = 0
 IMAG = 1 #constants for consistent iterable access
+
+LINE_INDEX = 0
 
 class PointGrid(object):
     """
@@ -22,6 +24,7 @@ class PointGrid(object):
         self.changed_flag_unhandled = False
         self.computed_steps_to_consider = None
         self.function = None
+        self.reverse = False
         self.computed_steps = []
         self.user_limits = limits
         self.remove_outliers = remove_outliers
@@ -135,7 +138,7 @@ class PointGrid(object):
             temp_line = Line.Line('z', circle_points.points[0].complex,
                                   circle_points.points[-1].complex,
                                   len(circle_points.points), circle_points.points)
-            temp_line.width = radii_diff * self.dpi
+            #temp_line.width =  self.dpi
             circles_as_lines.append(temp_line)
         return circles_as_lines
 
@@ -157,13 +160,13 @@ class PointGrid(object):
         """
         Get the state of every line at this current state
         """
-        return [ln.points_at_step(this_step) for ln in self.lines]
+        return [ln[0].points_at_step(this_step) for ln in self.lines]
 
     def lines_to_consider_at_step(self, this_step):
         """
         Get the points that don't have the marker on them..
         """
-        return [ln.points_at_step(this_step, to_consider=True) for ln in self.lines]
+        return [ln[0].points_at_step(this_step, to_consider=True) for ln in self.lines]
 
     def lines_to_consider(self):
         """
@@ -179,9 +182,8 @@ class PointGrid(object):
         Also, this function will track the min/max of both the real and imaginary axis
         """
         #Get every step in this homotopy and map it to this list.
-        return list(map(self.lines_at_step, range(self.n_steps)))
+        self.computed_steps = list(map(self.lines_at_step, range(self.n_steps)))
         #set the limits of the graph based upon the computation
-        self.set_limits()
         
 
     def set_user_limits(self, limits_tuple):
@@ -204,19 +206,14 @@ class PointGrid(object):
         #the user has specified their own limits. These limits take prrecedence
         if self.user_limits:
             return
-        if not self.computed_steps_to_consider:
-            lines = self.computed_steps
-        else:
-            lines = self.computed_steps_to_consider
-        #flatten the list
-        flattened_steps = [item for sublist in lines for item in sublist]
-        complex_flattened_steps = [[],[]]
-        for line in flattened_steps:
-            complex_flattened_steps[REAL] += line[REAL]
-            complex_flattened_steps[IMAG] += line[IMAG]
-        if complex_flattened_steps:
-            #check that we don't have an empty list
-            self.set_limits_agnostic(complex_flattened_steps[REAL], complex_flattened_steps[IMAG])
+
+        reals = []
+        imaginaries = []
+        for line_tuple in self.lines:
+            line_object = line_in_tuple(line_tuple)
+            reals.extend(line_object.reals)
+            imaginaries.extend(line_object.imaginaries)
+        self.set_limits_agnostic(reals, imaginaries)
 
     def limits_at_step(self, step):
         """
@@ -244,6 +241,9 @@ class PointGrid(object):
             imags = remove_outliers_operation(imags)
         #add 5% so the window isn't cramped.
         pad = 1.05
+        if not reals or not imags:
+            reals = [0]
+            imags = [0]
         self.real_max = max(reals) * pad
         self.real_min = min(reals) * pad
         self.imag_max = max(imags) * pad
@@ -281,80 +281,119 @@ class PointGrid(object):
             self.lines = []
             self.n_lines = 0
 
-    def provide_function(self, functions, number_of_steps_to_compute, reverse=False):
+
+    def provide_function(self, functions, number_of_steps_to_compute, reverse=False, limits=None, remove_outliers=False):
         """Give a complex function to this function.
         Then, operate on each point by the function
         (1-(t/n))point + (t/n)*f(point) where t is the step in the function
         after this function is completed, all the points will have their homotopy computed"""
-        lines_to_readd = []
-        lines_to_readd_indexes = []
-        line_removed = False
-        #cull the lines to remove duplicates
-        culled_and_flattened_lines = list(self.lines)
-        new_function = True
-        if self.functions == functions and self.n_steps == number_of_steps_to_compute and self.flattened_lines_cache:
-            new_function = False
-            in_both_lists = list_set_intersection(culled_and_flattened_lines, self.flattened_lines_cache)
-            #the function is the same as the last run. Truncate the list of lines so that only
-            #unique lines are included
-            for index, line in enumerate(culled_and_flattened_lines):
-                if line.points[0].point_order:
-                    #this line was already computed, don't recompute it
-                    #save this line
-                    if line in in_both_lists:
-                        lines_to_readd.append(line)
-                        lines_to_readd_indexes.append(index)
-                    else:
-                        #this line was already computed but is not in the new list!
-                        line_removed = False
-                        culled_and_flattened_lines.remove(line)
-                    #remove it from the list of lines that we will recompute
-            #remove elements not in this list
-            culled_and_flattened_lines = list_set_minus(culled_and_flattened_lines, lines_to_readd)
+        self.remove_outliers = remove_outliers
+        sigularities = []
+        if functions == self.functions and number_of_steps_to_compute == self.n_steps and reverse == self.reverse:
+            lines_to_compute = []
+            #find the lines without computations
+            for line_tuple in self.lines:
+                line = line_in_tuple(line_tuple)
+                if not line.computed:
+                    #add to the will-compute list
+                    lines_to_compute.append(line_tuple)
         else:
-            self.computed_steps = []
+            lines_to_compute = self.lines
             if self.functions != functions:
-                #we have a new set of functions, no tricks can be used to avoid computation
-                #need to redetermine the functions and filename
                 self.functions = functions
-                #get the total filename of the function
-                #start with the first function
-                self.filename = self.functions[0].filename
-                #then go through the rest
-                if len(self.functions) > 1:
-                    for function in self.functions[1:]:
-                        self.filename = self.filename + ";" + function.filename
-        #remove all lines and add in the different lines
-        self.new_lines(culled_and_flattened_lines)
-        #wipe the memory of the limits and creates a list of size n_steps
-        self.limit_mem = [None] * (self.n_steps)
-        singularity = []
-        for line_index in range(len(culled_and_flattened_lines)):
-            singularity.append(culled_and_flattened_lines[line_index].parameterize_points(functions,
-                                                                        number_of_steps_to_compute,
-                                                                        reverse=reverse))
-        #set the steps now so the program doesn't have to do this on the fly
-        #this is actually taking the number of steps at the first point on the first line only
-        #assuming that this is going to be consistent throughout the plane
-        self.n_steps = number_of_steps_to_compute
-        #if a singularity exists, set the lines to consider limit
-        if any(singularity):
-            self.lines_to_consider()
-        #readd the lines that we determined didn't need to be computed
-        if not line_removed and not new_function:
-            if self.computed_steps:
-                new_steps = self.pre_compute()
-                for step_index, lines in enumerate(new_steps):
-                    self.computed_steps[step_index] += lines
-            else:
-                self.computed_steps = self.pre_compute()
-        for index, line in enumerate(lines_to_readd):
-            self.add_line(line, lines_to_readd_indexes[index])
-        if line_removed or new_function:
-            self.computed_steps = self.pre_compute()
-        #COPY the list to the cache
-        self.flattened_lines_cache = list(self.lines)
-        self.set_limits()
+                self.set_filename(functions)
+        self.n_steps = (number_of_steps_to_compute - 1) * len(functions) + 1
+        self.reverse = reverse
+        if reverse:
+            self.n_steps *= 2
+        for line_tuple in lines_to_compute:
+            line = line_in_tuple(line_tuple)
+            sigularities.append(line.parameterize_points(self.functions, number_of_steps_to_compute, reverse))
+        self.pre_compute()
+        if limits:
+            self.user_limits = limits
+            self.set_user_limits(self.user_limits)
+        else:
+            self.set_limits()
+
+
+        #lines_to_readd = []
+        #lines_to_readd_indexes = []
+        #line_removed = False
+        ##cull the lines to remove duplicates
+        #culled_and_flattened_lines = list(self.lines)
+        #new_function = True
+        #if self.functions == functions and self.n_steps == number_of_steps_to_compute and self.flattened_lines_cache:
+        #    new_function = False
+        #    in_both_lists = list_set_intersection(culled_and_flattened_lines, self.flattened_lines_cache)
+        #    #the function is the same as the last run. Truncate the list of lines so that only
+        #    #unique lines are included
+        #    for index, line in enumerate(culled_and_flattened_lines):
+        #        if line.points[0].point_order:
+        #            #this line was already computed, don't recompute it
+        #            #save this line
+        #            if line in in_both_lists:
+        #                lines_to_readd.append(line)
+        #                lines_to_readd_indexes.append(index)
+        #            else:
+        #                #this line was already computed but is not in the new list!
+        #                line_removed = False
+        #                culled_and_flattened_lines.remove(line)
+        #            #remove it from the list of lines that we will recompute
+        #    #remove elements not in this list
+        #    culled_and_flattened_lines = list_set_minus(culled_and_flattened_lines, lines_to_readd)
+        #else:
+        #    self.computed_steps = []
+        #    if self.functions != functions:
+        #        #we have a new set of functions, no tricks can be used to avoid computation
+        #        #need to redetermine the functions and filename
+        #        self.functions = functions
+        #        #get the total filename of the function
+        #        #start with the first function
+        #        self.filename = self.functions[0].filename
+        #        #then go through the rest
+        #        if len(self.functions) > 1:
+        #            for function in self.functions[1:]:
+        #                self.filename = self.filename + ";" + function.filename
+        ##remove all lines and add in the different lines
+        #self.new_lines(culled_and_flattened_lines)
+        ##wipe the memory of the limits and creates a list of size n_steps
+        #self.limit_mem = [None] * (self.n_steps)
+        #singularity = []
+        #for line_index in range(len(culled_and_flattened_lines)):
+        #    singularity.append(culled_and_flattened_lines[line_index].parameterize_points(functions,
+        #                                                                number_of_steps_to_compute,
+        #                                                                reverse=reverse))
+        ##set the steps now so the program doesn't have to do this on the fly
+        ##this is actually taking the number of steps at the first point on the first line only
+        ##assuming that this is going to be consistent throughout the plane
+        #self.n_steps = number_of_steps_to_compute
+        ##if a singularity exists, set the lines to consider limit
+        #if any(singularity):
+        #    self.lines_to_consider()
+        ##readd the lines that we determined didn't need to be computed
+        #if not line_removed and not new_function:
+        #    if self.computed_steps:
+        #        new_steps = self.pre_compute()
+        #        for step_index, lines in enumerate(new_steps):
+        #            self.computed_steps[step_index] += lines
+        #    else:
+        #        self.computed_steps = self.pre_compute()
+        #for index, line in enumerate(lines_to_readd):
+        #    self.add_line(line, lines_to_readd_indexes[index])
+        #if line_removed or new_function:
+        #    self.computed_steps = self.pre_compute()
+        ##COPY the list to the cache
+        #self.flattened_lines_cache = list(self.lines)
+        #self.set_limits()
+
+    def set_filename(self, functions):
+        #get the first functions filename
+        self.filename = functions[0].filename
+        #then go through the rest
+        if len(functions) > 1:
+            for function in functions[1:]:
+                self.filename = self.filename + ";" + function.filename
 
 def remove_outliers_operation(points, z_limit=3):
     """
@@ -393,3 +432,6 @@ def flatten_lines(line_collection):
     """
     stripped_of_id = [line[0] for line in line_collection]
     return [item for sublist in stripped_of_id for item in sublist]
+
+def line_in_tuple(line_tuple):
+    return line_tuple[0]

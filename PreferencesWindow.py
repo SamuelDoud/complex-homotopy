@@ -1,4 +1,4 @@
-﻿import tkinter
+import tkinter
 from tkinter import Entry, Label, Button, Toplevel, StringVar
 
 class PreferencesWindow(object):

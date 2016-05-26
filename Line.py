@@ -1,4 +1,4 @@
-﻿import cmath
+import cmath
 
 import numpy as np
 
@@ -7,6 +7,9 @@ import ComplexPoint
 PLUS = 0
 MINUS = 1
 
+REAL = 0
+IMAG = 1
+
 class Line(object):
     """
     Line is a container of points and delegates operations to them. Additionally,
@@ -14,18 +17,22 @@ class Line(object):
     of the line, if it is connected, how many points are on the line etc.. Lines
     are held within a PointGrid
     """
-    def __init__(self, function, start, end, number_of_points, points=None):
+    def __init__(self, function, start, end, number_of_points, points=None, color=None):
         self.singularity = []
         self.singularity_index = -1
         self.number_of_steps = 0
         self.width = 1
         self.dash_seq = None
+        self.computed = False
         self.function = function
+        self.reals = []
+        self.imaginaries = []
         #must be non-negative number of steps
         self.number_of_points = number_of_points
         self.start = start
         #the endpoints of this line
         self.end = end
+        self.color = color
         if not points:
             self.points = self.create_points()
         else:
@@ -113,7 +120,17 @@ class Line(object):
             for point in self.points:
                 point.add_reverse_to_point_order()
         #take the length of the point order of the first point
-        self.number_of_steps = len(self.points[0].point_order)
+        self.computed = True
+        self.set_points()
+
+    def set_points(self):
+        self.reals = []
+        self.imaginaries = []
+        for point in self.points:
+            pt_order_split = list(zip(*point.point_order))
+            self.reals += pt_order_split[REAL]
+            self.imaginaries += pt_order_split[IMAG]
+
 
     def build_around(self, singularity):
         """

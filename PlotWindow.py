@@ -1,7 +1,10 @@
-﻿import math
+import math
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+
+import Line
+import PointGrid
 
 REAL = 0
 IMAG = 1
@@ -10,6 +13,8 @@ INDEX = 2
 RED = 0
 GREEN = 1
 BLUE = 2
+
+LINE = 0
 
 PAUSE = True
 PLAY = False
@@ -43,7 +48,7 @@ class PlotWindow(object):
         self.new_limits() #take the inital limits from self.grid and apply to the graph
         self.all_lines = []
         self.lines = [self.axes.plot([], [],
-                                     lw=self.grid.lines[line].width)[0]
+                                     lw=self.grid.lines[line][0].width)[0]
                       for line in range(len(self.grid.lines))]
         self.axes.set_xlabel("Real")
         self.axes.set_ylabel("Imaginary")
@@ -133,15 +138,19 @@ class PlotWindow(object):
             if len(self.lines) != self.grid.n_lines:
                 #there's a new number of lines in the graph
                 self.lines = [self.axes.plot([], [],
-                                                lw=self.grid.lines[line].width)[0]
+                                                lw=self.grid.lines[line][LINE].width)[0]
                                 for line in range(self.grid.n_lines)]
                 self.axes.lines = self.lines
             self.color = self.color_compute(self._frame_number)
-            for index, line in enumerate(self.grid.pre_computed_steps(self._frame_number)):
-                self.lines[index].set_data(line[REAL], line[IMAG])
-                self.lines[index]._color = self.color
-                if self.grid.lines[index].dash_seq:
-                    self.lines[index].set_dashes(self.grid.lines[index].dash_seq)
+            for index, line_tuple in enumerate(self.grid.lines):
+                line_object = PointGrid.line_in_tuple(line_tuple)
+                self.lines[index].set_data(*self.grid.computed_steps[self.frame_number][index])
+                if line_object.color:
+                    self.lines[index]._color = line_object.color
+                else:
+                    self.lines[index]._color = self.color
+                self.lines[index]
+                
                 #self.lines[index].set_visible(True)
             #saving this data is too memory intensive for the small computational power req'd
             #increment the frame number
@@ -218,7 +227,6 @@ class PlotWindow(object):
         """
         Take the new limits and apply them to the plot.
         """
-        self.grid.set_limits()
         self.axes = plt.gca()
         self.axes.set_xlim([self.grid.real_min, self.grid.real_max])
         self.axes.set_ylim([self.grid.imag_min, self.grid.imag_max])

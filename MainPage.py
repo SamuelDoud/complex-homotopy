@@ -1,4 +1,4 @@
-﻿import pickle
+import pickle
 import threading
 import os
 import sys
@@ -100,6 +100,7 @@ class Application(Frame):
         self.toolbar = None
         self.frame_slider = None
         self.plot_object = None
+        self.n_steps_per_function = 0
         self.size = 7
         self.slider_row = 1
         self.slider_column = 0
@@ -110,6 +111,8 @@ class Application(Frame):
         self.outlier_remover_var.set(0)
         self.reverse_checkbox_var = IntVar()
         self.reverse_checkbox_var.set(0)
+        self.reverse = False
+        self.remove_outliers = False
         self.create_frames()
         self.create_widgets()
         self.grid_widgets_in_frames()
@@ -550,6 +553,7 @@ class Application(Frame):
         Adds a set of lines to the collection and appends a id tag
         """
         self.line_collection.append((lines, self.id_number_counter, center, type_str))
+        self.point_grid.new_lines(self.line_collection)
         #increment the id tag
         self.id_number_counter += 1
         #return the id tag less one (as to refer to this object)
@@ -573,7 +577,7 @@ class Application(Frame):
         #did the user pass a value for id_number?
         if top:
             #user wants the first element removed
-            self.point_grid.delete(self.line_collection.pop(0)[0])
+            self.line_collection.pop(0)
         else:
             if id_number:
                 try:
@@ -591,19 +595,19 @@ class Application(Frame):
                             return False
                         last_index = index
                         delta //= 2
-                    self.point_grid.delete(self.line_collection.pop(index)[0])
+                    self.line_collection.pop(index)
                 except IndexError:
                     return False
             else:
                 #user did not pass an id number. pop from top of stack
                 if self.line_collection:
-                    self.point_grid.delete(self.line_collection.pop()[0])
+                    self.line_collection.pop()
                 else:
                     return False
         if self.line_collection:
-            self.relaunch()
-        else:
-            self.plot_object.anim = None
+            self.point_grid.new_lines(self.line_collection)
+
+        self.relaunch()
         #start the animation back up
         return True
 
@@ -635,10 +639,6 @@ class Application(Frame):
         """
         Given a list of lines, add them to the Plot.
         """
-        if not isinstance(list_of_lines, list):
-            list_of_lines = [list_of_lines]
-        for line in list_of_lines:
-            self.point_grid.add_line(line)
         id = self.add_to_collection(list_of_lines, center, type_str)
         if self.animating_already:
             self.relaunch()
@@ -664,7 +664,7 @@ class Application(Frame):
         return self.add_lines(self.point_grid.grid_lines(upper_right,
                                                          lower_left, lines_num,
                                                          self.default_points_on_line), center,
-                              self.type_strs["disk"])
+                              self.type_strs["grid"])
 
     def build_disk(self, radius, n_circles, center):
         return self.add_lines(self.point_grid.disk(radius, n_circles, center),
@@ -708,11 +708,12 @@ class Application(Frame):
             steps_from_user = int(self.n_entry.get()) + 1
         except Exception:
             steps_from_user = 1 #no animation
+        self.n_steps_per_function = steps_from_user
         #get if the user has checked the reverse animation box
-        reverse = self.reverse_checkbox_var.get() == ON
+        self.set_checkbox_vars()
         #give the point grid its function
-        self.point_grid.provide_function(self.function_objects, steps_from_user, reverse=reverse)
-        self.redraw_slider(steps_from_user)
+        self.point_grid.provide_function(self.function_objects, steps_from_user, reverse=self.reverse, remove_outliers=self.remove_outliers)
+        self.redraw_slider(self.point_grid.n_steps)
         #code for if this is the initial run of the launch method
         #prevents the application from launching unneeded windows
         #bind the method set_slider to the plot_object
@@ -724,15 +725,20 @@ class Application(Frame):
             self.key_bindings()
             self.update_graph()
         else:
-            self.plot_object.grid = self.point_grid
             #call on the animator to start at the beginning of the graph
             self.plot_object.set_frame(0)
             #pass an iterable to reorder the frames
             self.plot_object.anim.frame_seq = cycle(range(self.point_grid.n_steps))
         #allows the color computation to deal with if the animation is reversing
-        self.plot_object.reverse = reverse
+        self.plot_object.reverse = self.reverse
         #set the boolean that controls the outlier operation in the pointgrid to that of the user
-        self.plot_object.grid.remove_outliers = reverse
+        self.redraw_limits()
+
+    def set_checkbox_vars(self):
+        self.reverse = self.reverse_checkbox_var.get() == ON
+        self.remove_outliers = self.outlier_remover_var.get() == ON
+
+    def redraw_limits(self):
         self.plot_object.new_limits()
 
     def fetch_limits(self):
@@ -821,9 +827,9 @@ class Application(Frame):
 
     def relaunch(self):
         """Something has changed in the data, realunch the plot to reflect that."""
-        self.point_grid.provide_function(self.point_grid.functions, self.point_grid.n_steps,
-                                         self.plot_object.reverse)
-        self.plot_object.new_limits()
+        self.point_grid.provide_function(self.point_grid.functions, self.n_steps_per_function,
+                                         reverse=self.reverse, remove_outliers=self.remove_outliers)
+        self.redraw_limits()
 
     def shape_window(self):
         """Launch a window that shows a list of the current shapes.
@@ -835,7 +841,7 @@ class Application(Frame):
         temp_line_collection = [line for line in self.line_collection if line[1] in self.popup_window.ids]
         if self.line_collection != temp_line_collection:
             #checking if the lists are different
-            self.line_collection = temp_line_collection
+            self.point_grid.new_lines(self.line_collection)
             #since a change was made, we need to relauch the graph  
             self.relaunch()
         self.popup_window = None

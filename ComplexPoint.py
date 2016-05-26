@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 
 #constants used for point order indexes
 REAL = 0
