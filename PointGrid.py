@@ -240,14 +240,13 @@ class PointGrid(object):
             reals = remove_outliers_operation(reals)
             imags = remove_outliers_operation(imags)
         #add 5% so the window isn't cramped.
-        pad = 1.05
         if not reals or not imags:
             reals = [0]
             imags = [0]
-        self.real_max = max(reals) * pad
-        self.real_min = min(reals) * pad
-        self.imag_max = max(imags) * pad
-        self.imag_min = min(imags) * pad
+        self.real_max = max(reals)
+        self.real_min = min(reals)
+        self.imag_max = max(imags)
+        self.imag_min = min(imags)
         #make the limits square so the graph isn't distorted
         self.force_square()
 
@@ -255,8 +254,9 @@ class PointGrid(object):
         """
         Force the min-maxes to form a square.
         """
-        real_diff = self.real_max - self.real_min
-        imag_diff = self.imag_max - self.imag_min
+        pad = 1.05
+        real_diff = (self.real_max - self.real_min) * pad
+        imag_diff = (self.imag_max - self.imag_min) * pad
         if real_diff > imag_diff:
             self.imag_max += ((real_diff - imag_diff) / 2)
             self.imag_min -= ((real_diff-imag_diff) / 2)
