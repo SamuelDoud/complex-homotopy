@@ -1,4 +1,5 @@
 import math
+from itertools import cycle
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -118,6 +119,7 @@ class PlotWindow(object):
             self.ffmpeg_writer = self.ffmpeg_animation_writer(fps=frames, bitrate=1800)
             del self.anim
             self.animate(self.interval)
+            self.anim.frame_seq = cycle(range(self.grid.n_steps))
             self.anim.save(self.grid.filename + '.mp4', extra_args=['-vcodec', 'libx264'],
                            writer=self.ffmpeg_writer)
         if gif:
