@@ -324,13 +324,11 @@ class Application(Frame):
         lines = self.line_collection
         lines_to_save = [list(line) for line in self.line_collection]
         for index, shape in enumerate(lines):
-            temp_shape_list = []
-            for line in shape[DATA]:
-                temp_line_list = []
-                for point in line.points:
-                    temp_line_list.append(point.complex)
-                temp_shape_list.append(temp_line_list)
-            lines_to_save[index][DATA] = temp_shape_list
+            line = shape[DATA]
+            temp_line_list = []
+            for point in line.points:
+                temp_line_list.append(point.complex)
+            lines_to_save[index][DATA] = temp_line_list
         return lines_to_save
 
     def master_blaster(self):
@@ -346,17 +344,16 @@ class Application(Frame):
         """
         shapes_in_data = list(data)
         for index, shape in enumerate(data):
-            temp_lines_in_shape = []
-            for line in shape[DATA]:
-                temp_points_on_line = []
-                for points in line:
-                    temp_point = ComplexPoint.ComplexPoint(points)
-                    temp_points_on_line.append(temp_point)
-                temp_line = Line.Line("z", temp_points_on_line[0].complex,
-                                      temp_points_on_line[-1].complex,
-                                      len(temp_points_on_line), temp_points_on_line)
+            line = shape[DATA]
+            temp_points_on_line = []
+            for points in line:
+                temp_point = ComplexPoint.ComplexPoint(points)
+                temp_points_on_line.append(temp_point)
+            temp_line = Line.Line("z", temp_points_on_line[0].complex,
+                                    temp_points_on_line[-1].complex,
+                                    len(temp_points_on_line), temp_points_on_line)
             shapes_in_data[index][DATA] = temp_line
-        return [tuple(line) for line in shapes_in_data]
+        return shapes_in_data
 
     def serialize(self):
         """
@@ -418,8 +415,7 @@ class Application(Frame):
             self.set_text(self.real_min_entry, limits[1])
             self.set_text(self.imag_max_entry, limits[2])
             self.set_text(self.imag_min_entry, limits[3])
-        for line in self.line_collection:
-            self.point_grid.add_line(line[0])
+        self.point_grid.new_lines(self.line_collection)
         self.plot_object.set_frame(0)
 
     def set_checkbox(self, check_box, check_box_var, value):
@@ -827,6 +823,7 @@ class Application(Frame):
 
     def relaunch(self):
         """Something has changed in the data, realunch the plot to reflect that."""
+
         self.point_grid.provide_function(self.point_grid.functions, self.n_steps_per_function,
                                          reverse=self.reverse, remove_outliers=self.remove_outliers)
         self.redraw_limits()
