@@ -1,4 +1,5 @@
 import statistics
+import math
 
 from sympy import re, im, arg, Abs, Symbol, symbols, I
 import numpy as np
@@ -255,14 +256,25 @@ class PointGrid(object):
         Force the min-maxes to form a square.
         """
         pad = 1.05
-        real_diff = (self.real_max - self.real_min) * pad
-        imag_diff = (self.imag_max - self.imag_min) * pad
+        real_diff = (self.real_max - self.real_min)
+        imag_diff = (self.imag_max - self.imag_min)
+        big_change = math.fabs((real_diff - imag_diff) / 2) * pad
+        little_change = (pad - 1) / 2
         if real_diff > imag_diff:
-            self.imag_max += ((real_diff - imag_diff) / 2)
-            self.imag_min -= ((real_diff-imag_diff) / 2)
+            little_change *= real_diff
+            self.real_max += little_change
+            self.real_min -= little_change
+            self.imag_max += big_change + little_change
+            self.imag_min -= big_change + little_change
+            
         else:
-            self.real_max += ((imag_diff-real_diff) / 2)
-            self.real_min -= ((imag_diff-real_diff) / 2)
+            little_change *= imag_diff
+            self.imag_max += little_change
+            self.imag_min -= little_change
+            self.real_max += big_change + little_change 
+            self.real_min -= big_change + little_change
+
+
 
     def pre_computed_steps(self, this_step):
         """
