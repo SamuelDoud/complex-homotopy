@@ -130,6 +130,15 @@ class PointGrid(object):
         base_line = Line.Line('z', points[0], points[-1], len(points), point_objects)
         return base_line
 
+    def roots_of_unity_spindle(self, roots, radius, center=complex(0,0)):
+        pass
+
+    def build_line(self, start, end, n_points=50, color=None):
+        """Build a straight line on the complex plane."""
+        points_on_line = np.linspace(start, end, n_points)
+        line = Line.Line("z", points_on_line[0], points_on_line[-1], n_points, color=color)
+        return line
+
     def disk(self, radius, num_circles, center, n_points_per_circle=250):
         """
         Build a disk centered at radius of num_circles density.
