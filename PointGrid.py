@@ -351,6 +351,22 @@ class PointGrid(object):
             for function in functions[1:]:
                 self.filename = self.filename + ";" + function.filename
 
+def roots_of_unity(n_roots):
+    """
+    Takes the roots of unity for the passed variable n_roots.
+    """
+    list_of_roots = []
+    pi = math.pi
+    for nth_root in range(n_roots):
+        list_of_roots.append(cis((2 * nth_root * pi) / n_roots))
+    return list_of_roots
+
+def cis(argument):
+    """
+    DRY mandated function for the common complex function of "cos(z) + i * sin(z)" in a function.
+    """
+    return math.cos(argument) + complex(0, 1) * math.sin(argument) 
+
 def remove_outliers_operation(points, z_limit=3):
     """
     This removes outliers from the setting of limits.
@@ -391,3 +407,4 @@ def list_set_minus(big_list, little_list):
 def list_set_intersection(big_list, little_list):
     """Return the elements of big_list in small list"""
     return list(set(big_list).intersection(set(little_list)))
+
