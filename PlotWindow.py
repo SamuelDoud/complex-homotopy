@@ -59,6 +59,7 @@ class PlotWindow(object):
         self.reset_color_diff()
         self.recently_blitted = False
         self.pause_override = False
+        self.tracer_lines = []
 
     def toggle_pause(self, event):
         """
@@ -128,6 +129,21 @@ class PlotWindow(object):
         self._frame_number = old_frame_number
         self.set_animation(was_paused)
 
+    def tracer(self, step, points_to_add):
+        for index, line in enumerate(self.tracers):
+            line.append(points_to_add[index])
+        self.increment_tracer()
+        pass
+
+    def increment_tracer(self):
+        pass
+
+    def wipe_tracers(self):
+        self.tracers = []
+        for line in self.lines:
+            self.tracers.append([line])
+
+        
     def animate_compute(self, step):
         """
         Function that returns the lines that will be used to display this graph.
@@ -153,7 +169,7 @@ class PlotWindow(object):
                     self.lines[index]._color = self.color
                 self.lines[index]
                 
-                #self.lines[index].set_visible(True)
+                
             #saving this data is too memory intensive for the small computational power req'd
             #increment the frame number
             if not self.pause_override:
@@ -170,9 +186,11 @@ class PlotWindow(object):
         self.recently_blitted = True
 
     def un_blit(self):
+        self.wipe_tracers()
         for line in self.lines:
             line.set_visible(True)
         self.recently_blitted = False
+        
 
     def reset_interval(self, delta):
         """

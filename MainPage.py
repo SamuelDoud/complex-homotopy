@@ -93,6 +93,7 @@ class Application(Frame):
         self.type_strs["grid"] = "grid"
         self.type_strs["ellipse"] = "ellipse"
         self.type_strs["line"] = "line"
+        self.type_strs["spindle"] = "spindle"
         self.function_objects = []
         self.id_number_counter = 0
         self.line_collection = []
@@ -143,7 +144,9 @@ class Application(Frame):
         self.master.bind("<Left>", self.decrement_frame)
         self.master.bind("<Up>", self.interval_decrease)
         self.master.bind("<Down>", self.interval_increase)
-        self.master.bind("<space>", self.plot_object.toggle_pause)
+        #self.master.bind("<space>", self.plot_object.toggle_pause)
+        #space is a bad idea for pausing in a application that offers typing
+        #self.master.bind("<p>", self.plot_object.toggle_pause)
 
     def increment_frame(self, event):
         """
@@ -246,6 +249,7 @@ class Application(Frame):
         self.object_menu.add_command(label="Grid", command=self.grid_popup)
         self.object_menu.add_command(label="Circle", command=self.circle_popup)
         self.object_menu.add_command(label="Disk", command=self.disk_popup)
+        self.object_menu.add_command(label="Spindle", command=self.spindle_popup)
         self.object_menu.add_command(label="List", command=self.shape_window)
         self.object_menu.add_separator()
         self.object_menu.add_command(label="Remove First", command=self.remove_first)
@@ -666,6 +670,10 @@ class Application(Frame):
         return self.add_lines(self.point_grid.disk(radius, n_circles, center),
                               center, self.type_strs["disk"])       
 
+    def build_spindle(self, n_roots_of_unity, radius=1, n_circles=1, center=complex(0,0)):
+        x = (self.point_grid.draw_roots_of_unity_spindle(n_roots_of_unity, n_circles, radius, center), center, self.type_strs["spindle"])
+        return self.add_lines(*x)
+    
     def save_video_handler(self):
         """
         Dispatches the Plot to save the video.
@@ -791,6 +799,8 @@ class Application(Frame):
         self.animation_thread = threading.Thread(target=self.plot_object.animate, args=(self.default_interval,))
         self.animation_thread.start()
         
+    def spindle_popup(self):
+        self.general_popup(BuilderWindows.SpindleBuilderPopup, self.build_spindle)
 
     def disk_popup(self):
         self.general_popup(BuilderWindows.DiskBuilderPopup, self.build_disk)
@@ -812,11 +822,12 @@ class Application(Frame):
         self.popup_window = popup_class(self.master)
         self.master.wait_window(self.popup_window.top)
         data = self.popup_window.data
-        try:
-            #go to the popup function with the unpacked tuple arg
-            popup_function(*data)
-        except:
-            print("invalid data")
+        #try:
+        #    #go to the popup function with the unpacked tuple arg
+        #    popup_function(*data)
+        #except:
+        #    print("invalid data")
+        popup_function(*data)
         #remove from memory
         self.popup_window = None
         self.plot_object.set_animation(was_paused)
@@ -838,7 +849,7 @@ class Application(Frame):
         temp_line_collection = [line for line in self.line_collection if line[1] in self.popup_window.ids]
         if self.line_collection != temp_line_collection:
             #checking if the lists are different
-            self.point_grid.new_lines(self.line_collection)
+            self.point_grid.new_lines(temp_line_collection)
             #since a change was made, we need to relauch the graph  
             self.relaunch()
         self.popup_window = None
