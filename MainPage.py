@@ -144,9 +144,13 @@ class Application(Frame):
         self.master.bind("<Left>", self.decrement_frame)
         self.master.bind("<Up>", self.interval_decrease)
         self.master.bind("<Down>", self.interval_increase)
+        self.master.bind_all("<MouseWheel>", self.zoom_mousewheel)
         #self.master.bind("<space>", self.plot_object.toggle_pause)
         #space is a bad idea for pausing in a application that offers typing
         #self.master.bind("<p>", self.plot_object.toggle_pause)
+
+    def zoom_mousewheel(self, event):
+        self.plot_object.zoom_on_delta(event.delta/120)
 
     def increment_frame(self, event):
         """
@@ -502,26 +506,26 @@ class Application(Frame):
         """
         #WTF tab ordering
         self.function_label.grid(row=0, column=0)
-        self.function_entry.grid(row=0, column=1)
-        self.outlier_remover_checkbox.grid(row=0, column=2)
+        self.function_entry.grid(row=0, column=1, columnspan=3)
+        self.outlier_remover_checkbox.grid(row=0, column=5)
         self.n_label.grid(row=1, column=0)
         self.n_entry.grid(row=1, column=1)
-        self.reverse_checkbox.grid(row=1, column=2)
-        self.circle_launcher.grid(row=2, column=0)
-        self.grid_launcher.grid(row=2, column=1)
+        self.reverse_checkbox.grid(row=1, column=5)
+        #self.circle_launcher.grid(row=2, column=0)
+        #self.grid_launcher.grid(row=2, column=1)
         self.submit.grid(row=2, column=2)
-        self.remove_front.grid(row=3, column=0)
-        self.pop_from_collection.grid(row=3, column=1)
+        #self.remove_front.grid(row=3, column=0)
+        #self.pop_from_collection.grid(row=3, column=1)
         self.save_video.grid(row=3, column=2)
         offset = 3
-        self.real_max_label.grid(row=1, column=(offset + 4))
-        self.real_max_entry.grid(row=1, column=(offset + 3))
-        self.real_min_label.grid(row=1, column=(offset + 0))
-        self.real_min_entry.grid(row=1, column=(offset + 1))
-        self.imag_max_label.grid(row=0, column=(offset + 1))
-        self.imag_max_entry.grid(row=0, column=(offset + 2))
-        self.imag_min_label.grid(row=2, column=(offset + 1))
-        self.imag_min_entry.grid(row=2, column=(offset + 2))
+        #self.real_max_label.grid(row=1, column=(offset + 4))
+        #self.real_max_entry.grid(row=1, column=(offset + 3))
+        #self.real_min_label.grid(row=1, column=(offset + 0))
+        #self.real_min_entry.grid(row=1, column=(offset + 1))
+        #self.imag_max_label.grid(row=0, column=(offset + 1))
+        #self.imag_max_entry.grid(row=0, column=(offset + 2))
+        #self.imag_min_label.grid(row=2, column=(offset + 1))
+        #self.imag_min_entry.grid(row=2, column=(offset + 2))
         self.redraw_slider(1)
 
     def redraw_slider(self, steps):

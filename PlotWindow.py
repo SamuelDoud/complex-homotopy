@@ -168,8 +168,6 @@ class PlotWindow(object):
                 else:
                     self.lines[index]._color = self.color
                 self.lines[index]
-                
-                
             #saving this data is too memory intensive for the small computational power req'd
             #increment the frame number
             if not self.pause_override:
@@ -242,6 +240,14 @@ class PlotWindow(object):
         for index in range(len(self._start_color)):
             color[index] = self._end_color[index] - (self.color_diff[index] * modifier)
         return color
+
+    def zoom_on_delta(self, delta):
+        self.grid.real_max -= delta
+        self.grid.real_min += delta
+        self.grid.imag_max -= delta
+        self.grid.imag_min += delta
+        self.new_limits()
+
 
     def new_limits(self):
         """
