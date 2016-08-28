@@ -254,7 +254,7 @@ class PlotWindow(object):
         self.new_limits()
 
 
-    def new_limits(self):
+    def new_limits(self, limits=None):
         """
         Take the new limits and apply them to the plot.
         """

@@ -21,6 +21,7 @@ import Line
 import PreferencesWindow
 import BuilderWindows
 import ShapesMenu
+import ZoomWindow
 
 #constants for checkboxes
 ON = 1
@@ -158,6 +159,12 @@ class Application(Frame):
     def zoom_mousewheel(self, event):
         self.plot_object.zoom_on_delta(event.delta/120)
 
+    def zoom_out_step(self, event=None):
+        self.plot_object.zoom_on_delta(-1)
+
+    def zoom_in_step(self, event=None):
+        self.plot_object.zoom_on_delta(1)
+
     def increment_frame(self, event):
         """
         go forward one frame
@@ -219,6 +226,7 @@ class Application(Frame):
         self.color_menu_create()
         self.file_menu_create()
         self.help_menu_create()
+        self.view_menu_create()
         self.master.config(menu=self.menubar)
 
     def edit_menu_create(self):
@@ -226,7 +234,30 @@ class Application(Frame):
         self.edit_menu.add_cascade(label="Colors", menu=self.color_menu)
         self.edit_menu.add_command(label="Preferences", command=self.launch_preferences)
 
-    def toggle_pause(self, event=""):
+    def view_menu_create(self):
+        self.view_menu.add_cascade(label="Zoom Window", command=self.zoom_window)
+        self.view_menu.add_cascade(label="Zoom Square", command=self.force_square)
+        self.view_menu.add_cascade(label="Zoom Out", command=self.zoom_out_step)
+        self.view_menu.add_cascade(label="Zoom In", command=self.zoom_in_step)
+        pass
+
+    def zoom_window(self, event=None):
+        was_paused = self.pause_play(PlotWindow.PAUSE)
+        self.popup_window = ZoomWindow.ZoomWindow(self.master)
+        self.master.wait_window(self.popup_window.top)
+        limits = (self.popup_window.real_max, self.popup_window.real_min,
+                  self.popup_window.imag_max, self.popup_window.imag_min)
+        if limits.count(None) == 0:
+            self.point_grid.set_user_limits(limits)
+            self.plot_object.new_limits()
+        self.popup_window = None
+        self.pause_play(was_paused)
+
+    def force_square(self, event=None):
+        self.point_grid.force_square()
+        self.plot_object.new_limits()
+
+    def toggle_pause(self, event=None):
         """Toggle the pause state by XOR"""
         return self.pause_play(self.plot_object.pause ^ True)
 
