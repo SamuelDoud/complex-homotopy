@@ -18,11 +18,13 @@ class ShapesMenu(object):
         self.top.bind("<Return>", func=self.submit)
         self.current_lines = line_collection
         self.removed_lines = []
+        self.ids_internal = []
         self.ids = []
         for index, line in enumerate(self.current_lines):
             #removes the point data and converts the rest to strings
             id = line[1]
-            if id not in self.ids:
+            if id not in self.ids_internal:
+                self.ids_internal.append(id)
                 self.ids.append(id)
                 line = [str(element) for element in line[1:]]
                 
@@ -34,6 +36,8 @@ class ShapesMenu(object):
         self.remove_button.grid(row=1, column=0)
         
     def submit(self):
+        #expose the internal IDs to remove to the exterior methods
+        self.ids = self.ids_internal
         self.top.destroy()
 
     def remove_line(self):
@@ -42,6 +46,6 @@ class ShapesMenu(object):
         line_to_remove = self.current_lines_listbox.get(ANCHOR)
         id_to_remove = int(line_to_remove.split(" ")[0])
         #remove it from the ID list
-        self.ids.remove(id_to_remove)
+        self.ids_internal.remove(id_to_remove)
         #remove it from the listbox
         self.current_lines_listbox = self.current_lines_listbox.delete(ANCHOR)

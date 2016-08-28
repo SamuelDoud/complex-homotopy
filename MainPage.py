@@ -254,10 +254,10 @@ class Application(Frame):
         self.object_menu.add_command(label="Circle", command=self.circle_popup)
         self.object_menu.add_command(label="Disk", command=self.disk_popup)
         self.object_menu.add_command(label="Spindle", command=self.spindle_popup)
-        self.object_menu.add_command(label="List", command=self.shape_window)
         self.object_menu.add_separator()
+        self.object_menu.add_command(label="List", command=self.shape_window)
         self.object_menu.add_command(label="Remove First", command=self.remove_first)
-        self.object_menu.add_command(label="Remove Last", command=self.remove_from_collection)
+        self.object_menu.add_command(label="Remove Last", command=self.remove_last)
         self.object_menu.add_command(label="Remove All", command=self.master_blaster)
 
     def help_menu_create(self):
@@ -343,7 +343,8 @@ class Application(Frame):
         """
         Deletes all objects on the graph
         """
-        self.line_collection = []
+        #pass an empty list
+        self.new_lines([])
 
     def bring_lines_together(self, data):
         """
@@ -477,7 +478,7 @@ class Application(Frame):
                                             variable=self.reverse_checkbox_var,
                                             onvalue=ON, offvalue=OFF, height=1, width=6)
         self.pop_from_collection = Button(self.utility_frame, text="Remove last",
-                                          command=self.remove_from_collection)
+                                          command=self.remove_last)
         self.submit = Button(self.utility_frame, text="Submit", command=self.launch)
         self.function_label = Label(self.utility_frame, text="Enter a f(z)")
         self.save_video = Button(self.utility_frame, text="Save as Video", command=self.save_video_handler)
@@ -571,7 +572,7 @@ class Application(Frame):
         #        pass
         return self.id_number_counter - 1
 
-    def remove_from_collection(self, id_number=None, top=False):
+    def remove_last(self, id_number=None, top=False):
         """
         Removes a line collection from the list. If no index is passed, the collection is
         treated like a stack
@@ -620,7 +621,7 @@ class Application(Frame):
         Take the first item on the collection and remove it.
         Then recalculate the graph.
         """
-        self.remove_from_collection(top=True)
+        self.remove_last(top=True)
 
     def build_sample(self):
         """
@@ -647,6 +648,24 @@ class Application(Frame):
         if self.animating_already:
             self.relaunch()
         return id
+
+    def new_lines(self, list_of_new_lines, reanimate=False):
+        """Replace the old set of lines with a new one.
+        IDs will be reassigned starting at zero."""
+        #location of the ID element in the line
+        id_index = 1
+        #go through each line object and reassign the ID
+        for id_tag in range(len(list_of_new_lines)):
+            list_of_new_lines[id_tag] = change_tuple_value(list_of_new_lines[id_tag], id_index, id_tag) 
+        #replace the line collection
+        self.line_collection = list_of_new_lines
+        self.point_grid.new_lines(list_of_new_lines)
+        #force the object to square itself
+        self.point_grid.force_square()
+        #relaunch the animation
+        if reanimate:
+            self.relaunch()
+
 
     def build_circle(self, radius, center=complex(0, 0)):
         """
@@ -852,10 +871,8 @@ class Application(Frame):
         self.master.wait_window(self.popup_window.top)
         temp_line_collection = [line for line in self.line_collection if line[1] in self.popup_window.ids]
         if self.line_collection != temp_line_collection:
-            #checking if the lists are different
-            self.point_grid.new_lines(temp_line_collection)
-            #since a change was made, we need to relauch the graph  
-            self.relaunch()
+            #checked if the lists are different
+            self.new_lines(temp_line_collection, True)
         self.popup_window = None
         self.plot_object.set_animation(was_paused)
 
@@ -873,6 +890,18 @@ def resource_path(relative_path):
     except Exception:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
+
+def change_tuple_value(tuple_item, index_to_replace, value_to_use):
+    """Replace a tuple's value at a specified index"""
+    temp_list = []
+    for index, value in enumerate(tuple_item):
+        if index == index_to_replace:
+            #use the user passed replacement
+            temp_list.append(value_to_use)
+        else:
+            #keep the value
+            temp_list.append(value)
+    return tuple(temp_list)
 
 
 ROOT = Tk()

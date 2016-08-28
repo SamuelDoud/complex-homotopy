@@ -3,6 +3,7 @@
                    atan, atan2, atanh, conjugate, tan, tanh, pi, log, ln)
 from sympy.abc import z
 
+
 class ComplexFunction(object):
     """
     A class that defines a single function on the complex plane.
@@ -12,6 +13,8 @@ class ComplexFunction(object):
     function. This is much slower than numpy lambdify and is unsafe (as eval
     reads in code, which could be malicious.
     """
+    #indentity functionn for external classes to use
+
     def __init__(self, expression):
         """
         Given a function, in either string or expression format, create an object that

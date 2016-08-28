@@ -152,7 +152,7 @@ class PlotWindow(object):
         #compute if the user has not paused the program
         if self.recently_blitted:
             self.un_blit()
-        if not self.pause or self.pause_override:
+        if not self.pause or self.pause_override and self.lines:
             if len(self.lines) != self.grid.n_lines:
                 #there's a new number of lines in the graph
                 self.lines = [self.axes.plot([], [],
