@@ -1,4 +1,5 @@
 import math
+import sys
 from itertools import cycle
 
 import matplotlib.pyplot as plt
@@ -152,31 +153,35 @@ class PlotWindow(object):
         #compute if the user has not paused the program
         if self.recently_blitted:
             self.un_blit()
-        if not self.pause or self.pause_override and self.lines:
-            if len(self.lines) != self.grid.n_lines:
-                #there's a new number of lines in the graph
-                self.lines = [self.axes.plot([], [],
-                                                lw=self.grid.lines[line][LINE].width)[0]
-                                for line in range(self.grid.n_lines)]
-                self.axes.lines = self.lines
-            self.color = self.color_compute(self._frame_number)
-            for index, line_tuple in enumerate(self.grid.lines):
-                line_object = PointGrid.line_in_tuple(line_tuple)
-                self.lines[index].set_data(*self.grid.computed_steps[self.frame_number][index])
-                if line_object.color:
-                    self.lines[index]._color = line_object.color
-                else:
-                    self.lines[index]._color = self.color
-                self.lines[index]
-            #saving this data is too memory intensive for the small computational power req'd
-            #increment the frame number
-            if not self.pause_override:
-                self._frame_number += 1
-            #set the frame number to the number of steps defined in the grid
-                self._frame_number %= self.grid.n_steps
-                self.set_frame(self.frame_number)
-            self.pause_override = False
-        return self.lines
+        try:
+            if not self.pause or self.pause_override and self.lines:
+                if len(self.lines) != self.grid.n_lines:
+                    #there's a new number of lines in the graph
+                    self.lines = [self.axes.plot([], [],
+                                                    lw=self.grid.lines[line][LINE].width)[0]
+                                    for line in range(self.grid.n_lines)]
+                    self.axes.lines = self.lines
+                self.color = self.color_compute(self._frame_number)
+                for index, line_tuple in enumerate(self.grid.lines):
+                    line_object = PointGrid.line_in_tuple(line_tuple)
+                    self.lines[index].set_data(*self.grid.computed_steps[self.frame_number][index])
+                    if line_object.color:
+                        self.lines[index]._color = line_object.color
+                    else:
+                        self.lines[index]._color = self.color
+                    self.lines[index]
+                #saving this data is too memory intensive for the small computational power req'd
+                #increment the frame number
+                if not self.pause_override:
+                    self._frame_number += 1
+                #set the frame number to the number of steps defined in the grid
+                    self._frame_number %= self.grid.n_steps
+                    self.set_frame(self.frame_number)
+                self.pause_override = False 
+            return self.lines
+        except IndexError:
+            return []
+            print(sys.exc_info()[0])
 
     def blit(self):
         for line in self.lines:

@@ -1,8 +1,9 @@
-﻿from sympy import (Function, Symbol, symbols, lambdify, re, im, arg, Abs, E, sympify, sin, sinc,
+﻿import sys
+
+from sympy import (Function, Symbol, symbols, lambdify, re, im, arg, Abs, E, sympify, sin, sinc,
                    cos, cosh, acos, acosh, acot, acoth, acsc, asec, asech, asin, asinh,
                    atan, atan2, atanh, conjugate, tan, tanh, pi, log, ln)
 from sympy.abc import z
-
 
 class ComplexFunction(object):
     """
@@ -22,10 +23,13 @@ class ComplexFunction(object):
         """
         self.function_str = compliant_expression(expression)
         self.filename = generate_filename(expression)
-        #TODO regex cleaning of expression
-        self.expr = sympify(self.function_str)
-        #self.z = symbols('z', complex=True)
-        self.f_z = lambdify(z, self.expr, "numpy")
+        try:
+            #TODO regex cleaning of expression
+            self.expr = sympify(self.function_str)
+            #self.z = symbols('z', complex=True)
+            self.f_z = lambdify(z, self.expr, "numpy")
+        except:
+            print("Illegal expression: ", sys.exc_info()[0])
         #taking advantage of the reuse of the function object.
         #Lamdba numby operations greatly speed up operations on
         #large amounts of data with inital overhead
@@ -50,7 +54,7 @@ def compliant_expression(expression):
     expression = str(expression)
     expression = expression.upper()
     expression = expression.replace("PI", "pi")
-    expression = expression.replace("EXP", "exp")
+    expression = expression.replace("EXP", "E**")
     expression = expression.lower()
     expression = expression.replace("e", "E")
     return expression
