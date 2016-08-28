@@ -29,6 +29,12 @@ OFF = 0
 DATA = 0
 ID = 1
 
+PAUSE_FLAG = True
+PLAY_FLAG = False
+
+PLAYING = "Playing"
+PAUSED = "Paused"
+
 def allow_constants(string_to_strip_of_constants):
     string_to_strip_of_constants = str(string_to_strip_of_constants).upper()
     pi_const_str = str(math.pi)
@@ -172,13 +178,13 @@ class Application(Frame):
             self.lock_frame = True
             was_paused_flag = True
             if not self.plot_object.pause:
-                self.plot_object.pause = True
+                self.pause_play(was_paused_flag)
                 was_paused_flag = False
             self.plot_object.frame_number += delta_frames
             if was_paused_flag:
                 #this will allow one frame to draw
                 self.plot_object.pause_override = True
-            self.plot_object.pause = was_paused_flag
+            self.pause_play(was_paused_flag)
             self.lock_frame = False
 
     def interval_increase(self, event):
@@ -220,9 +226,35 @@ class Application(Frame):
         self.edit_menu.add_cascade(label="Colors", menu=self.color_menu)
         self.edit_menu.add_command(label="Preferences", command=self.launch_preferences)
 
+    def toggle_pause(self, event=""):
+        """Toggle the pause state by XOR"""
+        return self.pause_play(self.plot_object.pause ^ True)
+
+    def pause_play(self, to_pause):
+        """Pauses or plays the animation based on to_pause.
+        Also will set the label indictating playing or paused.
+        Return the status of the animation before the pause call was made"""
+        self.pause_play_label.config(text=PAUSED if to_pause else PLAYING)
+        return self.plot_object.set_animation(to_pause)
+
+    def go_to_last_frame(self, event=None):
+        """Go to the last frame of the animation and pause on it."""
+        self.go_to_frame_int(self.point_grid.n_steps - 1)
+
+    def go_to_first_frame(self,event=None):
+        """Go to the first frame of the animation and pause on it."""
+        self.go_to_frame_int(0)
+
+    def go_to_frame_int(self, frame_number):
+        """Go to the frame_number of the animation and pause on it"""
+        self.plot_object.frame_number = frame_number
+        self.move_frame(0)
+        self.pause_play(PAUSE_FLAG)
+        self.master.update()
+
     def launch_preferences(self):
         #pause the window and see if the user already paused the animation
-        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
+        was_paused = self.pause_play(PlotWindow.PAUSE)
         self._get_attributes()
         self.pref_popup = PreferencesWindow.PreferencesWindow(self.master, self.attributes)
         self.master.wait_window(self.pref_popup.top)
@@ -234,7 +266,7 @@ class Application(Frame):
         #wipe this from memory
         del self.pref_popup
         #unpause if the user was playing before the launch
-        self.plot_object.set_animation(was_paused)
+        self.pause_play(was_paused)
         
     def _get_attributes(self):
         self.attributes[self.fps_str] = (1000 / self.default_interval)
@@ -277,27 +309,27 @@ class Application(Frame):
         self.plot_object.set_start_color(new_start_color)
 
     def new_color_selector_box(self, init_color=(0,0,0)):
-        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
+        was_paused = self.pause_play(PlotWindow.PAUSE)
         init_color = convert_to_byte_color(init_color)
         new_color = convert_to_zero_to_one(colorchooser.askcolor(color=init_color,
                                                             title="Pick a new color")[0])
-        self.plot_object.set_animation(was_paused)
+        self.pause_play(was_paused)
         return new_color
 
     def help_message_box(self):
         #pause the animation
         self.help_message_str = "Sam Doud needs to write this up"
-        was_paused_state = self.plot_object.set_animation(PlotWindow.PAUSE)
+        was_paused_state = self.pause_play(PlotWindow.PAUSE)
         #launch the message box
         tkinter.messagebox.showinfo("Help", self.help_message_str)
         #resume the animation if it was playing
-        self.plot_object.set_animation(was_paused_state)
+        self.pause_play(was_paused_state)
 
     def save(self):
         """
         Serialize the data of the program into a pickle file defined by the user.
         """
-        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
+        was_paused = self.pause_play(PlotWindow.PAUSE)
         data_dict = self.serialize()
         #get a file name from the user
         file_name = self.save_file_dialog()
@@ -306,13 +338,13 @@ class Application(Frame):
         if file_name:
             with open(file_name, "wb+") as save_file:
                 pickle.dump(data_dict, save_file)
-        self.plot_object.set_animation(was_paused)
+        self.pause_play(was_paused)
 
     def open(self):
         """
         Method to open a file that defines a previous state of the program.
         """
-        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
+        was_paused = self.pause_play(PlotWindow.PAUSE)
         file_name = self.open_file_dialog()
         if not file_name:
             #user gave a non-existent name
@@ -322,7 +354,7 @@ class Application(Frame):
         #unpack this data in another method
         self.deserialize(pickle_data)
         self.launch()
-        self.plot_object.set_animation(was_paused)
+        self.pause_play(was_paused)
 
     def break_apart_lines(self):
         """
@@ -471,6 +503,14 @@ class Application(Frame):
         common_width = 5
         common_bd = 3
         #checkbox to control outlier logic
+        self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
+        self.function_label = Label(self.utility_frame, text="Enter a f(z)")
+        self.n_label = Label(self.utility_frame, text="Number of steps")
+        self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
+        self.submit = Button(self.utility_frame, text="Submit", command=self.launch)
+        self.go_to_first_frame_button = Button(self.utility_frame, text="Go to domain", command=self.go_to_first_frame)
+        self.save_video = Button(self.utility_frame, text="Save as Video", command=self.save_video_handler)
+        self.go_to_last_frame_button = Button(self.utility_frame, text="Go to range", command=self.go_to_last_frame)
         self.outlier_remover_checkbox = Checkbutton(self.utility_frame, text="Remove outliers",
                                                     variable=self.outlier_remover_var,
                                                     onvalue=ON, offvalue=OFF, height=1, width=12)
@@ -479,14 +519,8 @@ class Application(Frame):
                                             onvalue=ON, offvalue=OFF, height=1, width=6)
         self.pop_from_collection = Button(self.utility_frame, text="Remove last",
                                           command=self.remove_last)
-        self.submit = Button(self.utility_frame, text="Submit", command=self.launch)
-        self.function_label = Label(self.utility_frame, text="Enter a f(z)")
-        self.save_video = Button(self.utility_frame, text="Save as Video", command=self.save_video_handler)
-        self.remove_front = Button(self.utility_frame, text="Remove first", command=self.remove_first)
-        self.n_label = Label(self.utility_frame, text="Number of steps")
-        self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
-        self.circle_launcher = Button(self.utility_frame, command=self.circle_popup, text="Circle Builder")
-        self.grid_launcher = Button(self.utility_frame, command=self.grid_popup, text="Grid Builder")
+        self.pause_play_label = Label(self.utility_frame, text="Awaiting function")
+        self.frame_slider = Scale(self.master, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame_slider)        
         self.real_max_label = Label(self.utility_frame, text="Real max")
         self.real_min_label = Label(self.utility_frame, text="Real min")
         self.imag_max_label = Label(self.utility_frame, text="Imag max")
@@ -495,8 +529,7 @@ class Application(Frame):
         self.real_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.imag_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.imag_max_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
-        self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
-        self.frame_slider = Scale(self.master, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame)
+
 
     def grid_widgets_in_frames(self):
         """
@@ -505,28 +538,17 @@ class Application(Frame):
         Pythonically, this code is probably bad. I am referencing variables that are created
         outside of this method but not in the __init__ method.
         """
-        #WTF tab ordering
         self.function_label.grid(row=0, column=0)
         self.function_entry.grid(row=0, column=1, columnspan=3)
-        self.outlier_remover_checkbox.grid(row=0, column=5)
-        self.n_label.grid(row=1, column=0)
         self.n_entry.grid(row=1, column=1)
-        self.reverse_checkbox.grid(row=1, column=5)
-        #self.circle_launcher.grid(row=2, column=0)
-        #self.grid_launcher.grid(row=2, column=1)
-        self.submit.grid(row=2, column=2)
-        #self.remove_front.grid(row=3, column=0)
-        #self.pop_from_collection.grid(row=3, column=1)
-        self.save_video.grid(row=3, column=2)
-        offset = 3
-        #self.real_max_label.grid(row=1, column=(offset + 4))
-        #self.real_max_entry.grid(row=1, column=(offset + 3))
-        #self.real_min_label.grid(row=1, column=(offset + 0))
-        #self.real_min_entry.grid(row=1, column=(offset + 1))
-        #self.imag_max_label.grid(row=0, column=(offset + 1))
-        #self.imag_max_entry.grid(row=0, column=(offset + 2))
-        #self.imag_min_label.grid(row=2, column=(offset + 1))
-        #self.imag_min_entry.grid(row=2, column=(offset + 2))
+        self.n_label.grid(row=1, column=0)
+        self.outlier_remover_checkbox.grid(row=2, column=3)
+        self.reverse_checkbox.grid(row=2, column=4)
+        self.submit.grid(row=0, column=4)
+        self.save_video.grid(row=1, column=4)
+        self.go_to_first_frame_button.grid(row=0, column=5)
+        self.go_to_last_frame_button.grid(row=1, column=5)
+        self.pause_play_label.grid(row=2, column=1)
         self.redraw_slider(1)
 
     def redraw_slider(self, steps):
@@ -537,10 +559,10 @@ class Application(Frame):
         """
         self.frame_slider.destroy()
         self.frame_slider = Scale(to=self.point_grid.n_steps - 1, length=(self.size * 100),
-                                  from_=0, orient=HORIZONTAL, command=self.go_to_frame,)
+                                  from_=0, orient=HORIZONTAL, command=self.go_to_frame_slider,)
         self.frame_slider.grid(row=self.slider_row, column=self.slider_column)
 
-    def go_to_frame(self, event):
+    def go_to_frame_slider(self, event):
         """
         Get the value from the slider if the user changes it and set the frame equal to that.
         """
@@ -710,6 +732,9 @@ class Application(Frame):
         Create a new animation based on the data given by the user.
         This method will be called on the press of the submit button.
         """
+        if self.animating_already:
+            self.pause_play_label.config(text="Computing")
+            self.master.update()
         #take the focus off of any entry
         self.master.focus()
         #take the input from the user.. if its null, set ito the identity function
@@ -747,11 +772,11 @@ class Application(Frame):
         if not self.animating_already:
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
             self.plot_object.bind(self.set_slider)
-            #space bar press controls pause/play
             #now we can bind the keys
             self.key_bindings()
             self.update_graph()
         else:
+            self.pause_play(PLAY_FLAG)
             #call on the animator to start at the beginning of the graph
             self.plot_object.set_frame(0)
             #pass an iterable to reorder the frames
@@ -814,7 +839,7 @@ class Application(Frame):
         self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=self.size)
         self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.toolbar_frame)
         self.toolbar.update()
-        self.plot_object.fig.canvas.mpl_connect('button_press_event', self.plot_object.toggle_pause)
+        self.plot_object.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
         #self.canvas.show()
         #self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
         self.animating_already = True
@@ -841,7 +866,7 @@ class Application(Frame):
         self.general_popup(BuilderWindows.GridBuilderPopup, self.build_grid)
 
     def general_popup(self, popup_class, popup_function):
-        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
+        was_paused = self.pause_play(PlotWindow.PAUSE)
         self.popup_window = popup_class(self.master)
         self.master.wait_window(self.popup_window.top)
         data = self.popup_window.data
@@ -853,19 +878,21 @@ class Application(Frame):
         popup_function(*data)
         #remove from memory
         self.popup_window = None
-        self.plot_object.set_animation(was_paused)
+        self.pause_play(was_paused)
 
     def relaunch(self):
         """Something has changed in the data, realunch the plot to reflect that."""
-
+        self.pause_play_label.config(text="Computing")
+        self.master.update()
         self.point_grid.provide_function(self.point_grid.functions, self.n_steps_per_function,
                                          reverse=self.reverse, remove_outliers=self.remove_outliers)
+        self.pause_play(PLAY_FLAG)
         self.redraw_limits()
 
     def shape_window(self):
         """Launch a window that shows a list of the current shapes.
            User can remove lines if desired."""
-        was_paused = self.plot_object.set_animation(PlotWindow.PAUSE)
+        was_paused = self.pause_play(PlotWindow.PAUSE)
         self.popup_window = ShapesMenu.ShapesMenu(self.master, self.line_collection)
         #wait for the window to close
         self.master.wait_window(self.popup_window.top)
@@ -874,7 +901,7 @@ class Application(Frame):
             #checked if the lists are different
             self.new_lines(temp_line_collection, True)
         self.popup_window = None
-        self.plot_object.set_animation(was_paused)
+        self.pause_play(was_paused)
 
 
 def resource_path(relative_path):
