@@ -1,4 +1,4 @@
-import math
+﻿import math
 import sys
 from itertools import cycle
 
@@ -68,6 +68,7 @@ class PlotWindow(object):
         """
         #XOR the bool to flip it
         self.pause ^= True
+        return self.pause
 
     def set_animation(self, pause_state):
         """
@@ -247,10 +248,13 @@ class PlotWindow(object):
         return color
 
     def zoom_on_delta(self, delta):
-        self.grid.real_max -= delta
-        self.grid.real_min += delta
-        self.grid.imag_max -= delta
-        self.grid.imag_min += delta
+        """zoom in or out by delta which is a value between -1 and 1"""
+        self.x_spread = self.grid.real_max - self.grid.real_min
+        self.y_spread = self.grid.imag_max - self.grid.imag_min
+        self.grid.real_max -= (delta / 2 * self.x_spread)
+        self.grid.real_min += (delta / 2 * self.x_spread)
+        self.grid.imag_max -= (delta / 2 * self.y_spread)
+        self.grid.imag_min += (delta / 2 * self.y_spread)
         self.new_limits()
 
 

@@ -1,4 +1,4 @@
-import pickle
+﻿import pickle
 import threading
 import os
 import sys
@@ -6,7 +6,7 @@ from itertools import cycle
 import math
 
 from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar,
-                     Scale, END, HORIZONTAL, Menu, filedialog, messagebox, colorchooser)
+                     Scale, END, HORIZONTAL, Menu, filedialog, messagebox, colorchooser, Y, LEFT)
 import tkinter
 import matplotlib
 matplotlib.use("TkAgg")
@@ -22,6 +22,7 @@ import PreferencesWindow
 import BuilderWindows
 import ShapesMenu
 import ZoomWindow
+import NavigationBar
 
 #constants for checkboxes
 ON = 1
@@ -35,6 +36,7 @@ PLAY_FLAG = False
 
 PLAYING = "Playing"
 PAUSED = "Paused"
+COMPUTING = "Computing"
 
 def allow_constants(string_to_strip_of_constants):
     string_to_strip_of_constants = str(string_to_strip_of_constants).upper()
@@ -75,7 +77,8 @@ class Application(Frame):
         self.master.protocol("WM_DELETE_WINDOW", self.shutdown)
         #give the icon file to the GUI
         #uncoment this when I figure out pyInstaller
-        self.master.iconbitmap(resource_path("icon.ico"))
+        self.image_loading()
+        self.master.iconbitmap(self.application_icon_path)
         #how long between frames in milliseconds
         self.default_interval = 40
         self.default_points_on_line = 150
@@ -110,7 +113,7 @@ class Application(Frame):
         self.plot_object = None
         self.n_steps_per_function = 0
         self.size = 7
-        self.slider_row = 1
+        self.slider_row = 2
         self.slider_column = 0
         self.identity = "z"
         self.identity_function = func.ComplexFunction(self.identity)
@@ -135,6 +138,36 @@ class Application(Frame):
         #show the graph
         self.launch()
 
+    def image_loading(self):
+        """Load the file path to images necessary for the function of this program Loading spinner: https://commons.wikimedia.org/wiki/File:Loading_icon.gif"""
+        images = "images"
+        #scale_w = new_width/old_width
+        #scale_h = new_height/old_height
+        if os.name == "nt":
+            #account for the difference between Windows and Unix file systems
+            images = images + "\\"
+        else:
+            images = images + "/"
+        self.play_icon_path = resource_path(images + "play.png")
+        self.pause_icon_path = resource_path(images + "pause.png")
+        self.loading_spinner_icon_path = resource_path(images + "Loading_icon_cropped.gif")
+        self.application_icon_path = resource_path(images + "icon.ico")
+        self.zoom_in_icon_path = resource_path(images + "zoom_in.png")
+        self.zoom_out_icon_path = resource_path(images + "zoom_out.png")
+        self.frame_increment_icon_path = resource_path(images + "frame_increment.png")
+        self.frame_decrement_icon_path = resource_path(images + "frame_decrement.png")
+
+        self.play_icon = tkinter.PhotoImage(file=self.play_icon_path)
+        
+        self.pause_icon = tkinter.PhotoImage(file=self.pause_icon_path)
+        self.loading_spinner_icon = tkinter.PhotoImage(file=self.loading_spinner_icon_path)
+        #self.application_icon = tkinter.PhotoImage(file=self.application_icon_path)
+        self.zoom_in_icon = tkinter.PhotoImage(file=self.zoom_in_icon_path)
+        self.zoom_out_icon = tkinter.PhotoImage(file=self.zoom_out_icon_path)
+        self.frame_decrement_icon = tkinter.PhotoImage(file=self.frame_decrement_icon_path)
+        self.frame_increment_icon = tkinter.PhotoImage(file=self.frame_increment_icon_path)
+
+
     def shutdown(self):
         """
         Closes the application
@@ -157,21 +190,21 @@ class Application(Frame):
         #self.master.bind("<p>", self.plot_object.toggle_pause)
 
     def zoom_mousewheel(self, event):
-        self.plot_object.zoom_on_delta(event.delta/120)
+        self.plot_object.zoom_on_delta(event.delta/1200)
 
     def zoom_out_step(self, event=None):
-        self.plot_object.zoom_on_delta(-1)
+        self.plot_object.zoom_on_delta(-.1)
 
     def zoom_in_step(self, event=None):
-        self.plot_object.zoom_on_delta(1)
+        self.plot_object.zoom_on_delta(.1)
 
-    def increment_frame(self, event):
+    def increment_frame(self, event=None):
         """
         go forward one frame
         """
         self.move_frame(1)
 
-    def decrement_frame(self, event):
+    def decrement_frame(self, event=None):
         """
         Move back one frame
         """
@@ -261,12 +294,27 @@ class Application(Frame):
         """Toggle the pause state by XOR"""
         return self.pause_play(self.plot_object.pause ^ True)
 
-    def pause_play(self, to_pause):
+    def pause_play(self, to_pause=None):
         """Pauses or plays the animation based on to_pause.
         Also will set the label indictating playing or paused.
         Return the status of the animation before the pause call was made"""
+        if to_pause == None:
+            to_pause = not self.plot_object.pause
+        if to_pause == COMPUTING:
+            self.pause_play_label.config(text=COMPUTING)
+            self.pause_play_button.config(image=self.loading_spinner_icon)
+            return
+        if to_pause:
+            self.pause_play_button.config(image=self.play_icon)
+        else:
+            self.pause_play_button.config(image=self.pause_icon)
         self.pause_play_label.config(text=PAUSED if to_pause else PLAYING)
         return self.plot_object.set_animation(to_pause)
+
+    def pause_play_button_flip(self, event=None):
+        """Change the play state of the animation and change the image accordingly"""
+        self.pause_play()
+
 
     def go_to_last_frame(self, event=None):
         """Go to the last frame of the animation and pause on it."""
@@ -524,8 +572,8 @@ class Application(Frame):
 
     def grid_frames(self):
         self.plotting_frame.grid(row=0, column=0, columnspan=self.size)
-        self.toolbar_frame.grid(row=1, column=0)#, columnspan=4)
-        self.utility_frame.grid(row=2, column=0, columnspan=self.size)
+        self.toolbar_frame.grid(row=self.slider_row + 2, column=0, columnspan=self.size)#, columnspan=4)
+        self.utility_frame.grid(row=self.slider_row + 1, column=0, columnspan=self.size)
 
     def create_widgets(self):
         """
@@ -534,11 +582,16 @@ class Application(Frame):
         common_width = 5
         common_bd = 3
         #checkbox to control outlier logic
+        self.frame_decrement_button = Button(self.toolbar_frame, image=self.frame_decrement_icon, command=self.decrement_frame)
+        self.pause_play_button = Button(self.toolbar_frame, image=self.play_icon, command=self.pause_play_button_flip)
+        self.frame_increment_button = Button(self.toolbar_frame, image=self.frame_increment_icon, command=self.increment_frame)
+        self.zoom_in_button = Button(self.toolbar_frame, image=self.zoom_in_icon, command=self.zoom_in_step)
+        self.zoom_out_button = Button(self.toolbar_frame, image=self.zoom_out_icon, command=self.zoom_out_step)
         self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
         self.function_label = Label(self.utility_frame, text="Enter a f(z)")
         self.n_label = Label(self.utility_frame, text="Number of steps")
         self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
-        self.submit = Button(self.utility_frame, text="Submit", command=self.launch)
+        self.submit = Button(self.utility_frame, text="Submit", command=self.launch_wrapper)
         self.go_to_first_frame_button = Button(self.utility_frame, text="Go to domain", command=self.go_to_first_frame)
         self.save_video = Button(self.utility_frame, text="Save as Video", command=self.save_video_handler)
         self.go_to_last_frame_button = Button(self.utility_frame, text="Go to range", command=self.go_to_last_frame)
@@ -581,6 +634,12 @@ class Application(Frame):
         self.go_to_last_frame_button.grid(row=1, column=5)
         self.pause_play_label.grid(row=2, column=1)
         self.redraw_slider(1)
+        #pack into frame toolbar
+        self.frame_decrement_button.pack(side=LEFT)
+        self.pause_play_button.pack(side=LEFT)
+        self.frame_increment_button.pack(side=LEFT)
+        self.zoom_in_button.pack(side=LEFT)
+        self.zoom_out_button.pack(side=LEFT)
 
     def redraw_slider(self, steps):
         """
@@ -758,13 +817,18 @@ class Application(Frame):
         #now actually save the graph
         self.plot_object.save(video=True, frames = (1000 / self.default_interval))
 
+    def launch_wrapper(self, entry=None):
+        self.launch()
+        self.pause_play(PLAY_FLAG)
+        self.master.update()
+
     def launch(self, entry=None):
         """
         Create a new animation based on the data given by the user.
         This method will be called on the press of the submit button.
         """
         if self.animating_already:
-            self.pause_play_label.config(text="Computing")
+            self.pause_play(COMPUTING)
             self.master.update()
         #take the focus off of any entry
         self.master.focus()
@@ -807,7 +871,6 @@ class Application(Frame):
             self.key_bindings()
             self.update_graph()
         else:
-            self.pause_play(PLAY_FLAG)
             #call on the animator to start at the beginning of the graph
             self.plot_object.set_frame(0)
             #pass an iterable to reorder the frames
@@ -868,7 +931,7 @@ class Application(Frame):
         """
         self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=self.plotting_frame)
         self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=self.size)
-        self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.toolbar_frame)
+        self.toolbar = NavigationBar.NavigationBar(self.canvas, self.toolbar_frame)
         self.toolbar.update()
         self.plot_object.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
         #self.canvas.show()
@@ -913,12 +976,13 @@ class Application(Frame):
 
     def relaunch(self):
         """Something has changed in the data, realunch the plot to reflect that."""
-        self.pause_play_label.config(text="Computing")
+        self.pause_play(COMPUTING)
         self.master.update()
         self.point_grid.provide_function(self.point_grid.functions, self.n_steps_per_function,
                                          reverse=self.reverse, remove_outliers=self.remove_outliers)
         self.pause_play(PLAY_FLAG)
         self.redraw_limits()
+        self.master.update()
 
     def shape_window(self):
         """Launch a window that shows a list of the current shapes.
