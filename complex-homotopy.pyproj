@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{f0cab87d-9a1d-49df-acd0-295ed89c0a47}</ProjectGuid>
+    <ProjectGuid>{10455a5b-3cdc-4d04-99b1-c2b5e82f8d71}</ProjectGuid>
     <ProjectHome />
     <StartupFile>MainPage.py</StartupFile>
     <SearchPath />
@@ -50,7 +50,40 @@
     <InterpreterReference Include="{2af0f10d-7135-4994-9156-5d01c9c11b7e}\3.5" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="icon.ico" />
+    <Folder Include="images\" />
+    <Folder Include="images\Originals\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="images\actions.png" />
+    <Content Include="images\frame_decrement.png" />
+    <Content Include="images\frame_increment.png" />
+    <Content Include="images\icon.ico" />
+    <Content Include="images\Loading_icon.gif" />
+    <Content Include="images\Loading_icon_cropped.gif" />
+    <Content Include="images\Originals\actions.png" />
+    <Content Include="images\Originals\frame_decrement.png" />
+    <Content Include="images\Originals\frame_increment.png" />
+    <Content Include="images\Originals\icon.ico" />
+    <Content Include="images\Originals\Loading_icon.gif" />
+    <Content Include="images\Originals\Loading_icon_cropped.gif" />
+    <Content Include="images\Originals\pause.png" />
+    <Content Include="images\Originals\play.png" />
+    <Content Include="images\Originals\stop.png" />
+    <Content Include="images\Originals\x2.PNG" />
+    <Content Include="images\Originals\z.PNG" />
+    <Content Include="images\Originals\z2.PNG" />
+    <Content Include="images\Originals\zooming_icons.png" />
+    <Content Include="images\Originals\zoom_in.png" />
+    <Content Include="images\Originals\zoom_out.png" />
+    <Content Include="images\pause.png" />
+    <Content Include="images\play.png" />
+    <Content Include="images\stop.png" />
+    <Content Include="images\x2.PNG" />
+    <Content Include="images\z.PNG" />
+    <Content Include="images\z2.PNG" />
+    <Content Include="images\zooming_icons.png" />
+    <Content Include="images\zoom_in.png" />
+    <Content Include="images\zoom_out.png" />
   </ItemGroup>
   <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />

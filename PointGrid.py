@@ -51,6 +51,8 @@ class PointGrid(object):
         self.limit_mem = [None] * (self.n_steps + 2)
         self.filename = "z"
         self.functions = None
+        self.start_color = (0, 0, 0)
+        self.end_color = (0, 0, 0)
 
     def delete(self, line):
         """
@@ -76,14 +78,15 @@ class PointGrid(object):
         the number of points, and the color of  the circle through kwargs.
         """
         #new group is being created
-        return Line.Line.circle(radius, center, points)
+        return Line.Line.circle(radius, center, points, start_color=self.start_color, end_color=self.end_color)
 
     def draw_line(self, complex_start, complex_end, points=50):
         """
         Draw a "line" on the complex plane between two complex numbers.
         This is a interface to the Line class
         """
-        return Line.Line(identity_function, complex_start, complex_end, points)
+        return Line.Line(identity_function, complex_start, complex_end, points,
+                         start_color=self.start_color, end_color=self.end_color)
         pass
 
     def draw_roots_of_unity_spindle(self, n_roots, n_circles, total_radius=1, center = complex(0,0)):
@@ -155,13 +158,13 @@ class PointGrid(object):
                 start, end = end, start
         #create a Line with the points generated
         point_objects = [ComplexPoint.ComplexPoint(point) for point in points]
-        base_line = Line.Line('z', points[0], points[-1], len(points), point_objects)
+        base_line = Line.Line('z', points[0], points[-1], len(points), point_objects, start_color=self.start_color, end_color=self.end_color)
         return base_line
 
     def build_line(self, start, end, n_points=50, color=None):
         """Build a straight line on the complex plane."""
         points_on_line = np.linspace(start, end, n_points)
-        line = Line.Line("z", points_on_line[0], points_on_line[-1], n_points, color=color)
+        line = Line.Line("z", points_on_line[0], points_on_line[-1], n_points, color=color, start_color=self.start_color, end_color=self.end_color)
         return line
 
     def disk(self, radius, num_circles, center, n_points_per_circle=250):
@@ -175,7 +178,7 @@ class PointGrid(object):
         for circle_points in circles_as_points:
             temp_line = Line.Line('z', circle_points.points[0].complex,
                                   circle_points.points[-1].complex,
-                                  len(circle_points.points), circle_points.points)
+                                  len(circle_points.points), circle_points.points, start_color=self.start_color, end_color=self.end_color)
             #temp_line.width =  self.dpi
             circles_as_lines.append(temp_line)
         return circles_as_lines
@@ -198,7 +201,8 @@ class PointGrid(object):
         """
         Get the state of every line at this current state
         """
-        return [ln[0].points_at_step(this_step) for ln in self.lines]
+        x = [ln[0].points_at_step(this_step, self.n_steps) for ln in self.lines]
+        return x
 
     def lines_to_consider_at_step(self, this_step):
         """
@@ -221,7 +225,6 @@ class PointGrid(object):
         """
         #Get every step in this homotopy and map it to this list.
         self.computed_steps = list(map(self.lines_at_step, range(self.n_steps)))
-        #set the limits of the graph based upon the computation
 
     def set_user_limits(self, limits_tuple):
         """

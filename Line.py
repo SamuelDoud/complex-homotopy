@@ -1,4 +1,5 @@
 import cmath
+import operator
 
 import numpy as np
 
@@ -17,7 +18,8 @@ class Line(object):
     of the line, if it is connected, how many points are on the line etc.. Lines
     are held within a PointGrid
     """
-    def __init__(self, function, start, end, number_of_points, points=None, color=None):
+    def __init__(self, function, start, end, number_of_points, points=None, start_color=None, end_color=None):
+
         self.singularity = []
         self.singularity_index = -1
         self.number_of_steps = 0
@@ -32,14 +34,19 @@ class Line(object):
         self.start = start
         #the endpoints of this line
         self.end = end
-        self.color = color
+        if start_color and end_color:
+            self.start_color = start_color
+            self.end_color = end_color
+        else:
+            self.start_color = (0, 0, 0)
+            self.end_color = (0, 0, 0)
         if not points:
             self.points = self.create_points()
         else:
             self.points = points
 
     @classmethod
-    def circle(cls, radius, center=complex(0, 0), points=100):
+    def circle(cls, radius, center=complex(0, 0), points=100, start_color=None, end_color=None):
         """
         Alternative constructor for creating circle
         """
@@ -49,7 +56,7 @@ class Line(object):
         #must create a new point instead of attaching the head to the tail.
         #if that is done then the functions will evaluate twice over this point
         points.append(ComplexPoint.ComplexPoint(points[0].complex))
-        return cls(0, 0, 0, 0, points)
+        return cls(0, 0, 0, 0, points, start_color=start_color, end_color=end_color)
 
     def create_points(self):
         """
@@ -59,7 +66,7 @@ class Line(object):
         zs_to_be_evaluated = np.linspace(self.start, self.end, self.number_of_points)
         return [ComplexPoint.ComplexPoint(f_z) for f_z in zs_to_be_evaluated]
 
-    def points_at_step(self, this_step, to_consider=False):
+    def points_at_step(self, this_step, n_steps, to_consider=False):
         """
         Get the points on this line at step n
         """
@@ -71,7 +78,15 @@ class Line(object):
             list_of_tuples = [point.get_location_at_step(this_step)
                               for point in self.points if not point.ignore_in_outliers]
         #break into real and imag lists
-        return list(zip(*list_of_tuples))
+        color_diff = tuple(((self.end_color[color_index] - self.start_color[color_index]) / n_steps) for color_index in range(3))
+        colors = []
+        if n_steps > 1:
+            for index, color in enumerate(color_diff):
+                colors.append(color * (this_step % (n_steps - 1)) + self.start_color[index])
+        else:
+            colors = list(self.start_color)
+        split_list = list(zip(*list_of_tuples)) + [colors]
+        return split_list
 
     def parameterize_points(self, functions, steps=None, reverse=False):
         """

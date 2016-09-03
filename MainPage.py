@@ -6,7 +6,7 @@ from itertools import cycle
 import math
 
 from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar,
-                     Scale, END, HORIZONTAL, Menu, filedialog, messagebox, colorchooser, Y, LEFT)
+                     Scale, END, HORIZONTAL, Menu, filedialog, messagebox, colorchooser, RIGHT, LEFT)
 import tkinter
 import matplotlib
 matplotlib.use("TkAgg")
@@ -58,7 +58,7 @@ def convert_to_byte_color(tuple_colors_zero_to_one):
 def convert_to_zero_to_one(tuple_three_byte_color):
     list_three_byte_color = list(tuple_three_byte_color)
     for index, color in enumerate(list_three_byte_color):
-        list_three_byte_color[index] = color / 255
+        list_three_byte_color[index] = color / 256
     return tuple(list_three_byte_color)
 
 class Application(Frame):
@@ -88,6 +88,8 @@ class Application(Frame):
         self.attributes[self.fps_str] = 1000 / self.default_interval
         self.attributes[self.n_points_str] = self.default_points_on_line
         self.animation_thread = None
+        self.start_color = (0, 0, 0)
+        self.end_color = (0, 0, 0)
         self.extensions = [("Homotopy data", ".cht"), ("All Files", "*")]
         self.default_extension = ".cht"
         self.lines_pickle_str = "lines"
@@ -129,6 +131,7 @@ class Application(Frame):
         self.grid_widgets_in_frames()
         self.grid_frames()
         self.animating_already = False
+        self.animating_already_secondary = False
         self.already_paused = False
         self.lock_frame = False
         self.popup_window = None
@@ -309,6 +312,9 @@ class Application(Frame):
         else:
             self.pause_play_button.config(image=self.pause_icon)
         self.pause_play_label.config(text=PAUSED if to_pause else PLAYING)
+        #if not self.animating_already:
+            #self.pause_play_button.config(image=self.play_icon)
+            #self.pause_play_label.config(text="Awaiting function")
         return self.plot_object.set_animation(to_pause)
 
     def pause_play_button_flip(self, event=None):
@@ -381,10 +387,14 @@ class Application(Frame):
 
     def new_end_color(self):
         new_end_color = self.new_color_selector_box(self.plot_object._end_color)
+        self.point_grid.end_color = new_end_color
+        self.end_color = new_end_color
         self.plot_object.set_end_color(new_end_color)
 
     def new_start_color(self):
         new_start_color = self.new_color_selector_box(self.plot_object._start_color)
+        self.start_color = new_start_color
+        self.point_grid.start_color = new_start_color
         self.plot_object.set_start_color(new_start_color)
 
     def new_color_selector_box(self, init_color=(0,0,0)):
@@ -408,6 +418,8 @@ class Application(Frame):
         """
         Serialize the data of the program into a pickle file defined by the user.
         """
+        previous_state = self.plot_object.pause
+        self.pause_play(COMPUTING)
         was_paused = self.pause_play(PlotWindow.PAUSE)
         data_dict = self.serialize()
         #get a file name from the user
@@ -418,6 +430,7 @@ class Application(Frame):
             with open(file_name, "wb+") as save_file:
                 pickle.dump(data_dict, save_file)
         self.pause_play(was_paused)
+        self.pause_play(previous_state)
 
     def open(self):
         """
@@ -471,7 +484,8 @@ class Application(Frame):
                 temp_points_on_line.append(temp_point)
             temp_line = Line.Line("z", temp_points_on_line[0].complex,
                                     temp_points_on_line[-1].complex,
-                                    len(temp_points_on_line), temp_points_on_line)
+                                    len(temp_points_on_line), temp_points_on_line,
+                                    start_color=self.start_color, end_color=self.end_color)
             shapes_in_data[index][DATA] = temp_line
         return shapes_in_data
 
@@ -587,13 +601,15 @@ class Application(Frame):
         self.frame_increment_button = Button(self.toolbar_frame, image=self.frame_increment_icon, command=self.increment_frame)
         self.zoom_in_button = Button(self.toolbar_frame, image=self.zoom_in_icon, command=self.zoom_in_step)
         self.zoom_out_button = Button(self.toolbar_frame, image=self.zoom_out_icon, command=self.zoom_out_step)
+        self.save_video = Button(self.toolbar_frame, text="Save as Video", command=self.save_video_handler)
+        self.save_gif = Button(self.toolbar_frame, text="Save as GIF", command=self.save_gif_handler)
         self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
         self.function_label = Label(self.utility_frame, text="Enter a f(z)")
         self.n_label = Label(self.utility_frame, text="Number of steps")
         self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.submit = Button(self.utility_frame, text="Submit", command=self.launch_wrapper)
         self.go_to_first_frame_button = Button(self.utility_frame, text="Go to domain", command=self.go_to_first_frame)
-        self.save_video = Button(self.utility_frame, text="Save as Video", command=self.save_video_handler)
+        
         self.go_to_last_frame_button = Button(self.utility_frame, text="Go to range", command=self.go_to_last_frame)
         self.outlier_remover_checkbox = Checkbutton(self.utility_frame, text="Remove outliers",
                                                     variable=self.outlier_remover_var,
@@ -629,7 +645,7 @@ class Application(Frame):
         self.outlier_remover_checkbox.grid(row=2, column=3)
         self.reverse_checkbox.grid(row=2, column=4)
         self.submit.grid(row=0, column=4)
-        self.save_video.grid(row=1, column=4)
+        #self.save_video.grid(row=1, column=4)
         self.go_to_first_frame_button.grid(row=0, column=5)
         self.go_to_last_frame_button.grid(row=1, column=5)
         self.pause_play_label.grid(row=2, column=1)
@@ -640,6 +656,8 @@ class Application(Frame):
         self.frame_increment_button.pack(side=LEFT)
         self.zoom_in_button.pack(side=LEFT)
         self.zoom_out_button.pack(side=LEFT)
+        self.save_gif.pack(side=RIGHT)
+        self.save_video.pack(side=RIGHT)
 
     def redraw_slider(self, steps):
         """
@@ -815,11 +833,26 @@ class Application(Frame):
         Should implement a filename prompt.
         """
         #now actually save the graph
-        self.plot_object.save(video=True, frames = (1000 / self.default_interval))
+        file_name = self.save_file_dialog()
+        #check if the user actually defined a file
+        #(i.e. didn't exit the prompt w/o selecting a file)
+        if file_name:
+            self.plot_object.save(video=True, frames=(1000 / self.default_interval), path=file_name)
+
+    def save_gif_handler(self):
+        """
+        Dispatches the Plot to save the video.
+        Should implement a filename prompt.
+        """
+        #now actually save the graph
+        file_name = self.save_file_dialog()
+        #check if the user actually defined a file
+        #(i.e. didn't exit the prompt w/o selecting a file)
+        if file_name:
+            self.plot_object.save(gif=True, frames=(1000 / self.default_interval), path=file_name)
 
     def launch_wrapper(self, entry=None):
         self.launch()
-        self.pause_play(PLAY_FLAG)
         self.master.update()
 
     def launch(self, entry=None):
@@ -827,6 +860,7 @@ class Application(Frame):
         Create a new animation based on the data given by the user.
         This method will be called on the press of the submit button.
         """
+        recently_activated = False
         if self.animating_already:
             self.pause_play(COMPUTING)
             self.master.update()
@@ -865,6 +899,7 @@ class Application(Frame):
         #prevents the application from launching unneeded windows
         #bind the method set_slider to the plot_object
         if not self.animating_already:
+            self.animating_already = True
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
             self.plot_object.bind(self.set_slider)
             #now we can bind the keys
@@ -879,6 +914,8 @@ class Application(Frame):
         self.plot_object.reverse = self.reverse
         #set the boolean that controls the outlier operation in the pointgrid to that of the user
         self.redraw_limits()
+        self.pause_play(PLAY_FLAG)
+
 
     def set_checkbox_vars(self):
         self.reverse = self.reverse_checkbox_var.get() == ON
@@ -936,7 +973,6 @@ class Application(Frame):
         self.plot_object.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
         #self.canvas.show()
         #self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
-        self.animating_already = True
         del self.animation_thread
         self.animation_thread = threading.Thread(target=self.plot_object.animate, args=(self.default_interval,))
         self.animation_thread.start()

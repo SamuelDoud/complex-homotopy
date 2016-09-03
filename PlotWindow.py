@@ -1,9 +1,12 @@
 ﻿import math
 import sys
+import os
 from itertools import cycle
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import images2gif
+#import images2video
 
 import Line
 import PointGrid
@@ -61,6 +64,7 @@ class PlotWindow(object):
         self.recently_blitted = False
         self.pause_override = False
         self.tracer_lines = []
+        self.path_divider = "\\" if os.name == "nt" else "/"
 
     def toggle_pause(self, event):
         """
@@ -104,7 +108,7 @@ class PlotWindow(object):
         for index in range(len(self._end_color)):
             self.color_diff.append(self._end_color[index] - self._start_color[index])
 
-    def save(self, video=False, gif=False, frames=25):
+    def save(self, video=False, gif=False, path=None, frames=25):
         """
         Save the homotopy as a video file or animated image file
         """
@@ -126,16 +130,21 @@ class PlotWindow(object):
             self.anim.save(self.grid.filename + '.mp4', extra_args=['-vcodec', 'libx264'],
                            writer=self.ffmpeg_writer)
         if gif:
-            raise NotImplementedError
-        #return to the frame that the user was on before they saved
-        self._frame_number = old_frame_number
-        self.set_animation(was_paused)
+            list_of_images = []
+            for frame_number in range(self.grid.n_steps):
+                image = self.fig.savefig()
+                list_of_images.append(image)
+
+            images2gif.writeGif(filename=path, images=list_of_images, duration=[(1 / frames)])
 
     def tracer(self, step, points_to_add):
         for index, line in enumerate(self.tracers):
             line.append(points_to_add[index])
         self.increment_tracer()
         pass
+    
+
+
 
     def increment_tracer(self):
         pass
@@ -165,12 +174,8 @@ class PlotWindow(object):
                 self.color = self.color_compute(self._frame_number)
                 for index, line_tuple in enumerate(self.grid.lines):
                     line_object = PointGrid.line_in_tuple(line_tuple)
-                    self.lines[index].set_data(*self.grid.computed_steps[self.frame_number][index])
-                    if line_object.color:
-                        self.lines[index]._color = line_object.color
-                    else:
-                        self.lines[index]._color = self.color
-                    self.lines[index]
+                    self.lines[index].set_data(*self.grid.computed_steps[self.frame_number][index][:2])
+                    self.lines[index]._color = self.grid.computed_steps[self.frame_number][index][2]
                 #saving this data is too memory intensive for the small computational power req'd
                 #increment the frame number
                 if not self.pause_override:
