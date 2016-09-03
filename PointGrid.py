@@ -102,7 +102,7 @@ class PointGrid(object):
         roots_of_unity_endpoints = offset_by(roots_of_unity(n_roots), center)
         #draw the lines that form the roots of unity
         for root_point in roots_of_unity_endpoints:
-            roots_of_unity_lines.append(self.draw_line(center, root_point))
+            roots_of_unity_lines.append(self.draw_line(center, root_point * total_radius))
         return flatten_spindle(roots_of_unity_lines, circles_on_the_spindle, center, total_radius)
     
     def grid_lines(self, complex_high_imag_low_real, complex_low_imag_high_real,
