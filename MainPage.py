@@ -345,6 +345,7 @@ class Application(Frame):
             self.pause_play_button.config(image=self.pause_icon)
         self.pause_play_label.config(text=PAUSED if to_pause else PLAYING)
         if not self.animating_already_secondary:
+            self.animating_already_secondary = True
             self.pause_play_button.config(image=self.play_icon)
             self.pause_play_label.config(text="Awaiting function")
         return self.plot_object.set_animation(to_pause)
@@ -551,13 +552,16 @@ class Application(Frame):
                 self.outlier_remover_pickle_str:outlier,
                 self.reverse_checkbox_pickle_str:reverse, self.limits_pickle_str:limits}
 
-    def save_file_dialog(self):
+    def save_file_dialog(self, extension=".cht"):
         """
         Prompts the user to choose a file name and directory to save their data to.
         """
         title = "Save homotopy as"
-        file_name = filedialog.asksaveasfilename(filetypes=self.extensions,
-                                             defaultextension=self.default_extension, title=title)
+        extensions = self.extensions
+        if extension is not ".cht":
+            extensions[0] = ("", extension)
+        file_name = filedialog.asksaveasfilename(filetypes=extensions,
+                                             defaultextension=extension, title=title)
         return file_name
 
     def deserialize(self, pickle_data):
@@ -600,13 +604,16 @@ class Application(Frame):
         entry_box.delete(0, END)
         entry_box.insert(0, text)
 
-    def open_file_dialog(self):
+    def open_file_dialog(self, extension=".cht"):
         """
         Launches a file browser that prompts the user to select a file to load.
         """
         title = "Open homotopy data"
-        file_name = filedialog.askopenfilename(filetypes=self.extensions,
-                                             defaultextension=self.default_extension, title=title)
+        extensions = self.extensions
+        if extension is not ".cht":
+            extensions[0] = ("", extension)
+        file_name = filedialog.askopenfilename(filetypes=extensions,
+                                             defaultextension=extension, title=title)
         return file_name
 
     def create_frames(self):
@@ -873,12 +880,9 @@ class Application(Frame):
         return self.add_lines(*x)
     
     def save_video_handler(self):
-        """
-        Dispatches the Plot to save the video.
-        Should implement a filename prompt.
-        """
+        """Dispatches the Plot to save the video."""
         #now actually save the graph
-        file_name = self.save_file_dialog()
+        file_name = self.save_file_dialog(".mp4")
         #check if the user actually defined a file
         #(i.e. didn't exit the prompt w/o selecting a file)
         if file_name:
@@ -886,12 +890,9 @@ class Application(Frame):
                                   path=file_name)
 
     def save_gif_handler(self):
-        """
-        Dispatches the Plot to save the video.
-        Should implement a filename prompt.
-        """
+        """Dispatches the Plot to save a GIF."""
         #now actually save the graph
-        file_name = self.save_file_dialog()
+        file_name = self.save_file_dialog(extension=".gif")
         #check if the user actually defined a file
         #(i.e. didn't exit the prompt w/o selecting a file)
         if file_name:

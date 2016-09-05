@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import images2gif
+from moviepy.editor import *
 #import images2video
 
 import Line
@@ -50,6 +51,7 @@ class PlotWindow(object):
         self.ffmpeg_animation_writer = animation.writers['ffmpeg']
         self.ffmpeg_writer = None
         self.updating_limits = updating_limits #
+        self.call_once = 0
         self.imag_spacing = 0.1
         self.real_spacing = 0.1
         self.grid_visible = True
@@ -71,28 +73,38 @@ class PlotWindow(object):
 
     def set_grid_lines(self, real_spacing=None, 
                        imag_spacing=None, line_width=1, visible=None):
-        
-        current_frame = self.get_frame()
-        self.axes.clear()
-        if real_spacing:
-            self.real_spacing = real_spacing
-        if imag_spacing:
-            self.imag_spacing = imag_spacing
-        if visible is not None:
-            self.grid_visible = visible
-        #get a starting point that is spaced from zero
-        imag_start = (self.imag_spacing - (self.grid.imag_min % self.imag_spacing))
-        imag_start = (imag_start + self.grid.imag_min if imag_start != self.imag_spacing
-                      else self.grid.imag_min)
-        real_start = (self.real_spacing - (self.grid.real_min % self.real_spacing))
-        real_start = (real_start + self.grid.real_min if real_start != self.real_spacing
-                      else self.grid.real_min)
-        imag_ticks = (np.arange(imag_start, self.grid.imag_max, self.imag_spacing) if self.grid_visible else [])
-        real_ticks = (np.arange(real_start, self.grid.real_max, self.real_spacing) if self.grid_visible else [])
-        imag_ticks_major = imag_ticks[::5]
-        real_tick_major = real_ticks[::5]
-        self.axes.yaxis.grid()
-        #self.axes.xaxis.grid(self.grid_visible)
+        pass
+        #current_frame = self.get_frame()
+
+        #if real_spacing:
+        #    self.real_spacing = real_spacing
+        #if imag_spacing:
+        #    self.imag_spacing = imag_spacing
+        #if visible is not None:
+        #    self.grid_visible = visible
+        ##get a starting point that is spaced from zero
+        #imag_start = (self.imag_spacing - (self.grid.imag_min % self.imag_spacing))
+        #imag_start = (imag_start + self.grid.imag_min if imag_start != self.imag_spacing
+        #              else self.grid.imag_min)
+        #real_start = (self.real_spacing - (self.grid.real_min % self.real_spacing))
+        #real_start = (real_start + self.grid.real_min if real_start != self.real_spacing
+        #              else self.grid.real_min)
+        #imag_ticks = (np.arange(imag_start, self.grid.imag_max, self.imag_spacing) if self.grid_visible else [])
+        #real_ticks = (np.arange(real_start, self.grid.real_max, self.real_spacing) if self.grid_visible else [])
+        #imag_ticks_major = imag_ticks[::5]
+        #real_tick_major = real_ticks[::5]
+        #if self.grid_visible:
+        #    new_color = "k"
+        #else:  
+        #    new_color="w"
+        #if not self.call_once:
+        #    self.fig.gca().grid()
+        #    self.call_once = True
+        #for gridline in self.fig.gca().get_xgridlines() + self.fig.gca().get_ygridlines():
+        #    gridline.set_color(new_color)
+        #plt.show()
+        #self.axes.clear()
+        ##self.axes.xaxis.grid(self.grid_visible)
         #self.axes.tick_params(axis='y', which='major')
         #self.axes.tick_params(axis='x', which='major')
         #self.axes.tick_params(axis='y', which='minor')
@@ -104,8 +116,8 @@ class PlotWindow(object):
         #else:
         #    self.axes.minorticks_off()
         #    self.axes.grid(False)
-        if self.anim is not None:
-            self.set_frame(current_frame)
+        #if self.anim is not None:
+        #    self.set_frame(current_frame)
         #self.axes.grid(self.grid_visible, which="both")
 
     def toggle_pause(self, event):
@@ -157,15 +169,14 @@ class PlotWindow(object):
             del self.anim
             self.animate(self.interval)
             self.anim.frame_seq = cycle(range(self.grid.n_steps))
-            self.anim.save(self.grid.filename + '.mp4', extra_args=['-vcodec', 'libx264'],
+            self.anim.save(path,
                            writer=self.ffmpeg_writer)
         if gif:
-            list_of_images = []
-            for frame_number in range(self.grid.n_steps):
-                image = self.fig.savefig()
-                list_of_images.append(image)
-
-            images2gif.writeGif(filename=path, images=list_of_images, duration=[(1 / frames)])
+            self.save(video=True, frames=frames, path=path+".mp4")
+            clip = VideoFileClip(path+".mp4")
+            clip.write_gif(path)
+            os.remove(path+".mp4")
+            
 
     def tracer(self, step, points_to_add):
         for index, line in enumerate(self.tracers):
@@ -182,9 +193,7 @@ class PlotWindow(object):
             self.tracers.append([line])
 
     def animate_compute(self, step):
-        """
-        Function that returns the lines that will be used to display this graph.
-        """
+        """Function that returns the lines that will be used to display this graph."""
         #ignore the step from the animation call!
         #compute if the user has not paused the program
         if self.recently_blitted:
@@ -227,24 +236,18 @@ class PlotWindow(object):
         self.recently_blitted = False
         
     def reset_interval(self, delta):
-        """
-        Change the interval by the passed delta
-        """
+        """Change the interval by the passed delta."""
         if self.interval > - 1 * delta:
             self.interval += delta
         self.anim._interval = self.interval
 
     def get_frame(self):
-        """
-        Returns the current frame of the homotopy
-        """
+        """Returns the current frame of the homotopy."""
         return self._frame_number
 
     def set_frame(self, value):
-        """
-        A more complex setter method. Starts like a normal setter, then calls every object in the
-        observer list with the value.
-        """
+        """A more complex setter method. Starts like a normal setter, then calls every object in the
+        observer list with the value."""
         if value >= 0 and value < self.grid.n_steps:
             self._frame_number = value
             for callback in self.observers:
@@ -254,15 +257,11 @@ class PlotWindow(object):
     frame_number = property(get_frame, set_frame)
 
     def bind(self, callback):
-        """
-        take the object in callback and append it to the observer
-        """
+        """Take the object in callback and append it to the observer."""
         self.observers.append(callback)
 
     def color_compute(self, step):
-        """
-        Determine a color based on how far along the animation is.
-        """
+        """Determine a color based on how far along the animation is."""
         color = list(self._start_color)
         #workaround for a if the animation is not reversing
         if not self.reverse:
@@ -288,19 +287,14 @@ class PlotWindow(object):
         self.new_limits()
 
     def new_limits(self, limits=None):
-        """
-        Take the new limits and apply them to the plot.
-        """
-
+        """Take the new limits and apply them to the plot."""
         self.axes.set_xlim([self.grid.real_min, self.grid.real_max])
         self.axes.set_ylim([self.grid.imag_min, self.grid.imag_max])
         #since we have a new set of limits the grid lines need to be reconfigured
         self.set_grid_lines()
 
     def animate(self, interval_length=200):
-        """
-        Run the animation through the parameters passed, namely the interval between frames
-        """
+        """Run the animation through the parameters passed, namely the interval between frames."""
         #will call the animation to start at the beginning
         self.interval = interval_length
         self.anim = animation.FuncAnimation(self.fig, func=self.animate_compute,
