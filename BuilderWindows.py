@@ -181,14 +181,15 @@ class SpindleBuilderPopup(BuilderPopup):
                 center = complex(allow_constants(self.center_entry.get()))
             n_circles = int(self.n_circles_entry.get())
             #this is the data that the passed builder function requires
-            self.data = (int(self.spindles_entry.get()),float(allow_constants(self.radius_entry.get())), n_circles, center)
-        except:
+            self.data = (int(self.spindles_entry.get()), 
+                         float(allow_constants(self.radius_entry.get())), n_circles, center)
+        except Exception:
             #Invalid entry data... eventually log this
             pass
         self.top.destroy()
 
-
 def allow_constants(string_to_strip_of_constants):
+    """Allows a user to enter certain constants in various ways"""
     #applies arithmetic to a string such as 3pi so that a computer can understand it
     string_to_strip_of_constants = str(string_to_strip_of_constants).upper()
     pi_const_str = str(math.pi)

@@ -27,6 +27,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ComplexFunction.py" />
+    <Compile Include="GridLinesWindow.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Line.py" />
     <Compile Include="MainPage.py" />
     <Compile Include="NavigationBar.py">

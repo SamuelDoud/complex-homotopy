@@ -3,6 +3,7 @@ import sys
 import os
 from itertools import cycle
 
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import images2gif
@@ -25,15 +26,11 @@ PAUSE = True
 PLAY = False
 
 class PlotWindow(object):
-    """
-    This class creates the plot in which the homotopy is displayed.
-    Can be used in a tkinter window OR can be used like an API
-    """
+    """This class creates the plot in which the homotopy is displayed.
+    Can be used in a tkinter window OR can be used like an API."""
     def __init__(self, grid, updating_limits=False,
                  start_color=(0.0, 0.0, 1.0), end_color=(1.0, 0.0, 0.0)):
-        """
-        Create the intial state of the plot. This will just be the image of z onto z.
-        """
+        """Create the intial state of the plot. This will just be the image of z onto z."""
         self.observers = []
         self.anim = None
         self.reverse = False
@@ -42,14 +39,20 @@ class PlotWindow(object):
         self.interval = None
         self.anim = None
         self.dpi = 100
-        self.grid = grid #the point grid that this graph is to display. Can be changed!
         grid.dpi = self.dpi
+        self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
         self.fig = plt.figure(figsize=(7, 7), dpi=self.dpi)
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
+        self.axes = plt.gca()
+        #self.axes.axvline(x=0)
+        #self.axes.axhline(y=0)
         self.ffmpeg_animation_writer = animation.writers['ffmpeg']
         self.ffmpeg_writer = None
         self.updating_limits = updating_limits #
+        self.imag_spacing = 0.1
+        self.real_spacing = 0.1
+        self.grid_visible = True
         self.new_limits() #take the inital limits from self.grid and apply to the graph
         self.all_lines = []
         self.lines = [self.axes.plot([], [],
@@ -66,52 +69,79 @@ class PlotWindow(object):
         self.tracer_lines = []
         self.path_divider = "\\" if os.name == "nt" else "/"
 
+    def set_grid_lines(self, real_spacing=None, 
+                       imag_spacing=None, line_width=1, visible=None):
+        
+        current_frame = self.get_frame()
+        self.axes.clear()
+        if real_spacing:
+            self.real_spacing = real_spacing
+        if imag_spacing:
+            self.imag_spacing = imag_spacing
+        if visible is not None:
+            self.grid_visible = visible
+        #get a starting point that is spaced from zero
+        imag_start = (self.imag_spacing - (self.grid.imag_min % self.imag_spacing))
+        imag_start = (imag_start + self.grid.imag_min if imag_start != self.imag_spacing
+                      else self.grid.imag_min)
+        real_start = (self.real_spacing - (self.grid.real_min % self.real_spacing))
+        real_start = (real_start + self.grid.real_min if real_start != self.real_spacing
+                      else self.grid.real_min)
+        imag_ticks = (np.arange(imag_start, self.grid.imag_max, self.imag_spacing) if self.grid_visible else [])
+        real_ticks = (np.arange(real_start, self.grid.real_max, self.real_spacing) if self.grid_visible else [])
+        imag_ticks_major = imag_ticks[::5]
+        real_tick_major = real_ticks[::5]
+        self.axes.yaxis.grid()
+        #self.axes.xaxis.grid(self.grid_visible)
+        #self.axes.tick_params(axis='y', which='major')
+        #self.axes.tick_params(axis='x', which='major')
+        #self.axes.tick_params(axis='y', which='minor')
+        #self.axes.tick_params(axis='x', which='minor')
+        
+        #if self.grid_visible:
+        #    self.axes.minorticks_on()
+        #    self.axes.grid(True)
+        #else:
+        #    self.axes.minorticks_off()
+        #    self.axes.grid(False)
+        if self.anim is not None:
+            self.set_frame(current_frame)
+        #self.axes.grid(self.grid_visible, which="both")
+
     def toggle_pause(self, event):
-        """
-        Toggles the pause variable through true and false
-        """
+        """Toggles the pause variable through true and false."""
         #XOR the bool to flip it
         self.pause ^= True
         return self.pause
 
     def set_animation(self, pause_state):
-        """
-        Set the animation's pause variable to the state passed.
-        Return the prior state of the pause variable before the call.
-        """
+        """Set the animation's pause variable to the state passed.
+        Return the prior state of the pause variable before the call."""
         prior_state = self.pause
         self.pause = pause_state
         return prior_state
 
     def set_start_color(self, color_tuple):
-        """
-        This method changes the start (z) color and updates the difference between the starting
-        and ending colors.
-        """
+        """This method changes the start (z) color and updates the difference between the starting
+        and ending colors."""
         self._start_color = color_tuple
         self.reset_color_diff()
 
     def set_end_color(self, color_tuple):
-        """
-        This method changes the end (f(z)) color and updates the difference between the starting
-        and ending colors.
-        """
+        """This method changes the end (f(z)) color and updates the difference between the starting
+        and ending colors."""
         self._end_color = color_tuple
         self.reset_color_diff()
 
     def reset_color_diff(self):
-        """
-        Determine the change in color per step.
-        Is called initally and whenever a starting or ending color is changed
-        """
+        """Determine the change in color per step.
+        Is called initally and whenever a starting or ending color is changed"""
         self.color_diff = [] #the list that shows how different the colors are per step
         for index in range(len(self._end_color)):
             self.color_diff.append(self._end_color[index] - self._start_color[index])
 
     def save(self, video=False, gif=False, path=None, frames=25):
-        """
-        Save the homotopy as a video file or animated image file
-        """
+        """Save the homotopy as a video file or animated image file"""
         #save the frame number the user is currently on
         old_frame_number = self._frame_number
         #jummp to the first frame so this is the first frame of the video
@@ -142,9 +172,6 @@ class PlotWindow(object):
             line.append(points_to_add[index])
         self.increment_tracer()
         pass
-    
-
-
 
     def increment_tracer(self):
         pass
@@ -154,7 +181,6 @@ class PlotWindow(object):
         for line in self.lines:
             self.tracers.append([line])
 
-        
     def animate_compute(self, step):
         """
         Function that returns the lines that will be used to display this graph.
@@ -200,7 +226,6 @@ class PlotWindow(object):
             line.set_visible(True)
         self.recently_blitted = False
         
-
     def reset_interval(self, delta):
         """
         Change the interval by the passed delta
@@ -262,14 +287,15 @@ class PlotWindow(object):
         self.grid.imag_min += (delta / 2 * self.y_spread)
         self.new_limits()
 
-
     def new_limits(self, limits=None):
         """
         Take the new limits and apply them to the plot.
         """
-        self.axes = plt.gca()
+
         self.axes.set_xlim([self.grid.real_min, self.grid.real_max])
         self.axes.set_ylim([self.grid.imag_min, self.grid.imag_max])
+        #since we have a new set of limits the grid lines need to be reconfigured
+        self.set_grid_lines()
 
     def animate(self, interval_length=200):
         """

@@ -1,5 +1,4 @@
 import cmath
-import operator
 
 import numpy as np
 
@@ -18,7 +17,8 @@ class Line(object):
     of the line, if it is connected, how many points are on the line etc.. Lines
     are held within a PointGrid
     """
-    def __init__(self, function, start, end, number_of_points, points=None, start_color=None, end_color=None):
+    def __init__(self, function, start, end, number_of_points,
+                 points=None, start_color=None, end_color=None):
 
         self.singularity = []
         self.singularity_index = -1
@@ -187,6 +187,3 @@ def compare(master, child_lines):
     child_start_points = [[(complex_point.complex
                             for complex_point in child.points)] for child in child_lines]
     return master_start_points in child_start_points
-
-def set_dash_seq(dashes):
-    self.dash_seq = dashes

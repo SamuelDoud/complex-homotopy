@@ -5,12 +5,11 @@ import sys
 from itertools import cycle
 import math
 
-from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, Toplevel, IntVar,
-                     Scale, END, HORIZONTAL, Menu, filedialog, messagebox, colorchooser, RIGHT, LEFT)
+from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, IntVar,
+                     Scale, END, HORIZONTAL, Menu, filedialog, colorchooser, RIGHT, LEFT)
 import tkinter
 import matplotlib
-matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backend_bases import key_press_handler
 
 import PointGrid
@@ -23,6 +22,9 @@ import BuilderWindows
 import ShapesMenu
 import ZoomWindow
 import NavigationBar
+import GridLinesWindow
+
+matplotlib.use("TkAgg")
 
 #constants for checkboxes
 ON = 1
@@ -121,9 +123,11 @@ class Application(Frame):
         self.identity_function = func.ComplexFunction(self.identity)
         self.point_grid = PointGrid.PointGrid()
         self.outlier_remover_var = IntVar()
-        self.outlier_remover_var.set(0)
+        self.outlier_remover_var.set(OFF)
         self.reverse_checkbox_var = IntVar()
-        self.reverse_checkbox_var.set(0)
+        self.reverse_checkbox_var.set(OFF)
+        self.view_grids_checkbox_var = IntVar()
+        self.view_grids_checkbox_var.set(ON)
         self.reverse = False
         self.remove_outliers = False
         self.create_frames()
@@ -142,7 +146,8 @@ class Application(Frame):
         self.launch()
 
     def image_loading(self):
-        """Load the file path to images necessary for the function of this program Loading spinner: https://commons.wikimedia.org/wiki/File:Loading_icon.gif"""
+        """Load the file path to images necessary for the function of this program
+        Loading spinner: https://commons.wikimedia.org/wiki/File:Loading_icon.gif"""
         images = "images"
         #scale_w = new_width/old_width
         #scale_h = new_height/old_height
@@ -159,9 +164,7 @@ class Application(Frame):
         self.zoom_out_icon_path = resource_path(images + "zoom_out.png")
         self.frame_increment_icon_path = resource_path(images + "frame_increment.png")
         self.frame_decrement_icon_path = resource_path(images + "frame_decrement.png")
-
         self.play_icon = tkinter.PhotoImage(file=self.play_icon_path)
-        
         self.pause_icon = tkinter.PhotoImage(file=self.pause_icon_path)
         self.loading_spinner_icon = tkinter.PhotoImage(file=self.loading_spinner_icon_path)
         #self.application_icon = tkinter.PhotoImage(file=self.application_icon_path)
@@ -193,13 +196,16 @@ class Application(Frame):
         #self.master.bind("<p>", self.plot_object.toggle_pause)
 
     def zoom_mousewheel(self, event):
+        """Zoom in/out by event."""
         self.plot_object.zoom_on_delta(event.delta/1200)
 
-    def zoom_out_step(self, event=None):
-        self.plot_object.zoom_on_delta(-.1)
+    def zoom_out_step(self, proportion=-.1):
+        """Zoom out by proportion."""
+        self.plot_object.zoom_on_delta(proportion)
 
-    def zoom_in_step(self, event=None):
-        self.plot_object.zoom_on_delta(.1)
+    def zoom_in_step(self, proportion=.1):
+        """Zoom in by proportion."""
+        self.plot_object.zoom_on_delta(proportion)
 
     def increment_frame(self, event=None):
         """
@@ -266,24 +272,50 @@ class Application(Frame):
         self.master.config(menu=self.menubar)
 
     def edit_menu_create(self):
+        """Method to create the edit menu options."""
         self.edit_menu.add_cascade(label="Objects", menu=self.object_menu)
         self.edit_menu.add_cascade(label="Colors", menu=self.color_menu)
         self.edit_menu.add_command(label="Preferences", command=self.launch_preferences)
 
     def view_menu_create(self):
+        """Method to create the view menu options."""
         self.view_menu.add_cascade(label="Zoom Window", command=self.zoom_window)
         self.view_menu.add_cascade(label="Zoom Square", command=self.force_square)
         self.view_menu.add_cascade(label="Zoom Out", command=self.zoom_out_step)
         self.view_menu.add_cascade(label="Zoom In", command=self.zoom_in_step)
-        pass
+        self.view_menu.add_separator()
+        self.view_menu.add_checkbutton(label="Grid Lines", command=self.grid_lines_control,
+                                       variable=self.view_grids_checkbox_var, onvalue=ON,
+                                       offvalue=OFF)
+        self.view_menu.add_cascade(label="Grid Lines Configuration",
+                                   command=self.grid_lines_configuration)
+        
+    def grid_lines_control(self, turn_on=None):
+        previous_state = self.pause_play(COMPUTING)
+        action = False
+        if turn_on == True or self.view_grids_checkbox_var.get() == ON:
+            #self.view_grids_checkbox_var.set(IntVar(value=ON))
+            action = True
+        #else:
+        #    #self.view_grids_checkbox_var.set(IntVar(value=OFF))
+        self.plot_object.set_grid_lines(visible=action)
+        self.pause_play(previous_state)
+
+    def grid_lines_configuration(self, event=None):
+        """Prompt the user for information about how the grid lines should be configured"""
+        self.general_popup(GridLinesWindow.GridLinesWindow, self.grid_lines_control)
 
     def zoom_window(self, event=None):
+        """Launches the "zoom window" which allows the user to set their own limits"""
         was_paused = self.pause_play(PlotWindow.PAUSE)
         self.popup_window = ZoomWindow.ZoomWindow(self.master)
         self.master.wait_window(self.popup_window.top)
         limits = (self.popup_window.real_max, self.popup_window.real_min,
                   self.popup_window.imag_max, self.popup_window.imag_min)
-        if limits.count(None) == 0:
+        for limit in limits:
+            limit = allow_constants(limits)
+        #ensure that all the limits are numbers and that the limits are properly ordered
+        if limits.count(None) == 0 and is_properly_ordered(*limits):
             self.point_grid.set_user_limits(limits)
             self.plot_object.new_limits()
         self.popup_window = None
@@ -306,15 +338,15 @@ class Application(Frame):
         if to_pause == COMPUTING:
             self.pause_play_label.config(text=COMPUTING)
             self.pause_play_button.config(image=self.loading_spinner_icon)
-            return
+            return self.plot_object.pause
         if to_pause:
             self.pause_play_button.config(image=self.play_icon)
         else:
             self.pause_play_button.config(image=self.pause_icon)
         self.pause_play_label.config(text=PAUSED if to_pause else PLAYING)
-        #if not self.animating_already:
-            #self.pause_play_button.config(image=self.play_icon)
-            #self.pause_play_label.config(text="Awaiting function")
+        if not self.animating_already_secondary:
+            self.pause_play_button.config(image=self.play_icon)
+            self.pause_play_label.config(text="Awaiting function")
         return self.plot_object.set_animation(to_pause)
 
     def pause_play_button_flip(self, event=None):
@@ -586,7 +618,7 @@ class Application(Frame):
 
     def grid_frames(self):
         self.plotting_frame.grid(row=0, column=0, columnspan=self.size)
-        self.toolbar_frame.grid(row=self.slider_row + 2, column=0, columnspan=self.size)#, columnspan=4)
+        self.toolbar_frame.grid(row=self.slider_row + 2, column=0, columnspan=self.size)
         self.utility_frame.grid(row=self.slider_row + 1, column=0, columnspan=self.size)
 
     def create_widgets(self):
@@ -596,21 +628,30 @@ class Application(Frame):
         common_width = 5
         common_bd = 3
         #checkbox to control outlier logic
-        self.frame_decrement_button = Button(self.toolbar_frame, image=self.frame_decrement_icon, command=self.decrement_frame)
-        self.pause_play_button = Button(self.toolbar_frame, image=self.play_icon, command=self.pause_play_button_flip)
-        self.frame_increment_button = Button(self.toolbar_frame, image=self.frame_increment_icon, command=self.increment_frame)
-        self.zoom_in_button = Button(self.toolbar_frame, image=self.zoom_in_icon, command=self.zoom_in_step)
-        self.zoom_out_button = Button(self.toolbar_frame, image=self.zoom_out_icon, command=self.zoom_out_step)
-        self.save_video = Button(self.toolbar_frame, text="Save as Video", command=self.save_video_handler)
-        self.save_gif = Button(self.toolbar_frame, text="Save as GIF", command=self.save_gif_handler)
+        self.frame_decrement_button = Button(self.toolbar_frame, image=self.frame_decrement_icon,
+                                             command=self.decrement_frame)
+        self.pause_play_button = Button(self.toolbar_frame, image=self.play_icon,
+                                        command=self.pause_play_button_flip)
+        self.frame_increment_button = Button(self.toolbar_frame, image=self.frame_increment_icon,
+                                             command=self.increment_frame)
+        self.zoom_in_button = Button(self.toolbar_frame, image=self.zoom_in_icon,
+                                     command=self.zoom_in_step)
+        self.zoom_out_button = Button(self.toolbar_frame, image=self.zoom_out_icon,
+                                      command=self.zoom_out_step)
+        self.save_video = Button(self.toolbar_frame, text="Save as Video",
+                                 command=self.save_video_handler)
+        self.save_gif = Button(self.toolbar_frame, text="Save as GIF",
+                               command=self.save_gif_handler)
         self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
         self.function_label = Label(self.utility_frame, text="Enter a f(z)")
         self.n_label = Label(self.utility_frame, text="Number of steps")
         self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.submit = Button(self.utility_frame, text="Submit", command=self.launch_wrapper)
-        self.go_to_first_frame_button = Button(self.utility_frame, text="Go to domain", command=self.go_to_first_frame)
+        self.go_to_first_frame_button = Button(self.utility_frame, text="Go to domain",
+                                               command=self.go_to_first_frame)
         
-        self.go_to_last_frame_button = Button(self.utility_frame, text="Go to range", command=self.go_to_last_frame)
+        self.go_to_last_frame_button = Button(self.utility_frame, text="Go to range",
+                                              command=self.go_to_last_frame)
         self.outlier_remover_checkbox = Checkbutton(self.utility_frame, text="Remove outliers",
                                                     variable=self.outlier_remover_var,
                                                     onvalue=ON, offvalue=OFF, height=1, width=12)
@@ -620,7 +661,8 @@ class Application(Frame):
         self.pop_from_collection = Button(self.utility_frame, text="Remove last",
                                           command=self.remove_last)
         self.pause_play_label = Label(self.utility_frame, text="Awaiting function")
-        self.frame_slider = Scale(self.master, from_=0, to=1, orient=HORIZONTAL, command=self.go_to_frame_slider)        
+        self.frame_slider = Scale(self.master, from_=0, to=1, orient=HORIZONTAL,
+                                  command=self.go_to_frame_slider)        
         self.real_max_label = Label(self.utility_frame, text="Real max")
         self.real_min_label = Label(self.utility_frame, text="Real min")
         self.imag_max_label = Label(self.utility_frame, text="Imag max")
@@ -786,7 +828,8 @@ class Application(Frame):
         id_index = 1
         #go through each line object and reassign the ID
         for id_tag in range(len(list_of_new_lines)):
-            list_of_new_lines[id_tag] = change_tuple_value(list_of_new_lines[id_tag], id_index, id_tag) 
+            list_of_new_lines[id_tag] = change_tuple_value(list_of_new_lines[id_tag],
+                                                           id_index, id_tag)
         #replace the line collection
         self.line_collection = list_of_new_lines
         self.point_grid.new_lines(list_of_new_lines)
@@ -824,7 +867,9 @@ class Application(Frame):
                               center, self.type_strs["disk"])       
 
     def build_spindle(self, n_roots_of_unity, radius=1, n_circles=1, center=complex(0,0)):
-        x = (self.point_grid.draw_roots_of_unity_spindle(n_roots_of_unity, n_circles, radius, center), center, self.type_strs["spindle"])
+        x = (self.point_grid.draw_roots_of_unity_spindle(n_roots_of_unity, n_circles, radius,
+                                                         center),
+             center, self.type_strs["spindle"])
         return self.add_lines(*x)
     
     def save_video_handler(self):
@@ -837,7 +882,8 @@ class Application(Frame):
         #check if the user actually defined a file
         #(i.e. didn't exit the prompt w/o selecting a file)
         if file_name:
-            self.plot_object.save(video=True, frames=(1000 / self.default_interval), path=file_name)
+            self.plot_object.save(video=True, frames=(1000 / self.default_interval),
+                                  path=file_name)
 
     def save_gif_handler(self):
         """
@@ -852,6 +898,7 @@ class Application(Frame):
             self.plot_object.save(gif=True, frames=(1000 / self.default_interval), path=file_name)
 
     def launch_wrapper(self, entry=None):
+        self.animating_already_secondary = True
         self.launch()
         self.master.update()
 
@@ -893,7 +940,9 @@ class Application(Frame):
         #get if the user has checked the reverse animation box
         self.set_checkbox_vars()
         #give the point grid its function
-        self.point_grid.provide_function(self.function_objects, steps_from_user, reverse=self.reverse, remove_outliers=self.remove_outliers)
+        self.point_grid.provide_function(self.function_objects, steps_from_user,
+                                         reverse=self.reverse,
+                                         remove_outliers=self.remove_outliers)
         self.redraw_slider(self.point_grid.n_steps)
         #code for if this is the initial run of the launch method
         #prevents the application from launching unneeded windows
@@ -915,7 +964,6 @@ class Application(Frame):
         #set the boolean that controls the outlier operation in the pointgrid to that of the user
         self.redraw_limits()
         self.pause_play(PLAY_FLAG)
-
 
     def set_checkbox_vars(self):
         self.reverse = self.reverse_checkbox_var.get() == ON
@@ -970,11 +1018,12 @@ class Application(Frame):
         self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=self.size)
         self.toolbar = NavigationBar.NavigationBar(self.canvas, self.toolbar_frame)
         self.toolbar.update()
-        self.plot_object.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
+        #self.plot_object.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
         #self.canvas.show()
         #self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
         del self.animation_thread
-        self.animation_thread = threading.Thread(target=self.plot_object.animate, args=(self.default_interval,))
+        self.animation_thread = threading.Thread(target=self.plot_object.animate,
+                                                 args=(self.default_interval,))
         self.animation_thread.start()
         
     def spindle_popup(self):
@@ -1015,7 +1064,8 @@ class Application(Frame):
         self.pause_play(COMPUTING)
         self.master.update()
         self.point_grid.provide_function(self.point_grid.functions, self.n_steps_per_function,
-                                         reverse=self.reverse, remove_outliers=self.remove_outliers)
+                                         reverse=self.reverse,
+                                         remove_outliers=self.remove_outliers)
         self.pause_play(PLAY_FLAG)
         self.redraw_limits()
         self.master.update()
@@ -1027,10 +1077,10 @@ class Application(Frame):
         self.popup_window = ShapesMenu.ShapesMenu(self.master, self.line_collection)
         #wait for the window to close
         self.master.wait_window(self.popup_window.top)
-        temp_line_collection = [line for line in self.line_collection if line[1] in self.popup_window.ids]
-        if self.line_collection != temp_line_collection:
+        temp_ln_coll = [line for line in self.line_collection if line[1] in self.popup_window.ids]
+        if self.line_collection != temp_ln_coll:
             #checked if the lists are different
-            self.new_lines(temp_line_collection, True)
+            self.new_lines(temp_ln_coll, True)
         self.popup_window = None
         self.pause_play(was_paused)
 
@@ -1060,6 +1110,11 @@ def change_tuple_value(tuple_item, index_to_replace, value_to_use):
             #keep the value
             temp_list.append(value)
     return tuple(temp_list)
+
+def is_properly_ordered(real_max, real_min, imag_max, imag_min):
+    """Determines if a set of limits on the complex plane is legal.
+    That is to say that all maximums are strictly greater than their minimums."""
+    return real_max > real_min and imag_max > imag_min
 
 
 ROOT = Tk()
