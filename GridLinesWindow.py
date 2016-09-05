@@ -32,13 +32,13 @@ class GridLinesWindow(object):
         try:
             imag_spacing = float(self.imag_spacing_entry.get())
             real_spacing = float(self.real_spacing_entry.get())
-            if not str(self.imag_spacing).isdecimal() and self.imag_spacing <= 0:
+            if not str(imag_spacing).isdecimal() and imag_spacing <= 0:
                 self.imag_spacing_entry.config(text="", bg="red")
                 legal = False
                 self.illegal_entry("Imag")
             else:
                 self.imag_spacing_entry.config(bg="white")
-            if not str(self.real_spacing).isdecimal() and self.real_spacing <= 0:
+            if not str(real_spacing).isdecimal() and real_spacing <= 0:
                 self.real_spacing_entry.config(text="", bg="red")
                 legal = False
                 self.illegal_entry("Real")
@@ -51,4 +51,4 @@ class GridLinesWindow(object):
             print("Values passed are not real numbers")
 
     def illegal_entry(self, type):
-        tkinter.messagebox.Message(type + " spacing must be a positive number.")
+        messagebox.Message(type + " spacing must be a positive number.")
