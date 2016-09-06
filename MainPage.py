@@ -5,7 +5,7 @@ import sys
 from itertools import cycle
 import math
 
-from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, IntVar,
+from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, IntVar, messagebox,
                      Scale, END, HORIZONTAL, Menu, filedialog, colorchooser, RIGHT, LEFT)
 import tkinter
 import matplotlib
@@ -882,6 +882,9 @@ class Application(Frame):
     def save_video_handler(self):
         """Dispatches the Plot to save the video."""
         #now actually save the graph
+        if self.plot_object.install_ffmpeg:
+            self.alert_ffmpeg()
+            return
         file_name = self.save_file_dialog(".mp4")
         #check if the user actually defined a file
         #(i.e. didn't exit the prompt w/o selecting a file)
@@ -892,11 +895,18 @@ class Application(Frame):
     def save_gif_handler(self):
         """Dispatches the Plot to save a GIF."""
         #now actually save the graph
+        if self.plot_object.install_ffmpeg:
+            self.alert_ffmpeg()
+            return
         file_name = self.save_file_dialog(extension=".gif")
         #check if the user actually defined a file
         #(i.e. didn't exit the prompt w/o selecting a file)
         if file_name:
             self.plot_object.save(gif=True, frames=(1000 / self.default_interval), path=file_name)
+
+    def alert_ffmpeg(self):
+        messagebox.askquestion(title="ffmpeg not found",
+                               message="In order to perform this operation ffmpeg must be installed and the command 'ffmpeg' must execute")
 
     def launch_wrapper(self, entry=None):
         self.animating_already_secondary = True

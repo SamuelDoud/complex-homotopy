@@ -48,7 +48,11 @@ class PlotWindow(object):
         self.axes = plt.gca()
         #self.axes.axvline(x=0)
         #self.axes.axhline(y=0)
-        self.ffmpeg_animation_writer = animation.writers['ffmpeg']
+        self.install_ffmpeg = False
+        try:
+            self.ffmpeg_animation_writer = animation.writers['ffmpeg']
+        else:
+            self.install_ffmpeg = True
         self.ffmpeg_writer = None
         self.updating_limits = updating_limits #
         self.call_once = 0
