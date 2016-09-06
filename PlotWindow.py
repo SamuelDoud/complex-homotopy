@@ -6,9 +6,7 @@ from itertools import cycle
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import images2gif
 from moviepy.editor import *
-#import images2video
 
 import Line
 import PointGrid
@@ -51,7 +49,7 @@ class PlotWindow(object):
         self.install_ffmpeg = False
         try:
             self.ffmpeg_animation_writer = animation.writers['ffmpeg']
-        else:
+        except:
             self.install_ffmpeg = True
         self.ffmpeg_writer = None
         self.updating_limits = updating_limits #
