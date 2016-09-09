@@ -903,7 +903,7 @@ class Application(Frame):
         #(i.e. didn't exit the prompt w/o selecting a file)
         if file_name:
             self.plot_object.save(gif=True, frames=(1000 / self.default_interval), path=file_name)
-        self.pause_play(COMPUTING)
+        self.pause_play(old_state)
 
     def alert_ffmpeg(self):
         messagebox.askquestion(title="ffmpeg not found",
