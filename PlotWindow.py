@@ -6,7 +6,8 @@ from itertools import cycle
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from moviepy.editor import *
+import images2gif
+from PIL import Image
 
 import Line
 import PointGrid
@@ -174,11 +175,23 @@ class PlotWindow(object):
             self.anim.save(path,
                            writer=self.ffmpeg_writer)
         if gif:
-            self.save(video=True, frames=frames, path=path+".mp4")
-            clip = VideoFileClip(path+".mp4")
-            clip.write_gif(path)
-            os.remove(path+".mp4")
-            
+            images = []
+            if os.name == "nt":
+            #account for the difference between Windows and Unix file systems
+                spacer ="\\"
+            else:
+                spacer = "/"
+            frame_dir = "frames" + spacer
+            if not os.path.exists(resource_path(frame_dir)):
+                os.makedirs(resource_path(frame_dir))
+            for frame in range(self.grid.n_steps):
+                self.animate_compute(frame)
+                name = resource_path(frame_dir + "frame" + str(frame) + ".png")
+                self.fig.savefig(name)
+                images.append(Image.open(name))
+            images = images[1:] + [images[0]]
+            images2gif.writeGif(filename=path, images=images, duration=[1.0/frames] * self.grid.n_steps, subRectangles=False)
+        self.set_frame(old_frame_number)
 
     def tracer(self, step, points_to_add):
         for index, line in enumerate(self.tracers):
@@ -303,3 +316,17 @@ class PlotWindow(object):
                                             #init_func=self.blit,
                                             interval=interval_length,
                                             blit=True, frames=self.grid.n_steps)
+
+def resource_path(relative_path):
+    """
+    A function that gets the absolute path from relative. Needed for redist.
+    Found from StackOverflow.
+    http://stackoverflow.com/questions/7674790/bundling-data-files-with-pyinstaller-onefile
+    user: Max
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)

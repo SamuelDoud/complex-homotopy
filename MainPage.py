@@ -514,6 +514,7 @@ class Application(Frame):
         """
         #pass an empty list
         self.new_lines([])
+        self.point_grid.n_lines = 0
 
     def bring_lines_together(self, data):
         """
@@ -878,6 +879,7 @@ class Application(Frame):
     def save_video_handler(self):
         """Dispatches the Plot to save the video."""
         #now actually save the graph
+        old_state = self.pause_play(COMPUTING)
         if self.plot_object.install_ffmpeg:
             self.alert_ffmpeg()
             return
@@ -887,18 +889,21 @@ class Application(Frame):
         if file_name:
             self.plot_object.save(video=True, frames=(1000 / self.default_interval),
                                   path=file_name)
+        self.pause_play(old_state)
 
     def save_gif_handler(self):
         """Dispatches the Plot to save a GIF."""
         #now actually save the graph
-        if self.plot_object.install_ffmpeg:
-            self.alert_ffmpeg()
-            return
+        old_state = self.pause_play(COMPUTING)
+        #if self.plot_object.install_ffmpeg:
+        #    self.alert_ffmpeg()
+        #    return
         file_name = self.save_file_dialog(extension=".gif")
         #check if the user actually defined a file
         #(i.e. didn't exit the prompt w/o selecting a file)
         if file_name:
             self.plot_object.save(gif=True, frames=(1000 / self.default_interval), path=file_name)
+        self.pause_play(COMPUTING)
 
     def alert_ffmpeg(self):
         messagebox.askquestion(title="ffmpeg not found",
