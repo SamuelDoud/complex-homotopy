@@ -80,7 +80,7 @@ class Application(Frame):
         #give the icon file to the GUI
         #uncoment this when I figure out pyInstaller
         self.image_loading()
-        self.master.iconbitmap(self.application_icon_path)
+        self.master.iconphoto(True, self.application_icon)
         #how long between frames in milliseconds
         self.default_interval = 40
         self.default_points_on_line = 150
@@ -159,7 +159,7 @@ class Application(Frame):
         self.play_icon_path = resource_path(images + "play.png")
         self.pause_icon_path = resource_path(images + "pause.png")
         self.loading_spinner_icon_path = resource_path(images + "Loading_icon_cropped.gif")
-        self.application_icon_path = resource_path(images + "icon.ico")
+        self.application_icon_path = resource_path(images + "icon.png")
         self.zoom_in_icon_path = resource_path(images + "zoom_in.png")
         self.zoom_out_icon_path = resource_path(images + "zoom_out.png")
         self.frame_increment_icon_path = resource_path(images + "frame_increment.png")
@@ -167,7 +167,7 @@ class Application(Frame):
         self.play_icon = tkinter.PhotoImage(file=self.play_icon_path)
         self.pause_icon = tkinter.PhotoImage(file=self.pause_icon_path)
         self.loading_spinner_icon = tkinter.PhotoImage(file=self.loading_spinner_icon_path)
-        #self.application_icon = tkinter.PhotoImage(file=self.application_icon_path)
+        self.application_icon = tkinter.PhotoImage(file=self.application_icon_path)
         self.zoom_in_icon = tkinter.PhotoImage(file=self.zoom_in_icon_path)
         self.zoom_out_icon = tkinter.PhotoImage(file=self.zoom_out_icon_path)
         self.frame_decrement_icon = tkinter.PhotoImage(file=self.frame_decrement_icon_path)
