@@ -5,7 +5,7 @@ import sys
 from itertools import cycle
 import math
 
-from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, IntVar,
+from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, IntVar, messagebox,
                      Scale, END, HORIZONTAL, Menu, filedialog, colorchooser, RIGHT, LEFT)
 import tkinter
 import matplotlib
@@ -164,6 +164,11 @@ class Application(Frame):
         self.zoom_out_icon_path = resource_path(images + "zoom_out.png")
         self.frame_increment_icon_path = resource_path(images + "frame_increment.png")
         self.frame_decrement_icon_path = resource_path(images + "frame_decrement.png")
+        self.go_to_range_icon_path = resource_path(images + "range.png")
+        self.go_to_domain_icon_path = resource_path(images + "domain.png")
+        self.save_gif_icon_path = resource_path(images + "GIF_icon.png")
+        self.save_movie_icon_path = resource_path(images + "movie_icon.png")
+        
         self.play_icon = tkinter.PhotoImage(file=self.play_icon_path)
         self.pause_icon = tkinter.PhotoImage(file=self.pause_icon_path)
         self.loading_spinner_icon = tkinter.PhotoImage(file=self.loading_spinner_icon_path)
@@ -172,6 +177,10 @@ class Application(Frame):
         self.zoom_out_icon = tkinter.PhotoImage(file=self.zoom_out_icon_path)
         self.frame_decrement_icon = tkinter.PhotoImage(file=self.frame_decrement_icon_path)
         self.frame_increment_icon = tkinter.PhotoImage(file=self.frame_increment_icon_path)
+        self.go_to_domain_icon = tkinter.PhotoImage(file=self.go_to_domain_icon_path)
+        self.go_to_range_icon = tkinter.PhotoImage(file=self.go_to_range_icon_path)
+        self.save_gif_icon = tkinter.PhotoImage(file=self.save_gif_icon_path)
+        self.save_movie_icon = tkinter.PhotoImage(file=self.save_movie_icon_path)
 
 
     def shutdown(self):
@@ -417,6 +426,9 @@ class Application(Frame):
         self.file_menu.add_command(label="Save", command=self.save)
         self.file_menu.add_command(label="Open", command=self.open)
         self.file_menu.add_command(label="Exit", command=self.master.quit)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Save as GIF", command=self.save_gif_handler)
+        self.file_menu.add_command(label="Save as Video", command=self.save_video_handler)
 
     def new_end_color(self):
         new_end_color = self.new_color_selector_box(self.plot_object._end_color)
@@ -502,6 +514,7 @@ class Application(Frame):
         """
         #pass an empty list
         self.new_lines([])
+        self.point_grid.n_lines = 0
 
     def bring_lines_together(self, data):
         """
@@ -635,6 +648,8 @@ class Application(Frame):
         common_width = 5
         common_bd = 3
         #checkbox to control outlier logic
+        self.go_to_first_frame_button = Button(self.toolbar_frame, image=self.go_to_domain_icon,
+                                               command=self.go_to_first_frame)
         self.frame_decrement_button = Button(self.toolbar_frame, image=self.frame_decrement_icon,
                                              command=self.decrement_frame)
         self.pause_play_button = Button(self.toolbar_frame, image=self.play_icon,
@@ -645,20 +660,17 @@ class Application(Frame):
                                      command=self.zoom_in_step)
         self.zoom_out_button = Button(self.toolbar_frame, image=self.zoom_out_icon,
                                       command=self.zoom_out_step)
-        self.save_video = Button(self.toolbar_frame, text="Save as Video",
+        self.go_to_last_frame_button = Button(self.toolbar_frame, image=self.go_to_range_icon,
+                                              command=self.go_to_last_frame)
+        self.save_video = Button(self.toolbar_frame, image=self.save_movie_icon,
                                  command=self.save_video_handler)
-        self.save_gif = Button(self.toolbar_frame, text="Save as GIF",
+        self.save_gif = Button(self.toolbar_frame, image=self.save_gif_icon,
                                command=self.save_gif_handler)
         self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
         self.function_label = Label(self.utility_frame, text="Enter a f(z)")
         self.n_label = Label(self.utility_frame, text="Number of steps")
         self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.submit = Button(self.utility_frame, text="Submit", command=self.launch_wrapper)
-        self.go_to_first_frame_button = Button(self.utility_frame, text="Go to domain",
-                                               command=self.go_to_first_frame)
-        
-        self.go_to_last_frame_button = Button(self.utility_frame, text="Go to range",
-                                              command=self.go_to_last_frame)
         self.outlier_remover_checkbox = Checkbutton(self.utility_frame, text="Remove outliers",
                                                     variable=self.outlier_remover_var,
                                                     onvalue=ON, offvalue=OFF, height=1, width=12)
@@ -681,12 +693,10 @@ class Application(Frame):
 
 
     def grid_widgets_in_frames(self):
-        """
-        Method to pack widgets created in above method onto the window.
+        """Method to pack widgets created in above method onto the window.
         This method only exists for organization purposes.
         Pythonically, this code is probably bad. I am referencing variables that are created
-        outside of this method but not in the __init__ method.
-        """
+        outside of this method but not in the __init__ method."""
         self.function_label.grid(row=0, column=0)
         self.function_entry.grid(row=0, column=1, columnspan=3)
         self.n_entry.grid(row=1, column=1)
@@ -694,35 +704,30 @@ class Application(Frame):
         self.outlier_remover_checkbox.grid(row=2, column=3)
         self.reverse_checkbox.grid(row=2, column=4)
         self.submit.grid(row=0, column=4)
-        #self.save_video.grid(row=1, column=4)
-        self.go_to_first_frame_button.grid(row=0, column=5)
-        self.go_to_last_frame_button.grid(row=1, column=5)
         self.pause_play_label.grid(row=2, column=1)
         self.redraw_slider(1)
         #pack into frame toolbar
+        self.go_to_first_frame_button.pack(side=LEFT)
         self.frame_decrement_button.pack(side=LEFT)
         self.pause_play_button.pack(side=LEFT)
         self.frame_increment_button.pack(side=LEFT)
+        self.go_to_last_frame_button.pack(side=LEFT)
         self.zoom_in_button.pack(side=LEFT)
         self.zoom_out_button.pack(side=LEFT)
-        self.save_gif.pack(side=RIGHT)
-        self.save_video.pack(side=RIGHT)
+        self.save_gif.pack(side=LEFT)
+        self.save_video.pack(side=LEFT)
 
     def redraw_slider(self, steps):
-        """
-        Need to recreate the frame slider if the number of steps change.
+        """Need to recreate the frame slider if the number of steps change.
         All this method does is destroys the old slider, create a new one with the current number
-        of steps, and then reinject it to its old spot
-        """
+        of steps, and then reinject it to its old spot."""
         self.frame_slider.destroy()
         self.frame_slider = Scale(to=self.point_grid.n_steps - 1, length=(self.size * 100),
                                   from_=0, orient=HORIZONTAL, command=self.go_to_frame_slider,)
         self.frame_slider.grid(row=self.slider_row, column=self.slider_column)
 
     def go_to_frame_slider(self, event):
-        """
-        Get the value from the slider if the user changes it and set the frame equal to that.
-        """
+        """Get the value from the slider if the user changes it and set the frame equal to that."""
         self.plot_object.frame_number = self.frame_slider.get()
 
     def set_slider(self, frame_number):
@@ -733,9 +738,7 @@ class Application(Frame):
         self.frame_slider.set(frame_number)
 
     def add_to_collection(self, lines, center=None, type_str=None):
-        """
-        Adds a set of lines to the collection and appends a id tag
-        """
+        """Adds a set of lines to the collection and appends a id tag"""
         self.line_collection.append((lines, self.id_number_counter, center, type_str))
         self.point_grid.new_lines(self.line_collection)
         #increment the id tag
@@ -752,10 +755,8 @@ class Application(Frame):
         return self.id_number_counter - 1
 
     def remove_last(self, id_number=None, top=False):
-        """
-        Removes a line collection from the list. If no index is passed, the collection is
-        treated like a stack
-        """
+        """Removes a line collection from the list. If no index is passed, the collection is
+        treated like a stack."""
         #search for the line
         #This is an ordered set. Using a binary search
         #did the user pass a value for id_number?
@@ -796,16 +797,12 @@ class Application(Frame):
         return True
 
     def remove_first(self):
-        """
-        Take the first item on the collection and remove it.
-        Then recalculate the graph.
-        """
+        """Take the first item on the collection and remove it.
+        Then recalculate the graph."""
         self.remove_last(top=True)
 
     def build_sample(self):
-        """
-        A sampler method to test adding and removing shapes.
-        """
+        """A sampler method to test adding and removing shapes."""
         self.build_circle(1, complex(1, 1))
         self.build_grid(complex(-1, 1), complex(1, -1), 10)
 
@@ -882,21 +879,35 @@ class Application(Frame):
     def save_video_handler(self):
         """Dispatches the Plot to save the video."""
         #now actually save the graph
+        old_state = self.pause_play(COMPUTING)
+        if self.plot_object.install_ffmpeg:
+            self.alert_ffmpeg()
+            return
         file_name = self.save_file_dialog(".mp4")
         #check if the user actually defined a file
         #(i.e. didn't exit the prompt w/o selecting a file)
         if file_name:
             self.plot_object.save(video=True, frames=(1000 / self.default_interval),
                                   path=file_name)
+        self.pause_play(old_state)
 
     def save_gif_handler(self):
         """Dispatches the Plot to save a GIF."""
         #now actually save the graph
+        old_state = self.pause_play(COMPUTING)
+        #if self.plot_object.install_ffmpeg:
+        #    self.alert_ffmpeg()
+        #    return
         file_name = self.save_file_dialog(extension=".gif")
         #check if the user actually defined a file
         #(i.e. didn't exit the prompt w/o selecting a file)
         if file_name:
             self.plot_object.save(gif=True, frames=(1000 / self.default_interval), path=file_name)
+        self.pause_play(old_state)
+
+    def alert_ffmpeg(self):
+        messagebox.askquestion(title="ffmpeg not found",
+                               message="In order to perform this operation ffmpeg must be installed and the command 'ffmpeg' must execute")
 
     def launch_wrapper(self, entry=None):
         self.animating_already_secondary = True
