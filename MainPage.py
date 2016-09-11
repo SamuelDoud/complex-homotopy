@@ -1113,15 +1113,8 @@ def resource_path(relative_path):
 
 def change_tuple_value(tuple_item, index_to_replace, value_to_use):
     """Replace a tuple's value at a specified index"""
-    temp_list = []
-    for index, value in enumerate(tuple_item):
-        if index == index_to_replace:
-            #use the user passed replacement
-            temp_list.append(value_to_use)
-        else:
-            #keep the value
-            temp_list.append(value)
-    return tuple(temp_list)
+    return tuple(tuple_item[:index_to_replace] + (value_to_use, )
+                + tuple_item[index_to_replace + 1:])
 
 def is_properly_ordered(real_max, real_min, imag_max, imag_min):
     """Determines if a set of limits on the complex plane is legal.
