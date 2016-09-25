@@ -38,11 +38,12 @@ class PlotWindow(object):
         self._frame_number = 0
         self.interval = None
         self.anim = None
-        self.dpi = 100
+        self.dpi = 120
         grid.dpi = self.dpi
         self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
-        self.fig = plt.figure(figsize=(7, 7), dpi=self.dpi)
+        self.fig = plt.figure(figsize=(6, 6), dpi=self.dpi)
+        
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
         self.axes = plt.gca()
         #self.axes.axvline(x=0)
@@ -73,6 +74,7 @@ class PlotWindow(object):
         self.pause_override = False
         self.tracer_lines = []
         self.path_divider = "\\" if os.name == "nt" else "/"
+        
 
     def set_grid_lines(self, real_spacing=None, 
                        imag_spacing=None, line_width=1, visible=None):

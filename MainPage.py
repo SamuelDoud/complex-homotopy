@@ -5,12 +5,14 @@ import sys
 from itertools import cycle
 import math
 
-from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, IntVar, messagebox,
+from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, IntVar, messagebox, StringVar,
                      Scale, END, HORIZONTAL, Menu, filedialog, colorchooser, RIGHT, LEFT)
 import tkinter
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backend_bases import key_press_handler
+from sympy import latex, Symbol, sympify
+from sympy.abc import z
 
 import PointGrid
 import PlotWindow
@@ -23,6 +25,7 @@ import ShapesMenu
 import ZoomWindow
 import NavigationBar
 import GridLinesWindow
+import FunctionDisplay
 
 matplotlib.use("TkAgg")
 
@@ -85,6 +88,11 @@ class Application(Frame):
         self.default_interval = 40
         self.default_points_on_line = 150
         self.attributes = {}
+        self.z = Symbol('z')
+        self.function_display = FunctionDisplay.FunctionDisplay()
+        self.function_str = StringVar()
+        self.function_str.set("")
+        self.function_str.trace("w", self.update_latex)
         self.fps_str = "Frames per second"
         self.n_points_str = "Default points per line"
         self.attributes[self.fps_str] = 1000 / self.default_interval
@@ -601,6 +609,12 @@ class Application(Frame):
         self.point_grid.new_lines(self.line_collection)
         self.plot_object.set_frame(0)
 
+    def update_latex(self, a, b, c):
+        try:
+            self.function_display.new_input(self.function_entry.get().lower())
+        except:
+            return
+
     def set_checkbox(self, check_box, check_box_var, value):
         """
         General method to set the value of a checkbox based on a value
@@ -634,12 +648,13 @@ class Application(Frame):
         self.plotting_frame = Frame(self.master, bd=common_bd)
         self.utility_frame = Frame(self.master, bd=common_bd)
         self.toolbar_frame = Frame(self.plotting_frame)
-        
 
     def grid_frames(self):
         self.plotting_frame.grid(row=0, column=0, columnspan=self.size)
         self.toolbar_frame.grid(row=self.slider_row + 2, column=0, columnspan=self.size)
-        self.utility_frame.grid(row=self.slider_row + 1, column=0, columnspan=self.size)
+        self.utility_frame.grid(row=self.slider_row + 1, column=0, columnspan=self.size - 1)
+        #self.function_display_frame.grid(row=self.slider_row + 1, column=self.size)
+
 
     def create_widgets(self):
         """
@@ -666,7 +681,7 @@ class Application(Frame):
                                  command=self.save_video_handler)
         self.save_gif = Button(self.toolbar_frame, image=self.save_gif_icon,
                                command=self.save_gif_handler)
-        self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
+        self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd, textvariable=self.function_str)
         self.function_label = Label(self.utility_frame, text="Enter a f(z)")
         self.n_label = Label(self.utility_frame, text="Number of steps")
         self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
@@ -690,7 +705,7 @@ class Application(Frame):
         self.real_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.imag_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.imag_max_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
-
+        self.function_display_canvas = FigureCanvasTkAgg(self.function_display.fig, master=self.utility_frame)
 
     def grid_widgets_in_frames(self):
         """Method to pack widgets created in above method onto the window.
@@ -716,6 +731,9 @@ class Application(Frame):
         self.zoom_out_button.pack(side=LEFT)
         self.save_gif.pack(side=LEFT)
         self.save_video.pack(side=LEFT)
+        self.function_display_canvas.get_tk_widget().grid(row=0, column=5,
+                                                          columnspan=self.function_display.column_size,
+                                                          rowspan=self.function_display.row_size)
 
     def redraw_slider(self, steps):
         """Need to recreate the frame slider if the number of steps change.
@@ -842,7 +860,6 @@ class Application(Frame):
         #relaunch the animation
         if reanimate:
             self.relaunch()
-
 
     def build_circle(self, radius, center=complex(0, 0)):
         """
