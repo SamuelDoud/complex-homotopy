@@ -203,8 +203,6 @@ class Application(Frame):
         Bind the keys.
         """
         self.master.bind("<Return>", self.launch)
-        self.master.bind("<Right>", self.increment_frame)
-        self.master.bind("<Left>", self.decrement_frame)
         self.master.bind("<Up>", self.interval_decrease)
         self.master.bind("<Down>", self.interval_increase)
         self.master.bind_all("<MouseWheel>", self.zoom_mousewheel)
@@ -439,18 +437,22 @@ class Application(Frame):
         self.file_menu.add_command(label="Save as Video", command=self.save_video_handler)
 
     def new_end_color(self):
+        """Sets a new ending color from user choice."""
         new_end_color = self.new_color_selector_box(self.plot_object._end_color)
         self.point_grid.end_color = new_end_color
         self.end_color = new_end_color
         self.plot_object.set_end_color(new_end_color)
 
     def new_start_color(self):
+        """Sets a new starting color from user choice."""
         new_start_color = self.new_color_selector_box(self.plot_object._start_color)
         self.start_color = new_start_color
         self.point_grid.start_color = new_start_color
         self.plot_object.set_start_color(new_start_color)
 
     def new_color_selector_box(self, init_color=(0,0,0)):
+        """Launches a window that prompts the user to select a new color.
+        This color is then returned."""
         was_paused = self.pause_play(PlotWindow.PAUSE)
         init_color = convert_to_byte_color(init_color)
         new_color = convert_to_zero_to_one(colorchooser.askcolor(color=init_color,
@@ -468,9 +470,7 @@ class Application(Frame):
         self.pause_play(was_paused_state)
 
     def save(self):
-        """
-        Serialize the data of the program into a pickle file defined by the user.
-        """
+        """Serialize the data of the program into a pickle file defined by the user."""
         previous_state = self.plot_object.pause
         self.pause_play(COMPUTING)
         was_paused = self.pause_play(PlotWindow.PAUSE)
@@ -486,9 +486,7 @@ class Application(Frame):
         self.pause_play(previous_state)
 
     def open(self):
-        """
-        Method to open a file that defines a previous state of the program.
-        """
+        """Method to open a file that defines a previous state of the program."""
         was_paused = self.pause_play(PlotWindow.PAUSE)
         file_name = self.open_file_dialog()
         if not file_name:
@@ -502,10 +500,8 @@ class Application(Frame):
         self.pause_play(was_paused)
 
     def break_apart_lines(self):
-        """
-        Take the line_collection and get the first point in the point order of every point and
-        store that in a list so it can be pickled and reassembled later.
-        """
+        """Take the line_collection and get the first point in the point order of every point and
+        store that in a list so it can be pickled and reassembled later."""
         lines = self.line_collection
         lines_to_save = [list(line) for line in self.line_collection]
         for index, shape in enumerate(lines):
@@ -517,18 +513,14 @@ class Application(Frame):
         return lines_to_save
 
     def master_blaster(self):
-        """
-        Deletes all objects on the graph
-        """
+        """Deletes all objects on the graph."""
         #pass an empty list
         self.new_lines([])
         self.point_grid.n_lines = 0
 
     def bring_lines_together(self, data):
-        """
-        Given a set of points on a line, change them into ComplexPoint and Line objects.
-        Needed as these classes cannot be pickled.
-        """
+        """Given a set of points on a line, change them into ComplexPoint and Line objects.
+        Needed as these classes cannot be pickled."""
         shapes_in_data = list(data)
         for index, shape in enumerate(data):
             line = shape[DATA]
@@ -544,9 +536,7 @@ class Application(Frame):
         return shapes_in_data
 
     def serialize(self):
-        """
-        Method that handles packing and saving the data from the current homotopy.
-        """
+        """Method that handles packing and saving the data from the current homotopy."""
         #get the first function from the user. If it does not exist, defaults to "z"
         current_functions = self.point_grid.functions[0].function_str
         #if the user declared multiple functions, handle that below
@@ -574,9 +564,7 @@ class Application(Frame):
                 self.reverse_checkbox_pickle_str:reverse, self.limits_pickle_str:limits}
 
     def save_file_dialog(self, extension=".cht"):
-        """
-        Prompts the user to choose a file name and directory to save their data to.
-        """
+        """Prompts the user to choose a file name and directory to save their data to."""
         title = "Save homotopy as"
         extensions = self.extensions
         if extension is not ".cht":
@@ -586,9 +574,7 @@ class Application(Frame):
         return file_name
 
     def deserialize(self, pickle_data):
-        """
-        Take the data from the pickle and load it into the program.
-        """
+        """Take the data from the pickle and load it into the program."""
         self.set_checkbox(self.reverse_checkbox, self.reverse_checkbox_var,
                           pickle_data[self.reverse_checkbox_pickle_str])
         self.set_checkbox(self.outlier_remover_checkbox, self.outlier_remover_var,
@@ -681,7 +667,8 @@ class Application(Frame):
                                  command=self.save_video_handler)
         self.save_gif = Button(self.toolbar_frame, image=self.save_gif_icon,
                                command=self.save_gif_handler)
-        self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd, textvariable=self.function_str)
+        self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd,
+                                    textvariable=self.function_str)
         self.function_label = Label(self.utility_frame, text="Enter a f(z)")
         self.n_label = Label(self.utility_frame, text="Number of steps")
         self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
@@ -705,7 +692,8 @@ class Application(Frame):
         self.real_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.imag_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.imag_max_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
-        self.function_display_canvas = FigureCanvasTkAgg(self.function_display.fig, master=self.utility_frame)
+        self.function_display_canvas = FigureCanvasTkAgg(self.function_display.fig,
+                                                         master=self.utility_frame)
 
     def grid_widgets_in_frames(self):
         """Method to pack widgets created in above method onto the window.
@@ -749,10 +737,8 @@ class Application(Frame):
         self.plot_object.frame_number = self.frame_slider.get()
 
     def set_slider(self, frame_number):
-        """
-        Take the frame number passed and set the frame slider to it
-        This method is accessed by the observer in the PlotWindow.
-        """
+        """Take the frame number passed and set the frame slider to it
+        This method is accessed by the observer in the PlotWindow."""
         self.frame_slider.set(frame_number)
 
     def add_to_collection(self, lines, center=None, type_str=None):
@@ -825,19 +811,13 @@ class Application(Frame):
         self.build_grid(complex(-1, 1), complex(1, -1), 10)
 
     def flattened_lines(self):
-        """
-        The collection of lines is a list of tuples with
-        each tuple containing a list of lines and an id.
-        This method takes all the lines in the collection
-        and returns them as one list.
-        """
+        """The collection of lines is a list of tuples with each tuple containing a list of lines
+        and an id. This method takes all the lines in the collection and returns them as a list."""
         stripped_of_id = [line[0] for line in self.line_collection]
         return [item for sublist in stripped_of_id for item in sublist]
 
     def add_lines(self, list_of_lines, center=None, type_str=None):
-        """
-        Given a list of lines, add them to the Plot.
-        """
+        """Given a list of lines, add them to the Plot."""
         id = self.add_to_collection(list_of_lines, center, type_str)
         if self.animating_already:
             self.relaunch()
@@ -880,14 +860,16 @@ class Application(Frame):
                          (upper_right.imag + lower_left.imag / 2))
         return self.add_lines(self.point_grid.grid_lines(upper_right,
                                                          lower_left, lines_num,
-                                                         self.default_points_on_line), center,
-                              self.type_strs["grid"])
+                                                         self.default_points_on_line),
+                              center, self.type_strs["grid"])
 
     def build_disk(self, radius, n_circles, center):
+        """Builds a disk from user-defined properties given from a pop-up."""
         return self.add_lines(self.point_grid.disk(radius, n_circles, center),
                               center, self.type_strs["disk"])       
 
     def build_spindle(self, n_roots_of_unity, radius=1, n_circles=1, center=complex(0,0)):
+        """Builds a spindle from user-defined properties given from a pop-up."""
         x = (self.point_grid.draw_roots_of_unity_spindle(n_roots_of_unity, n_circles, radius,
                                                          center),
              center, self.type_strs["spindle"])
@@ -927,15 +909,14 @@ class Application(Frame):
                                message="In order to perform this operation ffmpeg must be installed and the command 'ffmpeg' must execute")
 
     def launch_wrapper(self, entry=None):
+        """Calls the launch method from a user-controlled button."""
         self.animating_already_secondary = True
         self.launch()
         self.master.update()
 
     def launch(self, entry=None):
-        """
-        Create a new animation based on the data given by the user.
-        This method will be called on the press of the submit button.
-        """
+        """Create a new animation based on the data given by the user.
+        This method will be called on the press of the submit button."""
         recently_activated = False
         if self.animating_already:
             self.pause_play(COMPUTING)
@@ -980,6 +961,8 @@ class Application(Frame):
             self.animating_already = True
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
             self.plot_object.bind(self.set_slider)
+            self.master.bind("<Right>", self.increment_frame)
+            self.master.bind("<Left>", self.decrement_frame)
             #now we can bind the keys
             self.key_bindings()
             self.update_graph()
@@ -995,20 +978,20 @@ class Application(Frame):
         self.pause_play(PLAY_FLAG)
 
     def set_checkbox_vars(self):
+        """Activates the checkboxes for reversal and removal of outliers."""
         self.reverse = self.reverse_checkbox_var.get() == ON
         self.remove_outliers = self.outlier_remover_var.get() == ON
 
     def redraw_limits(self):
+        """Force the plotting object to grab new limits based on the graph's current state"""
         self.plot_object.new_limits()
 
     def fetch_limits(self):
-        """
-        Get the limits the user put into the GUI.
+        """Get the limits the user put into the GUI.
         Apply logical checking (maxes must be greater than mins...
         Also insert Nones for blanks or invalid entries
         Limits arranged in a tuple as follows:
-        (Real max, real min, imaginary max, imaginary min)
-        """
+        (Real max, real min, imaginary max, imaginary min)"""
         real_max = self.get_limit_from_entry(self.real_max_entry)
         real_min = self.get_limit_from_entry(self.real_min_entry)
         imag_max = self.get_limit_from_entry(self.imag_max_entry)
@@ -1112,7 +1095,6 @@ class Application(Frame):
             self.new_lines(temp_ln_coll, True)
         self.popup_window = None
         self.pause_play(was_paused)
-
 
 def resource_path(relative_path):
     """

@@ -5,10 +5,9 @@ from sympy.abc import z
 class FunctionDisplay:
     """A matplotlib graph that utilizes matplotlib's ability to display LaTeX."""
     def __init__(self, **kwargs):
-        self.row_size = 2
-        self.column_size = 4
-        self.fig = plt.figure(figsize=(self.column_size,self.row_size), dpi=50)
-        #plt.show()
+        self.row_size = 3
+        self.column_size = 6
+        self.fig = plt.figure(figsize=(self.column_size, self.row_size), dpi=50, facecolor="#F0F0F0")
         self.latex_str = ""
 
     def new_input(self, input):
@@ -22,3 +21,4 @@ class FunctionDisplay:
         #wipes any previous texts
         self.fig.texts = []
         self.fig.text(0.1,0.5,r"$" + self.latex_str + "$", fontsize=40)
+        self.fig.tight_layout()

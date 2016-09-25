@@ -42,8 +42,7 @@ class PlotWindow(object):
         grid.dpi = self.dpi
         self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
-        self.fig = plt.figure(figsize=(6, 6), dpi=self.dpi)
-        
+        self.fig = plt.figure(figsize=(6, 6), dpi=self.dpi, facecolor="#F0F0F0")
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
         self.axes = plt.gca()
         #self.axes.axvline(x=0)
@@ -66,6 +65,7 @@ class PlotWindow(object):
                       for line in range(len(self.grid.lines))]
         self.axes.set_xlabel("Real")
         self.axes.set_ylabel("Imaginary")
+        self.fig.tight_layout()
         self._start_color = start_color #private as their is logic to change these colors
         self._end_color = end_color #rgb tuple that specify the color endpoints
         self.color = list(self._start_color) #the color that will actually be displayed
