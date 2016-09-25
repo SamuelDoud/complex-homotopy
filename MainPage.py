@@ -342,7 +342,7 @@ class Application(Frame):
 
     def toggle_pause(self, event=None):
         """Toggle the pause state by XOR"""
-        return self.pause_play(self.plot_object.pause ^ True)
+        return self.plot_object.toggle_pause()
 
     def pause_play(self, to_pause=None):
         """Pauses or plays the animation based on to_pause.
@@ -388,27 +388,16 @@ class Application(Frame):
     def launch_preferences(self):
         #pause the window and see if the user already paused the animation
         was_paused = self.pause_play(PlotWindow.PAUSE)
-        self._get_attributes()
         self.pref_popup = PreferencesWindow.PreferencesWindow(self.master, self.attributes)
         self.master.wait_window(self.pref_popup.top)
         if list(self.attributes.values()) != self.pref_popup.attributes:
             #an attribute was changed, so reassign the attributtes and relaunch
             self.attributes = dict(zip(self.attributes.keys(), self.pref_popup.attribute_values))
-            self._set_attributes()
-            self.launch()
+            self.plot_object.set_interval(fps=float(self.attributes[self.fps_str]))
         #wipe this from memory
         del self.pref_popup
         #unpause if the user was playing before the launch
         self.pause_play(was_paused)
-        
-    def _get_attributes(self):
-        self.attributes[self.fps_str] = (1000 / self.default_interval)
-        self.attributes[self.n_points_str] = self.default_points_on_line
-
-    def _set_attributes(self):
-        self.default_interval = 1000 / float(self.attributes[self.fps_str])
-        self.default_points_on_line = self.attributes[self.n_points_str]
-
 
     def color_menu_create(self):
         self.color_menu.add_command(label="New start color", command=self.new_start_color)
@@ -945,7 +934,10 @@ class Application(Frame):
             #see if the user supplied a number of steps.
             steps_from_user = int(self.n_entry.get()) + 1
         except Exception:
-            steps_from_user = 1 #no animation
+            if self.function_entry.get() != "":
+                steps_from_user = 20 #a default twenty step animation
+            else:
+                steps_from_user = 1
         self.n_steps_per_function = steps_from_user
         #get if the user has checked the reverse animation box
         self.set_checkbox_vars()
@@ -1022,10 +1014,8 @@ class Application(Frame):
             return None
 
     def update_graph(self):
-        """
-        Create the frame on which the matplotlib figure will be displayed.
-        Also, kick off the animation.
-        """
+        """Create the frame on which the matplotlib figure will be displayed.
+        Also, kick off the animation."""
         self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=self.plotting_frame)
         self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=self.size)
         self.toolbar = NavigationBar.NavigationBar(self.canvas, self.toolbar_frame)
@@ -1035,7 +1025,7 @@ class Application(Frame):
         #self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
         del self.animation_thread
         self.animation_thread = threading.Thread(target=self.plot_object.animate,
-                                                 args=(self.default_interval,))
+                                                 args=(self.attributes[self.fps_str],))
         self.animation_thread.start()
         
     def spindle_popup(self):

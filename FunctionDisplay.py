@@ -8,6 +8,7 @@ class FunctionDisplay:
         self.row_size = 3
         self.column_size = 6
         self.fig = plt.figure(figsize=(self.column_size, self.row_size), dpi=50, facecolor="#F0F0F0")
+        self.identity = latex(sympify("z"))
         self.latex_str = ""
 
     def new_input(self, input):
@@ -16,9 +17,12 @@ class FunctionDisplay:
         #cheaper than having sympify fail
         if not input[-1].isalnum() and not input[-1] in (')', '}', ']'):
             return
-        expr = sympify(input)
-        self.latex_str = latex(expr)
+        if input == "z":
+            self.latex_str = self.identity
+        else:
+            expr = sympify(input)
+            self.latex_str = latex(expr)
         #wipes any previous texts
         self.fig.texts = []
-        self.fig.text(0.1,0.5,r"$" + self.latex_str + "$", fontsize=40)
+        self.fig.text(0.1, 0.5, r"$" + self.latex_str + "$", fontsize=40)
         self.fig.tight_layout()
