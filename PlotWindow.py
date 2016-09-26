@@ -298,6 +298,7 @@ class PlotWindow(object):
             interval = 1000 / fps
         if self.anim:
             self.anim._interval = interval
+            self.anim.event_source.interval = interval
 
 def resource_path(relative_path):
     """

@@ -95,7 +95,11 @@ class Application(Frame):
         self.function_str.trace("w", self.update_latex)
         self.fps_str = "Frames per second"
         self.n_points_str = "Default points per line"
+        self.time_estimate_str = StringVar()
         self.attributes[self.fps_str] = 1000 / self.default_interval
+        self.time_estimate_str.set("Duration: " + str(20 / self.attributes[self.fps_str]))
+        self.n_entry_str = StringVar()
+        self.n_entry_str.trace("w", self.update_time_estimate)
         self.attributes[self.n_points_str] = self.default_points_on_line
         self.animation_thread = None
         self.start_color = (0, 0, 0)
@@ -134,6 +138,7 @@ class Application(Frame):
         self.outlier_remover_var.set(OFF)
         self.reverse_checkbox_var = IntVar()
         self.reverse_checkbox_var.set(OFF)
+        self.reverse_checkbox_var.trace("w", self.update_time_estimate)
         self.view_grids_checkbox_var = IntVar()
         self.view_grids_checkbox_var.set(ON)
         self.reverse = False
@@ -390,9 +395,9 @@ class Application(Frame):
         was_paused = self.pause_play(PlotWindow.PAUSE)
         self.pref_popup = PreferencesWindow.PreferencesWindow(self.master, self.attributes)
         self.master.wait_window(self.pref_popup.top)
-        if list(self.attributes.values()) != self.pref_popup.attributes:
+        if list(self.attributes.values()) != list(self.pref_popup.dict_attributes.values()):
             #an attribute was changed, so reassign the attributtes and relaunch
-            self.attributes = dict(zip(self.attributes.keys(), self.pref_popup.attribute_values))
+            self.attributes = self.pref_popup.dict_attributes
             self.plot_object.set_interval(fps=float(self.attributes[self.fps_str]))
         #wipe this from memory
         del self.pref_popup
@@ -590,26 +595,43 @@ class Application(Frame):
         except:
             return
 
+    def update_time_estimate(self, a, b, c):
+        """Give an estimate of the time that the animation will take to reach completion."""
+        try:
+            steps = int(self.n_entry.get())
+            if self.reverse_checkbox_var.get() == ON:
+                #twice the steps if reversal is true
+                steps *= 2
+            estimated_time_in_seconds = (steps + 0.0) / self.attributes[self.fps_str]
+            estimated_time_minutes = estimated_time_in_seconds // 60
+            estimated_time_seconds = int(round(estimated_time_in_seconds % 60))
+            estimated_time_str = ""
+            if estimated_time_minutes > 0:
+                estimated_time_str = str(int(estimated_time_minutes))
+                if estimated_time_minutes < 10:
+                    estimated_time_str = "0" + estimated_time_str
+            estimated_time_str = estimated_time_str + ":"
+            if estimated_time_seconds < 10:
+                estimated_time_str = estimated_time_str + "0"
+            estimated_time_str = estimated_time_str + str(estimated_time_seconds)
+            self.time_estimate_str.set("Duration "+ estimated_time_str)
+        except:
+            return
+
     def set_checkbox(self, check_box, check_box_var, value):
-        """
-        General method to set the value of a checkbox based on a value
-        """
+        """General method to set the value of a checkbox based on a value."""
         if check_box_var.get() == ON:
             check_box.select()
         else:
             check_box.deselect()
 
     def set_text(self, entry_box, text):
-        """
-        General method to set a text entry based on a entry object and text.
-        """
+        """General method to set a text entry based on a entry object and text."""
         entry_box.delete(0, END)
         entry_box.insert(0, text)
 
     def open_file_dialog(self, extension=".cht"):
-        """
-        Launches a file browser that prompts the user to select a file to load.
-        """
+        """Launches a file browser that prompts the user to select a file to load."""
         title = "Open homotopy data"
         extensions = self.extensions
         if extension is not ".cht":
@@ -632,9 +654,7 @@ class Application(Frame):
 
 
     def create_widgets(self):
-        """
-        Creates and arranges the GUI.
-        """
+        """Creates and arranges the GUI."""
         common_width = 5
         common_bd = 3
         #checkbox to control outlier logic
@@ -660,7 +680,9 @@ class Application(Frame):
                                     textvariable=self.function_str)
         self.function_label = Label(self.utility_frame, text="Enter a f(z)")
         self.n_label = Label(self.utility_frame, text="Number of steps")
-        self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
+        self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd,
+                             textvariable=self.n_entry_str)
+        self.time_estimate_label = Label(self.utility_frame, textvariable=self.time_estimate_str)
         self.submit = Button(self.utility_frame, text="Submit", command=self.launch_wrapper)
         self.outlier_remover_checkbox = Checkbutton(self.utility_frame, text="Remove outliers",
                                                     variable=self.outlier_remover_var,
@@ -693,6 +715,7 @@ class Application(Frame):
         self.function_entry.grid(row=0, column=1, columnspan=3)
         self.n_entry.grid(row=1, column=1)
         self.n_label.grid(row=1, column=0)
+        self.time_estimate_label.grid(row=1, column=2)
         self.outlier_remover_checkbox.grid(row=2, column=3)
         self.reverse_checkbox.grid(row=2, column=4)
         self.submit.grid(row=0, column=4)
