@@ -145,8 +145,8 @@ class Line(object):
         self.imaginaries = []
         for point in self.points:
             pt_order_split = list(zip(*point.point_order))
-            self.reals += pt_order_split[REAL]
-            self.imaginaries += pt_order_split[IMAG]
+            self.reals.extend(pt_order_split[REAL])
+            self.imaginaries.extend(pt_order_split[IMAG])
 
 
     def build_around(self, singularity):

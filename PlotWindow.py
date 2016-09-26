@@ -29,8 +29,10 @@ class PlotWindow(object):
     """This class creates the plot in which the homotopy is displayed.
     Can be used in a tkinter window OR can be used like an API."""
     def __init__(self, grid, updating_limits=False,
-                 start_color=(0.0, 0.0, 1.0), end_color=(1.0, 0.0, 0.0)):
+                 start_color=(0.0, 0.0, 1.0), end_color=(1.0, 0.0, 0.0),
+                 row_size=6, column_size=6):
         """Create the intial state of the plot. This will just be the image of z onto z."""
+        self.is_paused = False
         self.observers = []
         self.anim = None
         self.reverse = False
@@ -38,11 +40,14 @@ class PlotWindow(object):
         self._frame_number = 0
         self.interval = None
         self.anim = None
-        self.dpi = 100
+        self.dpi = 120
         grid.dpi = self.dpi
+        self.row_size = row_size
+        self.column_size = column_size
         self.grid = grid #the point grid that this graph is to display. Can be changed!
         #the dimmensions of the figure. Could be more intelligent
-        self.fig = plt.figure(figsize=(7, 7), dpi=self.dpi)
+        self.fig = plt.figure(figsize=(self.column_size, self.row_size), dpi=self.dpi,
+                              facecolor="#F0F0F0")
         plt.ion() #turn on interactive mode. Needed to allow for limit resizing
         self.axes = plt.gca()
         #self.axes.axvline(x=0)
@@ -65,6 +70,7 @@ class PlotWindow(object):
                       for line in range(len(self.grid.lines))]
         self.axes.set_xlabel("Real")
         self.axes.set_ylabel("Imaginary")
+        self.fig.tight_layout()
         self._start_color = start_color #private as their is logic to change these colors
         self._end_color = end_color #rgb tuple that specify the color endpoints
         self.color = list(self._start_color) #the color that will actually be displayed
@@ -73,60 +79,17 @@ class PlotWindow(object):
         self.pause_override = False
         self.tracer_lines = []
         self.path_divider = "\\" if os.name == "nt" else "/"
+        
 
     def set_grid_lines(self, real_spacing=None, 
                        imag_spacing=None, line_width=1, visible=None):
         pass
-        #current_frame = self.get_frame()
 
-        #if real_spacing:
-        #    self.real_spacing = real_spacing
-        #if imag_spacing:
-        #    self.imag_spacing = imag_spacing
-        #if visible is not None:
-        #    self.grid_visible = visible
-        ##get a starting point that is spaced from zero
-        #imag_start = (self.imag_spacing - (self.grid.imag_min % self.imag_spacing))
-        #imag_start = (imag_start + self.grid.imag_min if imag_start != self.imag_spacing
-        #              else self.grid.imag_min)
-        #real_start = (self.real_spacing - (self.grid.real_min % self.real_spacing))
-        #real_start = (real_start + self.grid.real_min if real_start != self.real_spacing
-        #              else self.grid.real_min)
-        #imag_ticks = (np.arange(imag_start, self.grid.imag_max, self.imag_spacing) if self.grid_visible else [])
-        #real_ticks = (np.arange(real_start, self.grid.real_max, self.real_spacing) if self.grid_visible else [])
-        #imag_ticks_major = imag_ticks[::5]
-        #real_tick_major = real_ticks[::5]
-        #if self.grid_visible:
-        #    new_color = "k"
-        #else:  
-        #    new_color="w"
-        #if not self.call_once:
-        #    self.fig.gca().grid()
-        #    self.call_once = True
-        #for gridline in self.fig.gca().get_xgridlines() + self.fig.gca().get_ygridlines():
-        #    gridline.set_color(new_color)
-        #plt.show()
-        #self.axes.clear()
-        ##self.axes.xaxis.grid(self.grid_visible)
-        #self.axes.tick_params(axis='y', which='major')
-        #self.axes.tick_params(axis='x', which='major')
-        #self.axes.tick_params(axis='y', which='minor')
-        #self.axes.tick_params(axis='x', which='minor')
-        
-        #if self.grid_visible:
-        #    self.axes.minorticks_on()
-        #    self.axes.grid(True)
-        #else:
-        #    self.axes.minorticks_off()
-        #    self.axes.grid(False)
-        #if self.anim is not None:
-        #    self.set_frame(current_frame)
-        #self.axes.grid(self.grid_visible, which="both")
-
-    def toggle_pause(self, event):
+    def toggle_pause(self, event=None):
         """Toggles the pause variable through true and false."""
         #XOR the bool to flip it
         self.pause ^= True
+        self.animation_control()
         return self.pause
 
     def set_animation(self, pause_state):
@@ -134,7 +97,18 @@ class PlotWindow(object):
         Return the prior state of the pause variable before the call."""
         prior_state = self.pause
         self.pause = pause_state
+        self.animation_control()
         return prior_state
+
+    def animation_control(self):
+        if self.anim is None:
+            return
+        if self.pause and not self.is_paused:
+            self.anim.event_source.stop()
+            self.is_paused = True
+        else:
+            self.anim.event_source.start()
+            self.is_paused = False
 
     def set_start_color(self, color_tuple):
         """This method changes the start (z) color and updates the difference between the starting
@@ -211,6 +185,7 @@ class PlotWindow(object):
         """Function that returns the lines that will be used to display this graph."""
         #ignore the step from the animation call!
         #compute if the user has not paused the program
+        
         if self.recently_blitted:
             self.un_blit()
         try:
@@ -316,6 +291,14 @@ class PlotWindow(object):
                                             #init_func=self.blit,
                                             interval=interval_length,
                                             blit=True, frames=self.grid.n_steps)
+
+    def set_interval(self, interval=40, fps=0):
+        """Sets a new interval, or fps, for the animation to run on."""
+        if fps > 0:
+            interval = 1000 / fps
+        if self.anim:
+            self.anim._interval = interval
+            self.anim.event_source.interval = interval
 
 def resource_path(relative_path):
     """

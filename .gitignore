@@ -63,3 +63,5 @@ target/
 complex-homotopy.sln
 *.pyproj
 /z_to_the_2.mp4
+/GIFtest.gif
+*.mp4

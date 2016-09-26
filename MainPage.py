@@ -5,12 +5,14 @@ import sys
 from itertools import cycle
 import math
 
-from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, IntVar, messagebox,
+from tkinter import (Frame, Tk, Checkbutton, Button, Label, Entry, IntVar, messagebox, StringVar,
                      Scale, END, HORIZONTAL, Menu, filedialog, colorchooser, RIGHT, LEFT)
 import tkinter
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backend_bases import key_press_handler
+from sympy import latex, Symbol, sympify
+from sympy.abc import z
 
 import PointGrid
 import PlotWindow
@@ -23,6 +25,7 @@ import ShapesMenu
 import ZoomWindow
 import NavigationBar
 import GridLinesWindow
+import FunctionDisplay
 
 matplotlib.use("TkAgg")
 
@@ -80,14 +83,23 @@ class Application(Frame):
         #give the icon file to the GUI
         #uncoment this when I figure out pyInstaller
         self.image_loading()
-        self.master.iconbitmap(self.application_icon_path)
+        self.master.iconphoto(True, self.application_icon)
         #how long between frames in milliseconds
         self.default_interval = 40
         self.default_points_on_line = 150
         self.attributes = {}
+        self.z = Symbol('z')
+        self.function_display = FunctionDisplay.FunctionDisplay()
+        self.function_str = StringVar()
+        self.function_str.set("")
+        self.function_str.trace("w", self.update_latex)
         self.fps_str = "Frames per second"
         self.n_points_str = "Default points per line"
+        self.time_estimate_str = StringVar()
         self.attributes[self.fps_str] = 1000 / self.default_interval
+        self.time_estimate_str.set("Duration: " + str(20 / self.attributes[self.fps_str]))
+        self.n_entry_str = StringVar()
+        self.n_entry_str.trace("w", self.update_time_estimate)
         self.attributes[self.n_points_str] = self.default_points_on_line
         self.animation_thread = None
         self.start_color = (0, 0, 0)
@@ -126,6 +138,7 @@ class Application(Frame):
         self.outlier_remover_var.set(OFF)
         self.reverse_checkbox_var = IntVar()
         self.reverse_checkbox_var.set(OFF)
+        self.reverse_checkbox_var.trace("w", self.update_time_estimate)
         self.view_grids_checkbox_var = IntVar()
         self.view_grids_checkbox_var.set(ON)
         self.reverse = False
@@ -159,7 +172,7 @@ class Application(Frame):
         self.play_icon_path = resource_path(images + "play.png")
         self.pause_icon_path = resource_path(images + "pause.png")
         self.loading_spinner_icon_path = resource_path(images + "Loading_icon_cropped.gif")
-        self.application_icon_path = resource_path(images + "icon.ico")
+        self.application_icon_path = resource_path(images + "icon.png")
         self.zoom_in_icon_path = resource_path(images + "zoom_in.png")
         self.zoom_out_icon_path = resource_path(images + "zoom_out.png")
         self.frame_increment_icon_path = resource_path(images + "frame_increment.png")
@@ -172,7 +185,7 @@ class Application(Frame):
         self.play_icon = tkinter.PhotoImage(file=self.play_icon_path)
         self.pause_icon = tkinter.PhotoImage(file=self.pause_icon_path)
         self.loading_spinner_icon = tkinter.PhotoImage(file=self.loading_spinner_icon_path)
-        #self.application_icon = tkinter.PhotoImage(file=self.application_icon_path)
+        self.application_icon = tkinter.PhotoImage(file=self.application_icon_path)
         self.zoom_in_icon = tkinter.PhotoImage(file=self.zoom_in_icon_path)
         self.zoom_out_icon = tkinter.PhotoImage(file=self.zoom_out_icon_path)
         self.frame_decrement_icon = tkinter.PhotoImage(file=self.frame_decrement_icon_path)
@@ -195,8 +208,6 @@ class Application(Frame):
         Bind the keys.
         """
         self.master.bind("<Return>", self.launch)
-        self.master.bind("<Right>", self.increment_frame)
-        self.master.bind("<Left>", self.decrement_frame)
         self.master.bind("<Up>", self.interval_decrease)
         self.master.bind("<Down>", self.interval_increase)
         self.master.bind_all("<MouseWheel>", self.zoom_mousewheel)
@@ -336,7 +347,7 @@ class Application(Frame):
 
     def toggle_pause(self, event=None):
         """Toggle the pause state by XOR"""
-        return self.pause_play(self.plot_object.pause ^ True)
+        return self.plot_object.toggle_pause()
 
     def pause_play(self, to_pause=None):
         """Pauses or plays the animation based on to_pause.
@@ -382,27 +393,16 @@ class Application(Frame):
     def launch_preferences(self):
         #pause the window and see if the user already paused the animation
         was_paused = self.pause_play(PlotWindow.PAUSE)
-        self._get_attributes()
         self.pref_popup = PreferencesWindow.PreferencesWindow(self.master, self.attributes)
         self.master.wait_window(self.pref_popup.top)
-        if list(self.attributes.values()) != self.pref_popup.attributes:
+        if list(self.attributes.values()) != list(self.pref_popup.dict_attributes.values()):
             #an attribute was changed, so reassign the attributtes and relaunch
-            self.attributes = dict(zip(self.attributes.keys(), self.pref_popup.attribute_values))
-            self._set_attributes()
-            self.launch()
+            self.attributes = self.pref_popup.dict_attributes
+            self.plot_object.set_interval(fps=float(self.attributes[self.fps_str]))
         #wipe this from memory
         del self.pref_popup
         #unpause if the user was playing before the launch
         self.pause_play(was_paused)
-        
-    def _get_attributes(self):
-        self.attributes[self.fps_str] = (1000 / self.default_interval)
-        self.attributes[self.n_points_str] = self.default_points_on_line
-
-    def _set_attributes(self):
-        self.default_interval = 1000 / float(self.attributes[self.fps_str])
-        self.default_points_on_line = self.attributes[self.n_points_str]
-
 
     def color_menu_create(self):
         self.color_menu.add_command(label="New start color", command=self.new_start_color)
@@ -431,18 +431,22 @@ class Application(Frame):
         self.file_menu.add_command(label="Save as Video", command=self.save_video_handler)
 
     def new_end_color(self):
+        """Sets a new ending color from user choice."""
         new_end_color = self.new_color_selector_box(self.plot_object._end_color)
         self.point_grid.end_color = new_end_color
         self.end_color = new_end_color
         self.plot_object.set_end_color(new_end_color)
 
     def new_start_color(self):
+        """Sets a new starting color from user choice."""
         new_start_color = self.new_color_selector_box(self.plot_object._start_color)
         self.start_color = new_start_color
         self.point_grid.start_color = new_start_color
         self.plot_object.set_start_color(new_start_color)
 
     def new_color_selector_box(self, init_color=(0,0,0)):
+        """Launches a window that prompts the user to select a new color.
+        This color is then returned."""
         was_paused = self.pause_play(PlotWindow.PAUSE)
         init_color = convert_to_byte_color(init_color)
         new_color = convert_to_zero_to_one(colorchooser.askcolor(color=init_color,
@@ -460,9 +464,7 @@ class Application(Frame):
         self.pause_play(was_paused_state)
 
     def save(self):
-        """
-        Serialize the data of the program into a pickle file defined by the user.
-        """
+        """Serialize the data of the program into a pickle file defined by the user."""
         previous_state = self.plot_object.pause
         self.pause_play(COMPUTING)
         was_paused = self.pause_play(PlotWindow.PAUSE)
@@ -478,9 +480,7 @@ class Application(Frame):
         self.pause_play(previous_state)
 
     def open(self):
-        """
-        Method to open a file that defines a previous state of the program.
-        """
+        """Method to open a file that defines a previous state of the program."""
         was_paused = self.pause_play(PlotWindow.PAUSE)
         file_name = self.open_file_dialog()
         if not file_name:
@@ -494,10 +494,8 @@ class Application(Frame):
         self.pause_play(was_paused)
 
     def break_apart_lines(self):
-        """
-        Take the line_collection and get the first point in the point order of every point and
-        store that in a list so it can be pickled and reassembled later.
-        """
+        """Take the line_collection and get the first point in the point order of every point and
+        store that in a list so it can be pickled and reassembled later."""
         lines = self.line_collection
         lines_to_save = [list(line) for line in self.line_collection]
         for index, shape in enumerate(lines):
@@ -509,18 +507,14 @@ class Application(Frame):
         return lines_to_save
 
     def master_blaster(self):
-        """
-        Deletes all objects on the graph
-        """
+        """Deletes all objects on the graph."""
         #pass an empty list
         self.new_lines([])
         self.point_grid.n_lines = 0
 
     def bring_lines_together(self, data):
-        """
-        Given a set of points on a line, change them into ComplexPoint and Line objects.
-        Needed as these classes cannot be pickled.
-        """
+        """Given a set of points on a line, change them into ComplexPoint and Line objects.
+        Needed as these classes cannot be pickled."""
         shapes_in_data = list(data)
         for index, shape in enumerate(data):
             line = shape[DATA]
@@ -536,9 +530,7 @@ class Application(Frame):
         return shapes_in_data
 
     def serialize(self):
-        """
-        Method that handles packing and saving the data from the current homotopy.
-        """
+        """Method that handles packing and saving the data from the current homotopy."""
         #get the first function from the user. If it does not exist, defaults to "z"
         current_functions = self.point_grid.functions[0].function_str
         #if the user declared multiple functions, handle that below
@@ -566,9 +558,7 @@ class Application(Frame):
                 self.reverse_checkbox_pickle_str:reverse, self.limits_pickle_str:limits}
 
     def save_file_dialog(self, extension=".cht"):
-        """
-        Prompts the user to choose a file name and directory to save their data to.
-        """
+        """Prompts the user to choose a file name and directory to save their data to."""
         title = "Save homotopy as"
         extensions = self.extensions
         if extension is not ".cht":
@@ -578,9 +568,7 @@ class Application(Frame):
         return file_name
 
     def deserialize(self, pickle_data):
-        """
-        Take the data from the pickle and load it into the program.
-        """
+        """Take the data from the pickle and load it into the program."""
         self.set_checkbox(self.reverse_checkbox, self.reverse_checkbox_var,
                           pickle_data[self.reverse_checkbox_pickle_str])
         self.set_checkbox(self.outlier_remover_checkbox, self.outlier_remover_var,
@@ -601,26 +589,49 @@ class Application(Frame):
         self.point_grid.new_lines(self.line_collection)
         self.plot_object.set_frame(0)
 
+    def update_latex(self, a, b, c):
+        try:
+            self.function_display.new_input(self.function_entry.get().lower())
+        except:
+            return
+
+    def update_time_estimate(self, a, b, c):
+        """Give an estimate of the time that the animation will take to reach completion."""
+        try:
+            steps = int(self.n_entry.get())
+            if self.reverse_checkbox_var.get() == ON:
+                #twice the steps if reversal is true
+                steps *= 2
+            estimated_time_in_seconds = (steps + 0.0) / self.attributes[self.fps_str]
+            estimated_time_minutes = estimated_time_in_seconds // 60
+            estimated_time_seconds = int(round(estimated_time_in_seconds % 60))
+            estimated_time_str = ""
+            if estimated_time_minutes > 0:
+                estimated_time_str = str(int(estimated_time_minutes))
+                if estimated_time_minutes < 10:
+                    estimated_time_str = "0" + estimated_time_str
+            estimated_time_str = estimated_time_str + ":"
+            if estimated_time_seconds < 10:
+                estimated_time_str = estimated_time_str + "0"
+            estimated_time_str = estimated_time_str + str(estimated_time_seconds)
+            self.time_estimate_str.set("Duration "+ estimated_time_str)
+        except:
+            return
+
     def set_checkbox(self, check_box, check_box_var, value):
-        """
-        General method to set the value of a checkbox based on a value
-        """
+        """General method to set the value of a checkbox based on a value."""
         if check_box_var.get() == ON:
             check_box.select()
         else:
             check_box.deselect()
 
     def set_text(self, entry_box, text):
-        """
-        General method to set a text entry based on a entry object and text.
-        """
+        """General method to set a text entry based on a entry object and text."""
         entry_box.delete(0, END)
         entry_box.insert(0, text)
 
     def open_file_dialog(self, extension=".cht"):
-        """
-        Launches a file browser that prompts the user to select a file to load.
-        """
+        """Launches a file browser that prompts the user to select a file to load."""
         title = "Open homotopy data"
         extensions = self.extensions
         if extension is not ".cht":
@@ -634,17 +645,16 @@ class Application(Frame):
         self.plotting_frame = Frame(self.master, bd=common_bd)
         self.utility_frame = Frame(self.master, bd=common_bd)
         self.toolbar_frame = Frame(self.plotting_frame)
-        
 
     def grid_frames(self):
         self.plotting_frame.grid(row=0, column=0, columnspan=self.size)
         self.toolbar_frame.grid(row=self.slider_row + 2, column=0, columnspan=self.size)
-        self.utility_frame.grid(row=self.slider_row + 1, column=0, columnspan=self.size)
+        self.utility_frame.grid(row=self.slider_row + 1, column=0, columnspan=self.size - 1)
+        #self.function_display_frame.grid(row=self.slider_row + 1, column=self.size)
+
 
     def create_widgets(self):
-        """
-        Creates and arranges the GUI.
-        """
+        """Creates and arranges the GUI."""
         common_width = 5
         common_bd = 3
         #checkbox to control outlier logic
@@ -666,10 +676,13 @@ class Application(Frame):
                                  command=self.save_video_handler)
         self.save_gif = Button(self.toolbar_frame, image=self.save_gif_icon,
                                command=self.save_gif_handler)
-        self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd)
+        self.function_entry = Entry(self.utility_frame, width=30, bd=common_bd,
+                                    textvariable=self.function_str)
         self.function_label = Label(self.utility_frame, text="Enter a f(z)")
         self.n_label = Label(self.utility_frame, text="Number of steps")
-        self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
+        self.n_entry = Entry(self.utility_frame, width=common_width, bd=common_bd,
+                             textvariable=self.n_entry_str)
+        self.time_estimate_label = Label(self.utility_frame, textvariable=self.time_estimate_str)
         self.submit = Button(self.utility_frame, text="Submit", command=self.launch_wrapper)
         self.outlier_remover_checkbox = Checkbutton(self.utility_frame, text="Remove outliers",
                                                     variable=self.outlier_remover_var,
@@ -690,7 +703,8 @@ class Application(Frame):
         self.real_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.imag_min_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
         self.imag_max_entry = Entry(self.utility_frame, width=common_width, bd=common_bd)
-
+        self.function_display_canvas = FigureCanvasTkAgg(self.function_display.fig,
+                                                         master=self.utility_frame)
 
     def grid_widgets_in_frames(self):
         """Method to pack widgets created in above method onto the window.
@@ -701,6 +715,7 @@ class Application(Frame):
         self.function_entry.grid(row=0, column=1, columnspan=3)
         self.n_entry.grid(row=1, column=1)
         self.n_label.grid(row=1, column=0)
+        self.time_estimate_label.grid(row=1, column=2)
         self.outlier_remover_checkbox.grid(row=2, column=3)
         self.reverse_checkbox.grid(row=2, column=4)
         self.submit.grid(row=0, column=4)
@@ -716,6 +731,9 @@ class Application(Frame):
         self.zoom_out_button.pack(side=LEFT)
         self.save_gif.pack(side=LEFT)
         self.save_video.pack(side=LEFT)
+        self.function_display_canvas.get_tk_widget().grid(row=0, column=5,
+                                                          columnspan=self.function_display.column_size,
+                                                          rowspan=self.function_display.row_size)
 
     def redraw_slider(self, steps):
         """Need to recreate the frame slider if the number of steps change.
@@ -731,10 +749,8 @@ class Application(Frame):
         self.plot_object.frame_number = self.frame_slider.get()
 
     def set_slider(self, frame_number):
-        """
-        Take the frame number passed and set the frame slider to it
-        This method is accessed by the observer in the PlotWindow.
-        """
+        """Take the frame number passed and set the frame slider to it
+        This method is accessed by the observer in the PlotWindow."""
         self.frame_slider.set(frame_number)
 
     def add_to_collection(self, lines, center=None, type_str=None):
@@ -807,19 +823,13 @@ class Application(Frame):
         self.build_grid(complex(-1, 1), complex(1, -1), 10)
 
     def flattened_lines(self):
-        """
-        The collection of lines is a list of tuples with
-        each tuple containing a list of lines and an id.
-        This method takes all the lines in the collection
-        and returns them as one list.
-        """
+        """The collection of lines is a list of tuples with each tuple containing a list of lines
+        and an id. This method takes all the lines in the collection and returns them as a list."""
         stripped_of_id = [line[0] for line in self.line_collection]
         return [item for sublist in stripped_of_id for item in sublist]
 
     def add_lines(self, list_of_lines, center=None, type_str=None):
-        """
-        Given a list of lines, add them to the Plot.
-        """
+        """Given a list of lines, add them to the Plot."""
         id = self.add_to_collection(list_of_lines, center, type_str)
         if self.animating_already:
             self.relaunch()
@@ -843,7 +853,6 @@ class Application(Frame):
         if reanimate:
             self.relaunch()
 
-
     def build_circle(self, radius, center=complex(0, 0)):
         """
         Build a circle from a popup
@@ -863,14 +872,16 @@ class Application(Frame):
                          (upper_right.imag + lower_left.imag / 2))
         return self.add_lines(self.point_grid.grid_lines(upper_right,
                                                          lower_left, lines_num,
-                                                         self.default_points_on_line), center,
-                              self.type_strs["grid"])
+                                                         self.default_points_on_line),
+                              center, self.type_strs["grid"])
 
     def build_disk(self, radius, n_circles, center):
+        """Builds a disk from user-defined properties given from a pop-up."""
         return self.add_lines(self.point_grid.disk(radius, n_circles, center),
                               center, self.type_strs["disk"])       
 
     def build_spindle(self, n_roots_of_unity, radius=1, n_circles=1, center=complex(0,0)):
+        """Builds a spindle from user-defined properties given from a pop-up."""
         x = (self.point_grid.draw_roots_of_unity_spindle(n_roots_of_unity, n_circles, radius,
                                                          center),
              center, self.type_strs["spindle"])
@@ -910,15 +921,14 @@ class Application(Frame):
                                message="In order to perform this operation ffmpeg must be installed and the command 'ffmpeg' must execute")
 
     def launch_wrapper(self, entry=None):
+        """Calls the launch method from a user-controlled button."""
         self.animating_already_secondary = True
         self.launch()
         self.master.update()
 
     def launch(self, entry=None):
-        """
-        Create a new animation based on the data given by the user.
-        This method will be called on the press of the submit button.
-        """
+        """Create a new animation based on the data given by the user.
+        This method will be called on the press of the submit button."""
         recently_activated = False
         if self.animating_already:
             self.pause_play(COMPUTING)
@@ -947,7 +957,10 @@ class Application(Frame):
             #see if the user supplied a number of steps.
             steps_from_user = int(self.n_entry.get()) + 1
         except Exception:
-            steps_from_user = 1 #no animation
+            if self.function_entry.get() != "":
+                steps_from_user = 20 #a default twenty step animation
+            else:
+                steps_from_user = 1
         self.n_steps_per_function = steps_from_user
         #get if the user has checked the reverse animation box
         self.set_checkbox_vars()
@@ -963,6 +976,8 @@ class Application(Frame):
             self.animating_already = True
             self.plot_object = PlotWindow.PlotWindow(self.point_grid)
             self.plot_object.bind(self.set_slider)
+            self.master.bind("<Right>", self.increment_frame)
+            self.master.bind("<Left>", self.decrement_frame)
             #now we can bind the keys
             self.key_bindings()
             self.update_graph()
@@ -978,20 +993,20 @@ class Application(Frame):
         self.pause_play(PLAY_FLAG)
 
     def set_checkbox_vars(self):
+        """Activates the checkboxes for reversal and removal of outliers."""
         self.reverse = self.reverse_checkbox_var.get() == ON
         self.remove_outliers = self.outlier_remover_var.get() == ON
 
     def redraw_limits(self):
+        """Force the plotting object to grab new limits based on the graph's current state"""
         self.plot_object.new_limits()
 
     def fetch_limits(self):
-        """
-        Get the limits the user put into the GUI.
+        """Get the limits the user put into the GUI.
         Apply logical checking (maxes must be greater than mins...
         Also insert Nones for blanks or invalid entries
         Limits arranged in a tuple as follows:
-        (Real max, real min, imaginary max, imaginary min)
-        """
+        (Real max, real min, imaginary max, imaginary min)"""
         real_max = self.get_limit_from_entry(self.real_max_entry)
         real_min = self.get_limit_from_entry(self.real_min_entry)
         imag_max = self.get_limit_from_entry(self.imag_max_entry)
@@ -1022,10 +1037,8 @@ class Application(Frame):
             return None
 
     def update_graph(self):
-        """
-        Create the frame on which the matplotlib figure will be displayed.
-        Also, kick off the animation.
-        """
+        """Create the frame on which the matplotlib figure will be displayed.
+        Also, kick off the animation."""
         self.canvas = FigureCanvasTkAgg(self.plot_object.fig, master=self.plotting_frame)
         self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=self.size)
         self.toolbar = NavigationBar.NavigationBar(self.canvas, self.toolbar_frame)
@@ -1035,7 +1048,7 @@ class Application(Frame):
         #self.canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
         del self.animation_thread
         self.animation_thread = threading.Thread(target=self.plot_object.animate,
-                                                 args=(self.default_interval,))
+                                                 args=(self.attributes[self.fps_str],))
         self.animation_thread.start()
         
     def spindle_popup(self):
@@ -1096,7 +1109,6 @@ class Application(Frame):
         self.popup_window = None
         self.pause_play(was_paused)
 
-
 def resource_path(relative_path):
     """
     A function that gets the absolute path from relative. Needed for redist.
@@ -1113,15 +1125,8 @@ def resource_path(relative_path):
 
 def change_tuple_value(tuple_item, index_to_replace, value_to_use):
     """Replace a tuple's value at a specified index"""
-    temp_list = []
-    for index, value in enumerate(tuple_item):
-        if index == index_to_replace:
-            #use the user passed replacement
-            temp_list.append(value_to_use)
-        else:
-            #keep the value
-            temp_list.append(value)
-    return tuple(temp_list)
+    return tuple(tuple_item[:index_to_replace] + (value_to_use, )
+                + tuple_item[index_to_replace + 1:])
 
 def is_properly_ordered(real_max, real_min, imag_max, imag_min):
     """Determines if a set of limits on the complex plane is legal.

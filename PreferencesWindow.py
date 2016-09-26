@@ -6,10 +6,10 @@ class PreferencesWindow(object):
     def __init__(self, master, dict_attributes):
         self.dict_attributes = dict(dict_attributes)
         self.top = Toplevel(master)
-        self.attributes = self.dict_attributes.keys()
+        self.attribute_keys = self.dict_attributes.keys()
         self.attribute_values = list(self.dict_attributes.values())
         self.entries = []
-        for row, attribute in enumerate(self.attributes):
+        for row, attribute in enumerate(self.attribute_keys):
             entry_text = self.dict_attributes[attribute]
             this_label = Label(self.top, text=attribute)
             this_entry = Entry(self.top)
@@ -28,7 +28,7 @@ class PreferencesWindow(object):
         for index, attribute in enumerate(self.attribute_values):
             if self.entries[index].get():
                 self.attribute_values[index] = self.entries[index].get()
-        self.dict_attributes = dict(zip(self.attributes, self.attribute_values))
+        self.dict_attributes = dict(zip(self.attribute_keys, self.attribute_values))
         self.top.destroy()
 
 
