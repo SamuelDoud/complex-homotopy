@@ -52,6 +52,7 @@ def allow_constants(string_to_strip_of_constants):
     string_to_strip_of_constants = string_to_strip_of_constants.replace("I", "j")
     string_to_strip_of_constants = string_to_strip_of_constants.replace("J", "j")
     string_to_strip_of_constants = string_to_strip_of_constants.replace("*", "")
+    x = 1
     return string_to_strip_of_constants
 
 def convert_to_byte_color(tuple_colors_zero_to_one):
