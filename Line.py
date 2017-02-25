@@ -1,4 +1,4 @@
-import cmath
+﻿import cmath
 
 import numpy as np
 
@@ -18,9 +18,9 @@ class Line(object):
     are held within a PointGrid
     """
     def __init__(self, function, start, end, number_of_points,
-                 points=None, start_color=None, end_color=None):
-
+                 points=None, start_color=None, end_color=None, optimize=True):
         self.singularity = []
+        self.optimize = optimize
         self.singularity_index = -1
         self.number_of_steps = 0
         self.width = 1
@@ -41,22 +41,21 @@ class Line(object):
             self.start_color = (0, 0, 0)
             self.end_color = (0, 0, 0)
         if not points:
-            self.points = self.create_points()
+            self.create_points()
         else:
             self.points = points
+        self.create_op_points()
 
     @classmethod
     def circle(cls, radius, center=complex(0, 0), points=100, start_color=None, end_color=None):
-        """
-        Alternative constructor for creating circle
-        """
+        """Alternative constructor for creating circle"""
         thetas = np.linspace(0, 2 * np.pi, points)
         points = [ComplexPoint.ComplexPoint(cmath.rect(radius, theta) + center) for theta in thetas]
         #circles and other simply connected objects need this in order to be a closed set
         #must create a new point instead of attaching the head to the tail.
         #if that is done then the functions will evaluate twice over this point
         points.append(ComplexPoint.ComplexPoint(points[0].complex))
-        return cls(0, 0, 0, 0, points, start_color=start_color, end_color=end_color)
+        return cls(0, 0, 0, 0, points, start_color=start_color, end_color=end_color, optimize=False)
 
     def create_points(self):
         """
@@ -64,7 +63,7 @@ class Line(object):
         """
         #this is the first value on the domain
         zs_to_be_evaluated = np.linspace(self.start, self.end, self.number_of_points)
-        return [ComplexPoint.ComplexPoint(f_z) for f_z in zs_to_be_evaluated]
+        self.points = [ComplexPoint.ComplexPoint(f_z) for f_z in zs_to_be_evaluated]
 
     def points_at_step(self, this_step, n_steps, to_consider=False):
         """
@@ -124,10 +123,13 @@ class Line(object):
             #remove the singularity points from the master list of points
             singularities.reverse()
             for point in singularities:
-                self.points.pop(point[1])
+                self.points.remove(point)
             #deal with each singularity. Need to wait as the functionality adds points to the line
             for point in singularities:
                 self.build_around(point)
+            if singularities:
+                self.create_op_points
+                self.parameterize_points(functions, steps=steps, reverse=reverse)
             #now move on to append
             do_append = True
         #the user wants to reverse the function
@@ -180,6 +182,20 @@ class Line(object):
                                    self.number_of_steps)
         self.points.insert(self.singularity_index, tuple_of_pm_epsilon[PLUS])
         self.points.insert(self.singularity_index, tuple_of_pm_epsilon[MINUS])
+
+    def create_op_points(self):
+        """Create a list of points that only contains unique points by referencing unique
+        memory addresses for same base points."""
+        if not self.optimize:
+            return
+        all_points = [point.complex for point in self.points]
+        seen_points = {}
+        for index, point in enumerate(all_points):
+            seen_points[point] = index
+        ref_to_index = [seen_points[z] for z in all_points]
+        temp_points = [self.points[index] for index in ref_to_index]
+        self.points = temp_points
+
 
 def compare(master, child_lines):
     """Check if master and child have the same points"""

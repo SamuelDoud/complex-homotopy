@@ -1,4 +1,4 @@
-import statistics
+﻿import statistics
 import math
 
 from sympy import re, im, arg, Abs, Symbol, symbols, I
@@ -80,13 +80,13 @@ class PointGrid(object):
         #new group is being created
         return Line.Line.circle(radius, center, points, start_color=self.start_color, end_color=self.end_color)
 
-    def draw_line(self, complex_start, complex_end, points=50):
+    def draw_line(self, complex_start, complex_end, points=50, points_list=None):
         """
         Draw a "line" on the complex plane between two complex numbers.
         This is a interface to the Line class
         """
         return Line.Line(identity_function, complex_start, complex_end, points,
-                         start_color=self.start_color, end_color=self.end_color)
+                         start_color=self.start_color, end_color=self.end_color, points=points_list)
         pass
 
     def draw_roots_of_unity_spindle(self, n_roots, n_circles, total_radius=1, center = complex(0,0)):
@@ -103,7 +103,7 @@ class PointGrid(object):
         #draw the lines that form the roots of unity
         for root_point in roots_of_unity_endpoints:
             roots_of_unity_lines.append(self.draw_line(center, root_point * total_radius))
-        return flatten_spindle(roots_of_unity_lines, circles_on_the_spindle, center, total_radius)
+        return self.flatten_spindle(roots_of_unity_lines, circles_on_the_spindle, center, total_radius)
     
     def grid_lines(self, complex_high_imag_low_real, complex_low_imag_high_real,
                    n_lines, n_points_per_line):
@@ -379,6 +379,62 @@ class PointGrid(object):
             for function in functions[1:]:
                 self.filename = self.filename + ";" + function.filename
 
+    def flatten_spindle(self,lines, circles, center, radius):
+        """passed a list of lines and circles, combine them into a single line
+        normalize to the lines and circles to (0,0)"""
+        n_circles = len(circles)
+        radius_diff = radius / n_circles
+        lines = [offset_by(line, -1 * center) for line in lines]
+        circles = [offset_by(circle, -1 * center) for circle in circles]
+        #outermost circle
+        master_circle = circles[-1]
+        #all the other circles
+        slave_circles = circles[:-1]
+        unified_lines = []
+        #empty checks
+        if(len(lines) < 1 or len(circles) < 1):
+            return []
+        #take a "master line" the circle and the rest of the lines 
+        master_line = lines[0]
+        master_line_len = len(master_line.points)
+        run = (master_line.points[-1 ].complex.real - master_line.points[0].complex.real)
+        #do not allow zero values
+        run = (run if run != 0 else 0.000001)
+        rise = (master_line.points[-1 ].complex.imag - master_line.points[0].complex.imag)
+        master_line_slope = rise / run
+        #find where the circle intersects with the master line
+        min_distance = (rise**2 + run **2)**0.5
+        min_distance_index = 0
+        #gets the smallest distance between the line and the outer circle
+        for index, point in enumerate(master_circle.points):
+            distance_between_circle_and_line = distance(master_line.points[-1].complex, point.complex)
+            if (distance_between_circle_and_line < min_distance):
+                min_dist = distance_between_circle_and_line
+                min_distance_index = index
+        #add the point with the smallest distance to the circle
+        master_circle.points.insert(min_distance_index, master_line.points[-1])
+        master_line.points.extend(master_circle.points)
+        if slave_circles:
+            for index, slave_circle in enumerate(reversed(slave_circles)):
+                insertion_point = int(((len(slave_circles) - index) * master_line_len) / len(circles))
+                master_line.points.insert(insertion_point, slave_circle.points[min_distance_index])
+                master_line.points[insertion_point:insertion_point] = slave_circle.points
+        if (len(lines) > 1):
+            slave_lines = lines[1:]
+            #connect the master line to its slaves
+            #the best way to do this is probably connecting on the master_circle (the outermost circle)
+            #this algo is much, much simpler though. There is value in that.
+            slave_line_len = len(slave_lines[0].points)
+            for slave_line in slave_lines:
+                #"inject" the points at the beginning of the master line
+                master_line.points[0:0] = slave_line.points
+                #draw back to the center
+                #need to use all the points on the line or this isn't going to look good
+                master_line.points[slave_line_len:slave_line_len] = reversed(slave_line.points)
+        #move back to where this was actually centered at
+        master_line = offset_by(master_line, center)
+        return self.draw_line(master_line.start, master_line.end, n_points=master_line.n_points, color=self.end_color, points=master_line.points)
+
 def roots_of_unity(n_roots):
     """
     Takes the roots of unity for the passed variable n_roots.
@@ -445,58 +501,3 @@ def offset_by(list_of_points, center):
             point.complex = point.complex + center
     return list_of_points
 
-def flatten_spindle(lines, circles, center, radius):
-    """passed a list of lines and circles, combine them into a single line
-    normalize to the lines and circles to (0,0)"""
-    n_circles = len(circles)
-    radius_diff = radius / n_circles
-    lines = [offset_by(line, -1 * center) for line in lines]
-    circles = [offset_by(circle, -1 * center) for circle in circles]
-    #outermost circle
-    master_circle = circles[-1]
-    #all the other circles
-    slave_circles = circles[:-1]
-    unified_lines = []
-    #empty checks
-    if(len(lines) < 1 or len(circles) < 1):
-        return []
-    #take a "master line" the circle and the rest of the lines 
-    master_line = lines[0]
-    master_line_len = len(master_line.points)
-    run = (master_line.points[-1 ].complex.real - master_line.points[0].complex.real)
-    #do not allow zero values
-    run = (run if run != 0 else 0.000001)
-    rise = (master_line.points[-1 ].complex.imag - master_line.points[0].complex.imag)
-    master_line_slope = rise / run
-    #find where the circle intersects with the master line
-    min_distance = (rise**2 + run **2)**0.5
-    min_distance_index = 0
-    #gets the smallest distance between the line and the outer circle
-    for index, point in enumerate(master_circle.points):
-        distance_between_circle_and_line = distance(master_line.points[-1].complex, point.complex)
-        if (distance_between_circle_and_line < min_distance):
-            min_dist = distance_between_circle_and_line
-            min_distance_index = index
-    #add the point with the smallest distance to the circle
-    master_circle.points.insert(min_distance_index, master_line.points[-1])
-    master_line.points.extend(master_circle.points)
-    if slave_circles:
-        for index, slave_circle in enumerate(reversed(slave_circles)):
-            insertion_point = int(((len(slave_circles) - index) * master_line_len) / len(circles))
-            master_line.points.insert(insertion_point, slave_circle.points[min_distance_index])
-            master_line.points[insertion_point:insertion_point] = slave_circle.points
-    if (len(lines) > 1):
-        slave_lines = lines[1:]
-        #connect the master line to its slaves
-        #the best way to do this is probably connecting on the master_circle (the outermost circle)
-        #this algo is much, much simpler though. There is value in that.
-        slave_line_len = len(slave_lines[0].points)
-        for slave_line in slave_lines:
-            #"inject" the points at the beginning of the master line
-            master_line.points[0:0] = slave_line.points
-            #draw back to the center
-            #need to use all the points on the line or this isn't going to look good
-            master_line.points[slave_line_len:slave_line_len] = reversed(slave_line.points)
-    #move back to where this was actually centered at
-    master_line = offset_by(master_line, center)
-    return master_line
