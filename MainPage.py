@@ -594,7 +594,7 @@ class Application(Frame):
     def update_latex(self, a=None, b=None, c=None):
         try:
             if self.function_entry.get() == "":
-                self.function_display.new_input("z")
+                self.function_display.new_input(self.function_display.var)
             else:
                 self.function_display.new_input(self.function_entry.get().lower())
         except:
