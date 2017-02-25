@@ -114,6 +114,7 @@ class Application(Frame):
         self.functions_pickle_str = "functions"
         self.reverse_checkbox_pickle_str = "reverse"
         self.outlier_remover_pickle_str = "outlier"
+        self.simplify_checkbox_pickle_str = "simplify"
         self.type_strs = {}
         self.type_strs["disk"] = "disk"
         self.type_strs["circle"] = "circle"
@@ -140,6 +141,9 @@ class Application(Frame):
         self.reverse_checkbox_var = IntVar()
         self.reverse_checkbox_var.set(OFF)
         self.reverse_checkbox_var.trace("w", self.update_time_estimate)
+        self.simplify_checkbox_var = IntVar()
+        self.simplify_checkbox_var.set(ON)
+        self.simplify_checkbox_var.trace("w", self.set_simplify)
         self.view_grids_checkbox_var = IntVar()
         self.view_grids_checkbox_var.set(ON)
         self.reverse = False
@@ -600,6 +604,9 @@ class Application(Frame):
         except:
             return
 
+    def set_simplify(self, a, b, c):
+        self.function_display.simplfication = self.simplify_checkbox_var == ON
+
     def update_time_estimate(self, a, b, c):
         """Give an estimate of the time that the animation will take to reach completion."""
         try:
@@ -694,7 +701,10 @@ class Application(Frame):
                                                     onvalue=ON, offvalue=OFF, height=1, width=12)
         self.reverse_checkbox = Checkbutton(self.utility_frame, text="Reverse",
                                             variable=self.reverse_checkbox_var,
-                                            onvalue=ON, offvalue=OFF, height=1, width=6)
+                                            onvalue=ON, offvalue=OFF, height=1, width=8)
+        self.simplify_checkbox = Checkbutton(self.utility_frame, text="Simplify",
+                                             variable=self.simplify_checkbox_var, onvalue=ON,
+                                             offvalue=OFF, height=1, width=6)
         self.pop_from_collection = Button(self.utility_frame, text="Remove last",
                                           command=self.remove_last)
         self.pause_play_label = Label(self.utility_frame, text="Awaiting function")
@@ -723,6 +733,7 @@ class Application(Frame):
         self.time_estimate_label.grid(row=1, column=2)
         self.outlier_remover_checkbox.grid(row=2, column=3)
         self.reverse_checkbox.grid(row=2, column=4)
+        self.simplify_checkbox.grid(row=2, column=5)
         self.submit.grid(row=0, column=4)
         self.pause_play_label.grid(row=2, column=1)
         self.redraw_slider(1)
@@ -1001,6 +1012,7 @@ class Application(Frame):
         """Activates the checkboxes for reversal and removal of outliers."""
         self.reverse = self.reverse_checkbox_var.get() == ON
         self.remove_outliers = self.outlier_remover_var.get() == ON
+        self.simplify = self.simplify_checkbox_var.get() == ON
 
     def redraw_limits(self):
         """Force the plotting object to grab new limits based on the graph's current state"""

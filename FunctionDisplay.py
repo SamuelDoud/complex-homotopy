@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
-from sympy import latex, Symbol, sympify
+from sympy import latex, Symbol, sympify, simplify, expand
 from sympy.abc import z
 
 class FunctionDisplay:
     """A matplotlib graph that utilizes matplotlib's ability to display LaTeX."""
-    def __init__(self, **kwargs):
+    def __init__(self, simplification=True):
         self.split_char = ";"
         self.var = "z"
         self.row_size = 3
@@ -12,12 +12,13 @@ class FunctionDisplay:
         self.fig = plt.figure(figsize=(self.column_size, self.row_size), dpi=50, facecolor="#F0F0F0")
         self.identity = latex(sympify("z"))
         self.latex_str = ""
+        self.simplification = simplification
 
     def new_input(self, input):
         """Updates the latex display with the new string 'input'."""
         #checks if the input is even worth trying to convert to an expression
         #cheaper than having sympify fail
-        if not input[-1].isalnum() and not input[-1] in (')', '}', ']'):
+        if not input[-1].isalnum() and not input[-1] in (")}]"):
             return
         if input == "z":
             self.latex_str = self.identity
@@ -25,6 +26,8 @@ class FunctionDisplay:
             #combine the functions if user defines multiple functions in their entry
             if self.split_char in input:
                 input = self.combine_functions(input)
+            if self.simplification:
+                input = expand(input)
             expr = sympify(input)
             self.latex_str = latex(expr)
         #wipes any previous texts
