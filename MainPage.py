@@ -158,6 +158,7 @@ class Application(Frame):
         self.function_entry.focus()
         #show the graph
         self.launch()
+        self.update_latex("z")
 
     def image_loading(self):
         """Load the file path to images necessary for the function of this program
@@ -590,9 +591,12 @@ class Application(Frame):
         self.point_grid.new_lines(self.line_collection)
         self.plot_object.set_frame(0)
 
-    def update_latex(self, a, b, c):
+    def update_latex(self, a=None, b=None, c=None):
         try:
-            self.function_display.new_input(self.function_entry.get().lower())
+            if self.function_entry.get() == "":
+                self.function_display.new_input("z")
+            else:
+                self.function_display.new_input(self.function_entry.get().lower())
         except:
             return
 
@@ -891,7 +895,7 @@ class Application(Frame):
     def save_video_handler(self):
         """Dispatches the Plot to save the video."""
         #now actually save the graph
-        old_state = self.pause_play(COMPUTING)
+        old_state = self.pause_play(PAUSED)
         if self.plot_object.install_ffmpeg:
             self.alert_ffmpeg()
             return
@@ -906,7 +910,7 @@ class Application(Frame):
     def save_gif_handler(self):
         """Dispatches the Plot to save a GIF."""
         #now actually save the graph
-        old_state = self.pause_play(COMPUTING)
+        old_state = self.pause_play(PAUSED)
         #if self.plot_object.install_ffmpeg:
         #    self.alert_ffmpeg()
         #    return

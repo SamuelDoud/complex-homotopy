@@ -1,6 +1,7 @@
 ﻿import math
 import sys
 import os
+import shutil
 from itertools import cycle
 
 import numpy as np
@@ -156,8 +157,9 @@ class PlotWindow(object):
             else:
                 spacer = "/"
             frame_dir = "frames" + spacer
-            if not os.path.exists(resource_path(frame_dir)):
-                os.makedirs(resource_path(frame_dir))
+            full_frame_directory = resource_path(frame_dir)
+            if not os.path.exists(full_frame_directory):
+                os.makedirs(full_frame_directory)
             for frame in range(self.grid.n_steps):
                 self.animate_compute(frame)
                 name = resource_path(frame_dir + "frame" + str(frame) + ".png")
@@ -165,6 +167,8 @@ class PlotWindow(object):
                 images.append(Image.open(name))
             images = images[1:] + [images[0]]
             images2gif.writeGif(filename=path, images=images, duration=[1.0/frames] * self.grid.n_steps, subRectangles=False)
+            #delete the frames 
+            shutil.rmtree(full_frame_directory)
         self.set_frame(old_frame_number)
 
     def tracer(self, step, points_to_add):
